@@ -64,7 +64,17 @@ This document tracks all features - implemented and planned. Check off items as 
 - [ ] Series expansion output - Taylor/Fourier series solutions
 - [ ] Code output - Executable Python/SymPy code
 - [ ] LaTeX export - Publication-ready formatted solutions
-- [ ] Interactive notebooks - Jupyter integration for exploration
+- [x] Interactive notebooks - Data exploration notebook with visualizations
+
+## Data Exploration
+
+- [x] Dataset overview tables - Column info, types, sample values
+- [x] Expression length analysis - Min/max/mean/median for u, f, kernel
+- [x] Expression type distribution - Polynomial, trig, hyperbolic, etc.
+- [x] Numerical parameter analysis - λ, a, b statistics and histograms
+- [x] Solution type classification - Trivial, constant, linear, polynomial, etc.
+- [ ] Kernel complexity analysis - Nested function depth, term count
+- [ ] Solvability assessment - Existence of closed-form solutions
 
 ## Configuration Presets
 
@@ -97,10 +107,11 @@ This document tracks all features - implemented and planned. Check off items as 
 | LLM Integration | 4 | 8 | 50% |
 | Prompt Engineering | 3 | 7 | 43% |
 | Evaluation | 3 | 7 | 43% |
-| Output Formats | 1 | 5 | 20% |
+| Output Formats | 2 | 5 | 40% |
+| Data Exploration | 5 | 7 | 71% |
 | Configuration | 6 | 6 | 100% |
 | Testing & Docs | 5 | 8 | 63% |
-| **Total** | **31** | **58** | **53%** |
+| **Total** | **37** | **65** | **57%** |
 
 ---
 

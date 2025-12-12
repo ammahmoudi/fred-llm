@@ -1,0 +1,52 @@
+# Fine-tuning Configuration
+# Settings for fine-tuning experiments
+
+dataset:
+  path: data/processed/train.json
+  format: json
+  max_samples: null
+  split_ratio:
+    train: 0.9
+    val: 0.1
+    test: 0.0  # Use separate test set
+
+model:
+  provider: huggingface
+  name: google/flan-t5-base  # Or microsoft/phi-2
+  temperature: 0.1
+  max_tokens: 512
+  timeout: 300
+
+# Fine-tuning specific settings
+fine_tuning:
+  enabled: true
+  epochs: 3
+  batch_size: 8
+  learning_rate: 2e-5
+  warmup_steps: 100
+  save_steps: 500
+  eval_steps: 100
+  output_dir: outputs/fine_tuned
+  fp16: true
+  gradient_accumulation_steps: 4
+
+prompting:
+  style: basic
+  include_examples: false
+  num_examples: 0
+  output_format: symbolic
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-8
+  numeric_tolerance: 1e-5
+  num_test_points: 100
+  integration_domain:
+    a: 0
+    b: 1
+
+output:
+  dir: outputs/fine_tuning
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

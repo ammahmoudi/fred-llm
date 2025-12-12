@@ -1,0 +1,35 @@
+# Development Configuration
+# Smaller dataset, faster inference for local testing
+
+dataset:
+  path: data/samples/test_equations.json
+  format: json
+  max_samples: 10  # Small subset for quick testing
+
+model:
+  provider: openai
+  name: gpt-4o-mini  # Faster, cheaper model
+  temperature: 0.1
+  max_tokens: 1024
+  timeout: 30
+
+prompting:
+  style: basic  # Simple prompts for fast iteration
+  include_examples: false
+  num_examples: 0
+  output_format: symbolic
+
+evaluation:
+  mode: symbolic  # Skip numeric for speed
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-4
+  num_test_points: 20
+  integration_domain:
+    a: 0
+    b: 1
+
+output:
+  dir: outputs/dev
+  save_predictions: true
+  save_metrics: true
+  log_level: DEBUG

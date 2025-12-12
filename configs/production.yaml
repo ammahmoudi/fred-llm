@@ -1,0 +1,35 @@
+# Production Configuration
+# Full dataset, best model, comprehensive evaluation
+
+dataset:
+  path: data/processed/equations.json
+  format: json
+  max_samples: null  # Use all samples
+
+model:
+  provider: openai
+  name: gpt-4o  # Best available model
+  temperature: 0.0  # Deterministic for reproducibility
+  max_tokens: 4096
+  timeout: 120
+
+prompting:
+  style: chain-of-thought
+  include_examples: true
+  num_examples: 5
+  output_format: symbolic
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-12
+  numeric_tolerance: 1e-8
+  num_test_points: 200
+  integration_domain:
+    a: 0
+    b: 1
+
+output:
+  dir: outputs/production
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

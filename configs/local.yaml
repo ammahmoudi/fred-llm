@@ -1,0 +1,36 @@
+# Local Model Configuration
+# For running with local/self-hosted models (vLLM, Ollama, HuggingFace)
+
+dataset:
+  path: data/processed/equations.json
+  format: json
+  max_samples: 100  # Moderate size for local testing
+
+model:
+  provider: local
+  name: microsoft/Phi-3-mini-4k-instruct  # Or any local model
+  endpoint: http://localhost:8000/v1  # vLLM/Ollama endpoint
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 180  # Longer timeout for local models
+
+prompting:
+  style: basic  # Simpler prompts work better with smaller models
+  include_examples: true
+  num_examples: 2
+  output_format: symbolic
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-8
+  numeric_tolerance: 1e-4
+  num_test_points: 50
+  integration_domain:
+    a: 0
+    b: 1
+
+output:
+  dir: outputs/local
+  save_predictions: true
+  save_metrics: true
+  log_level: DEBUG

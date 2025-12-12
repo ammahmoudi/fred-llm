@@ -181,8 +181,11 @@ source .venv/bin/activate
 
 4. Set up environment variables:
 ```bash
-# Create .env file or set directly
-export OPENAI_API_KEY="your-api-key-here"
+# Copy the sample env file
+cp .env.sample .env
+
+# Edit .env and add your API keys
+# OPENAI_API_KEY=your-key-here
 ```
 
 ## Usage
@@ -250,10 +253,17 @@ python scripts/generate_prompts.py --input data/processed/test.json --style chai
 
 ## Project Structure
 
-```
+```text
 fred-llm/
-├── config.yaml              # Runtime configuration
+├── .env.sample              # Environment variables template
+├── config.yaml              # Default runtime configuration
 ├── pyproject.toml           # Dependencies and project metadata
+├── configs/                 # Configuration presets
+│   ├── default.yaml         # Standard settings
+│   ├── development.yaml     # Fast iteration settings
+│   ├── production.yaml      # Full evaluation settings
+│   ├── local.yaml           # Local model settings
+│   └── fine_tuning.yaml     # Training settings
 ├── src/
 │   ├── cli.py               # CLI entrypoint
 │   ├── config.py            # Configuration loader
@@ -275,6 +285,7 @@ fred-llm/
 ├── scripts/                 # Utility scripts
 ├── notebooks/               # Jupyter notebooks
 ├── tests/                   # Unit tests
+├── docs/                    # Documentation
 └── data/                    # Data directory
     ├── raw/
     ├── processed/

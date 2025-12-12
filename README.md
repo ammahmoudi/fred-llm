@@ -25,6 +25,130 @@ where:
 - 📊 **Format conversion**: LaTeX, RPN, tokenized representations
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
 
+## Pipeline Architecture
+
+The project follows a modular 4-stage pipeline:
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontSize': '14px'}}}%%
+flowchart LR
+ subgraph Dataset_Preparation["Module 1: Dataset Preparation"]
+    direction TB
+    DP1["Data Augmentation"]
+    DP1a(["Add no-solution"])
+    DP1b(["Add special function"])
+    DP1c(["Generate numeric ground truth"])
+    DP2["Format Conversion"]
+    DP2a(["To LaTeX"])
+    DP2b(["To RPN"])
+    DP2c(["Tokenize for LLM"])
+    DP1 --> DP1a & DP1b & DP1c
+    DP1 --> DP2
+    DP2 --> DP2a & DP2b & DP2c
+  end
+
+ subgraph Prompt_Engineering["Module 2: Prompt Engineering"]
+    direction TB
+    PR1["Prompt Design"]
+    PR1a(["Direct prompts"])
+    PR1b(["Chain of thought"])
+    PR1c(["Approximation prompts"])
+    PR2["Output Format"]
+    PR2a(["Symbolic"])
+    PR2b(["Series"])
+    PR2c(["Code format"])
+    PR1 --> PR1a & PR1b & PR1c
+    PR1 --> PR2
+    PR2 --> PR2a & PR2b & PR2c
+  end
+
+ subgraph LLM_Methods["Module 3: LLM Methods"]
+    direction TB
+    LLM1["Fine Tuning"]
+    LLM1a(["Supervised pairs"])
+    LLM1b(["Use Phi or T5"])
+    LLM2["In Context Learning"]
+    LLM2a(["Few-shot examples"])
+    LLM2b(["Chain of thought prompts"])
+    LLM3["Tool Use"]
+    LLM3a(["Generate Python"])
+    LLM3b(["Use symbolic tools"])
+    LLM1 --> LLM1a & LLM1b
+    LLM1 --> LLM2
+    LLM2 --> LLM2a & LLM2b
+    LLM2 --> LLM3
+    LLM3 --> LLM3a & LLM3b
+  end
+
+ subgraph Evaluation["Module 4: Evaluation"]
+    direction TB
+    EV1["Symbolic Eval"]
+    EV1a(["Exact match"])
+    EV1b(["BLEU / TeX BLEU"])
+    EV2["Numeric Eval"]
+    EV2a(["MAE / MSE"])
+    EV2b(["Test points"])
+    EV3["Robustness"]
+    EV3a(["Prompt variation"])
+    EV3b(["Unseen function types"])
+    EV1 --> EV1a & EV1b
+    EV1 --> EV2
+    EV2 --> EV2a & EV2b
+    EV2 --> EV3
+    EV3 --> EV3a & EV3b
+  end
+
+    Dataset_Preparation --> Prompt_Engineering
+    Prompt_Engineering --> LLM_Methods
+    LLM_Methods --> Evaluation
+
+     DP1:::submod
+     DP1a:::step
+     DP1b:::step
+     DP1c:::step
+     DP2:::submod
+     DP2a:::step
+     DP2b:::step
+     DP2c:::step
+     PR1:::submod
+     PR1a:::step
+     PR1b:::step
+     PR1c:::step
+     PR2:::submod
+     PR2a:::step
+     PR2b:::step
+     PR2c:::step
+     LLM1:::submod
+     LLM1a:::step
+     LLM1b:::step
+     LLM2:::submod
+     LLM2a:::step
+     LLM2b:::step
+     LLM3:::submod
+     LLM3a:::step
+     LLM3b:::step
+     EV1:::submod
+     EV1a:::step
+     EV1b:::step
+     EV2:::submod
+     EV2a:::step
+     EV2b:::step
+     EV3:::submod
+     EV3a:::step
+     EV3b:::step
+    classDef submod fill:#e3f2fd,stroke:#1976d2,stroke-width:1px,color:#0d47a1
+    classDef step fill:#ffffff,stroke:#42a5f5,stroke-width:1px,color:#0d47a1
+```
+
+### Module Overview
+
+| Module | Purpose | Key Components |
+|--------|---------|----------------|
+| **Dataset Preparation** | Prepare and augment training data | Augmentation, LaTeX/RPN conversion, tokenization |
+| **Prompt Engineering** | Design effective prompts for LLMs | Direct, CoT, approximation prompts; symbolic/series/code output |
+| **LLM Methods** | Model training and inference | Fine-tuning (Phi/T5), few-shot learning, tool use |
+| **Evaluation** | Assess solution quality | Symbolic matching, BLEU, MAE/MSE, robustness testing |
+
 ## Installation
 
 ### Prerequisites

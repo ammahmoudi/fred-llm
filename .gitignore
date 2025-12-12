@@ -66,10 +66,16 @@ dmypy.json
 data/raw/*.json
 data/raw/*.csv
 data/raw/*.parquet
+data/raw/*.zip
+data/raw/*.pdf
+data/raw/Info/
 !data/raw/.gitkeep
 data/processed/*.json
 data/processed/*.csv
 !data/processed/.gitkeep
+data/samples/*.json
+data/samples/*.csv
+!data/samples/.gitkeep
 
 # Model outputs
 data/prompts/*.json

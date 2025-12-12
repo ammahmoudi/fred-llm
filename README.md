@@ -251,6 +251,55 @@ Generate prompts:
 python scripts/generate_prompts.py --input data/processed/test.json --style chain-of-thought
 ```
 
+## Dataset
+
+### Fredholm-LLM Dataset
+
+This project uses the Fredholm-LLM dataset, a collection of ~500,000 Fredholm integral equations of the second kind.
+
+**Source**: [Fredholm-LLM on GitHub](https://github.com/alirezaafzalaghaei/Fredholm-LLM)  
+**DOI**: [10.5281/zenodo.16784707](https://doi.org/10.5281/zenodo.16784707)
+
+### Dataset Schema
+
+| Field | Description |
+|-------|-------------|
+| `u` | Solution function u(x) |
+| `f` | Right-hand side function f(x) |
+| `kernel` | Kernel function K(x, t) |
+| `lambda` | Parameter λ |
+| `a`, `b` | Integration bounds |
+
+### Download Dataset
+
+Use the CLI to download the dataset from Zenodo:
+
+```bash
+# Download sample dataset (~5K equations, recommended for testing)
+python -m src.cli dataset download --variant sample
+
+# Download full dataset (~500K equations)
+python -m src.cli dataset download --variant full
+
+# Show dataset info
+python -m src.cli dataset info
+
+# Show dataset statistics
+python -m src.cli dataset stats
+
+# Display sample equations
+python -m src.cli dataset sample --max-samples 5
+```
+
+### Expression Types
+
+The dataset includes equations with various expression types:
+
+- **Polynomial**: `x**2`, `t**3 + t`
+- **Trigonometric**: `sin(x)`, `cos(t)`
+- **Hyperbolic**: `sinh(x)`, `cosh(t)`
+- **Exponential**: `exp(x)`, `exp(-t**2)`
+
 ## Project Structure
 
 ```text

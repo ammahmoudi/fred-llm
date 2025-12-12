@@ -146,6 +146,163 @@ def prompt(
     console.print(prompt_text)
 
 
+@app.command()
+def dataset(
+    action: str = typer.Argument(
+        "info",
+        help="Action: download, info, stats, sample",
+    ),
+    variant: str = typer.Option(
+        "sample",
+        "--variant",
+        "-v",
+        help="Dataset variant: 'sample' (5K) or 'full' (500K)",
+    ),
+    output_dir: Path = typer.Option(
+        "data/raw",
+        "--output",
+        "-o",
+        help="Output directory for downloaded data",
+    ),
+    max_samples: int | None = typer.Option(
+        None,
+        "--max-samples",
+        "-n",
+        help="Maximum samples to display/load",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Force re-download",
+    ),
+) -> None:
+    """Download and explore the Fredholm-LLM dataset from Zenodo."""
+    from rich.table import Table
+
+    from src.data.fredholm_loader import FredholmDatasetLoader
+
+    # Convert string to Path if needed
+    output_path = Path(output_dir)
+
+    if action == "download":
+        from src.data.dataset_fetcher import FredholmDatasetFetcher
+
+        console.print(
+            f"[bold blue]Downloading Fredholm-LLM dataset ({variant})...[/bold blue]"
+        )
+        fetcher = FredholmDatasetFetcher(data_dir=output_path)
+
+        try:
+            path = fetcher.download_dataset(variant=variant, force=force)
+            console.print(f"[bold green]✓ Dataset downloaded to: {path}[/bold green]")
+        except Exception as e:
+            console.print(f"[bold red]✗ Download failed: {e}[/bold red]")
+            raise typer.Exit(1) from e
+
+    elif action == "info":
+        from src.data.dataset_fetcher import FredholmDatasetFetcher
+
+        console.print("[bold blue]Fredholm-LLM Dataset Information[/bold blue]\n")
+        console.print("Source: https://github.com/alirezaafzalaghaei/Fredholm-LLM")
+        console.print("DOI: 10.5281/zenodo.16784707\n")
+
+        console.print("[bold]Available variants:[/bold]")
+        console.print("  • sample: ~5,000 equations (recommended for testing)")
+        console.print("  • full: ~500,000 equations (complete dataset)\n")
+
+        console.print("[bold]Dataset schema:[/bold]")
+        schema_table = Table(show_header=True, header_style="bold cyan")
+        schema_table.add_column("Field", style="green")
+        schema_table.add_column("Description")
+        schema_table.add_row("u", "Solution function u(x)")
+        schema_table.add_row("f", "Right-hand side function f(x)")
+        schema_table.add_row("kernel", "Kernel function K(x, t)")
+        schema_table.add_row("lambda", "Parameter λ")
+        schema_table.add_row("a, b", "Integration bounds")
+        schema_table.add_row("*_is_polynomial", "Boolean: is polynomial?")
+        schema_table.add_row("*_is_trigonometric", "Boolean: has sin/cos/tan?")
+        schema_table.add_row("*_is_hyperbolic", "Boolean: has sinh/cosh/tanh?")
+        schema_table.add_row("*_is_exponential", "Boolean: has exp?")
+        schema_table.add_row("*_max_degree", "Maximum polynomial degree")
+        console.print(schema_table)
+
+        # Check for available files
+        console.print("\n[bold]Checking available files on Zenodo...[/bold]")
+        try:
+            fetcher = FredholmDatasetFetcher()
+            files = fetcher.list_available_files()
+            for f in files:
+                size_mb = f.get("size", 0) / (1024 * 1024)
+                console.print(f"  • {f['key']}: {size_mb:.2f} MB")
+        except Exception as e:  # noqa: BLE001
+            console.print(f"[yellow]Could not fetch file list: {e}[/yellow]")
+
+    elif action == "stats":
+        console.print("[bold blue]Loading dataset statistics...[/bold blue]")
+
+        loader = FredholmDatasetLoader(
+            data_path=output_path / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
+            auto_download=True,
+            variant=variant,
+            max_samples=max_samples,
+        )
+
+        try:
+            stats = loader.get_statistics()
+
+            console.print(f"\n[bold]Total equations:[/bold] {stats['total_equations']}")
+
+            console.print("\n[bold]Solution (u) expression types:[/bold]")
+            for expr_type, count in stats["u_types"].items():
+                pct = (count / stats["total_equations"]) * 100 if stats["total_equations"] > 0 else 0
+                console.print(f"  • {expr_type}: {count} ({pct:.1f}%)")
+
+            console.print("\n[bold]Kernel expression types:[/bold]")
+            for expr_type, count in stats["kernel_types"].items():
+                pct = (count / stats["total_equations"]) * 100 if stats["total_equations"] > 0 else 0
+                console.print(f"  • {expr_type}: {count} ({pct:.1f}%)")
+
+        except FileNotFoundError:
+            console.print(
+                "[yellow]Dataset not found. Run 'dataset download' first.[/yellow]"
+            )
+
+    elif action == "sample":
+        console.print("[bold blue]Sample equations from dataset:[/bold blue]\n")
+
+        loader = FredholmDatasetLoader(
+            data_path=output_dir / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
+            auto_download=True,
+            variant=variant,
+            max_samples=max_samples or 5,
+        )
+
+        try:
+            equations = loader.load()
+
+            for i, eq in enumerate(equations[:5]):
+                console.print(f"[bold cyan]Equation {i + 1}:[/bold cyan]")
+                console.print(f"  u(x) = {eq.u}")
+                console.print(f"  f(x) = {eq.f}")
+                console.print(f"  K(x,t) = {eq.kernel}")
+                console.print(f"  lambda = {eq.lambda_val}")
+                console.print(f"  bounds = \\[{eq.a}, {eq.b}]")
+                if eq.metadata.get("u_type"):
+                    console.print(f"  Type: {eq.metadata['u_type'].value}")
+                console.print()
+
+        except FileNotFoundError:
+            console.print(
+                "[yellow]Dataset not found. Run 'dataset download' first.[/yellow]"
+            )
+
+    else:
+        console.print(f"[red]Unknown action: {action}[/red]")
+        console.print("Available actions: download, info, stats, sample")
+        raise typer.Exit(1)
+
+
 def main() -> None:
     """Main entry point."""
     app()

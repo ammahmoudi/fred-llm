@@ -5,13 +5,13 @@ Coordinates the full workflow from data loading through evaluation.
 """
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.config import Config
-from src.utils.logging_utils import get_logger
+from src.utils.logging_utils import get_logger, setup_logging
 
 console = Console()
 logger = get_logger(__name__)
@@ -37,7 +37,20 @@ class FredLLMPipeline:
             config: Configuration object with all settings.
         """
         self.config = config
+        self._setup_logging()
         self._setup_components()
+
+    def _setup_logging(self) -> None:
+        """Setup logging based on configuration."""
+        log_config = getattr(self.config, "logging", None)
+        if log_config:
+            log_file = setup_logging(
+                level=getattr(log_config, "level", "INFO"),
+                log_to_file=getattr(log_config, "log_to_file", False),
+                log_dir=getattr(log_config, "log_dir", "logs/"),
+            )
+            if log_file:
+                logger.info(f"Log file: {log_file}")
 
     def _setup_components(self) -> None:
         """Initialize pipeline components based on configuration."""
@@ -55,7 +68,7 @@ class FredLLMPipeline:
     def run(
         self,
         dry_run: bool = False,
-        sample_ids: Optional[list[str]] = None,
+        sample_ids: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Run the complete pipeline.
@@ -113,7 +126,7 @@ class FredLLMPipeline:
         return results
 
     def _load_data(
-        self, sample_ids: Optional[list[str]] = None
+        self, sample_ids: list[str] | None = None
     ) -> list[dict[str, Any]]:
         """Load equation data from configured source."""
         # TODO: Implement data loading

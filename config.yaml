@@ -39,7 +39,12 @@ output:
   format: "latex"  # latex, rpn, python, sympy
   save_intermediate: true
   results_dir: "data/processed/results/"
-  log_level: "INFO"
+
+# Logging settings
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_to_file: true
+  log_dir: "logs/"
 
 # Integral equation parameters
 equation:

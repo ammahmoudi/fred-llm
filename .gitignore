@@ -85,7 +85,8 @@ data/prompts/*.jsonl
 # Results
 results/
 outputs/
-logs/
+logs/*.log
+!logs/.gitkeep
 *.log
 
 # API keys and secrets

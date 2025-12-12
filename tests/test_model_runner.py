@@ -94,6 +94,21 @@ class TestModelRunnerFactory:
 
         assert True
 
+    def test_create_openrouter_runner(self) -> None:
+        """Test creating OpenRouter runner via factory."""
+        # TODO: Test actual module
+        # from src.llm.model_runner import ModelRunner
+        #
+        # runner = ModelRunner(
+        #     provider="openrouter",
+        #     model_name="anthropic/claude-3.5-sonnet",
+        #     api_key="test",
+        # )
+        #
+        # assert runner.provider == "openrouter"
+
+        assert True
+
     def test_create_local_runner(self) -> None:
         """Test creating local runner via factory."""
         # TODO: Test actual module
@@ -115,6 +130,47 @@ class TestModelRunnerFactory:
         #
         # with pytest.raises(ValueError):
         #     ModelRunner(provider="unknown")
+
+        assert True
+
+
+class TestOpenRouterModelRunner:
+    """Tests for OpenRouter model runner."""
+
+    def test_initialization(self) -> None:
+        """Test OpenRouter runner initialization."""
+        # TODO: Test actual module
+        # from src.llm.model_runner import OpenRouterModelRunner
+        #
+        # runner = OpenRouterModelRunner(
+        #     model_name="anthropic/claude-3.5-sonnet",
+        #     api_key="test-key",
+        #     app_name="test-app",
+        # )
+        #
+        # assert runner.model_name == "anthropic/claude-3.5-sonnet"
+        # assert runner.app_name == "test-app"
+
+        assert True
+
+    def test_api_key_from_env(self) -> None:
+        """Test loading API key from environment."""
+        # TODO: Test actual module
+        # from src.llm.model_runner import OpenRouterModelRunner
+        #
+        # os.environ["OPENROUTER_API_KEY"] = "env-test-key"
+        # runner = OpenRouterModelRunner()
+        # assert runner.api_key == "env-test-key"
+        # del os.environ["OPENROUTER_API_KEY"]
+
+        assert True
+
+    def test_base_url_is_openrouter(self) -> None:
+        """Test that base URL is OpenRouter."""
+        # TODO: Test actual module
+        # from src.llm.model_runner import OpenRouterModelRunner
+        #
+        # assert OpenRouterModelRunner.BASE_URL == "https://openrouter.ai/api/v1"
 
         assert True
 

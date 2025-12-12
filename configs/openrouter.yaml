@@ -1,0 +1,52 @@
+# OpenRouter Configuration
+# Access multiple models (Claude, GPT-4, Llama, etc.) via OpenRouter API
+# Get your API key at: https://openrouter.ai/keys
+
+dataset:
+  path: data/processed/equations.json
+  format: json
+  max_samples: null
+
+model:
+  provider: openrouter
+  # Popular models available on OpenRouter:
+  # - anthropic/claude-3.5-sonnet
+  # - openai/gpt-4o
+  # - google/gemini-pro-1.5
+  # - meta-llama/llama-3.1-70b-instruct
+  # - mistralai/mistral-large
+  # - deepseek/deepseek-chat
+  # See full list: https://openrouter.ai/models
+  name: anthropic/claude-3.5-sonnet
+  temperature: 0.1
+  max_tokens: 4096
+  timeout: 120
+  
+  # OpenRouter specific settings
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    # Optional: Set your app name for OpenRouter analytics
+    app_name: fred-llm
+    # Optional: Set site URL for rankings
+    site_url: https://github.com/ammahmoudi/fred-llm
+
+prompting:
+  style: chain-of-thought
+  include_examples: true
+  num_examples: 3
+  output_format: symbolic
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  integration_domain:
+    a: 0
+    b: 1
+
+output:
+  dir: outputs/openrouter
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

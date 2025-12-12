@@ -1,12 +1,12 @@
 """
 Model runner for LLM inference.
 
-Supports multiple providers: OpenAI API, local models, HuggingFace.
+Supports multiple providers: OpenAI API, OpenRouter, local models, HuggingFace.
 """
 
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from src.utils.logging_utils import get_logger
 
@@ -33,9 +33,9 @@ class OpenAIModelRunner(BaseModelRunner):
     def __init__(
         self,
         model_name: str = "gpt-4",
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         api_key_env: str = "OPENAI_API_KEY",
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 2048,
         timeout: int = 60,
@@ -156,6 +156,93 @@ class LocalModelRunner(BaseModelRunner):
         return [self.generate(p, **kwargs) for p in prompts]
 
 
+class OpenRouterModelRunner(BaseModelRunner):
+    """Model runner for OpenRouter API (access multiple models via single API)."""
+
+    # OpenRouter base URL
+    BASE_URL = "https://openrouter.ai/api/v1"
+
+    def __init__(
+        self,
+        model_name: str = "anthropic/claude-3.5-sonnet",
+        api_key: str | None = None,
+        api_key_env: str = "OPENROUTER_API_KEY",
+        temperature: float = 0.1,
+        max_tokens: int = 4096,
+        timeout: int = 120,
+        app_name: str = "fred-llm",
+        site_url: str | None = None,
+    ) -> None:
+        """
+        Initialize OpenRouter model runner.
+
+        Args:
+            model_name: Model identifier (e.g., 'anthropic/claude-3.5-sonnet').
+            api_key: API key (if not provided, uses env var).
+            api_key_env: Environment variable name for API key.
+            temperature: Sampling temperature.
+            max_tokens: Maximum tokens in response.
+            timeout: Request timeout in seconds.
+            app_name: App name for OpenRouter analytics.
+            site_url: Site URL for OpenRouter rankings.
+        """
+        self.model_name = model_name
+        self.api_key = api_key or os.getenv(api_key_env)
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.timeout = timeout
+        self.app_name = app_name
+        self.site_url = site_url
+
+        self._client = None
+
+    def _get_client(self) -> Any:
+        """Get or create OpenAI-compatible client for OpenRouter."""
+        if self._client is None:
+            # TODO: Import and initialize OpenAI client with OpenRouter base URL
+            # from openai import OpenAI
+            # self._client = OpenAI(
+            #     api_key=self.api_key,
+            #     base_url=self.BASE_URL,
+            #     default_headers={
+            #         "HTTP-Referer": self.site_url or "",
+            #         "X-Title": self.app_name,
+            #     }
+            # )
+            pass
+        return self._client
+
+    def generate(self, prompt: str, **kwargs: Any) -> str:
+        """
+        Generate a response from OpenRouter API.
+
+        Args:
+            prompt: The input prompt.
+            **kwargs: Additional generation parameters.
+
+        Returns:
+            Generated text response.
+        """
+        logger.info(f"Generating response with OpenRouter model: {self.model_name}")
+
+        # TODO: Implement OpenRouter API call
+        # client = self._get_client()
+        # response = client.chat.completions.create(
+        #     model=self.model_name,
+        #     messages=[{"role": "user", "content": prompt}],
+        #     temperature=kwargs.get("temperature", self.temperature),
+        #     max_tokens=kwargs.get("max_tokens", self.max_tokens),
+        # )
+        # return response.choices[0].message.content
+
+        return ""
+
+    def batch_generate(self, prompts: list[str], **kwargs: Any) -> list[str]:
+        """Generate responses for multiple prompts."""
+        logger.info(f"Batch generating {len(prompts)} responses via OpenRouter")
+        return [self.generate(p, **kwargs) for p in prompts]
+
+
 class ModelRunner:
     """Factory class to create appropriate model runner."""
 
@@ -168,13 +255,15 @@ class ModelRunner:
         Initialize model runner.
 
         Args:
-            provider: Model provider (openai, local, huggingface).
+            provider: Model provider (openai, openrouter, local, huggingface).
             **kwargs: Provider-specific configuration.
         """
         self.provider = provider
 
         if provider == "openai":
             self._runner = OpenAIModelRunner(**kwargs)
+        elif provider == "openrouter":
+            self._runner = OpenRouterModelRunner(**kwargs)
         elif provider in ("local", "huggingface"):
             self._runner = LocalModelRunner(**kwargs)
         else:

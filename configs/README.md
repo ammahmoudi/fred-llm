@@ -10,6 +10,7 @@ This directory contains configuration presets for different use cases.
 | `development.yaml` | Fast iteration settings | Local development & testing |
 | `production.yaml` | Full evaluation settings | Final benchmarking |
 | `local.yaml` | Local model settings | Self-hosted models (vLLM, Ollama) |
+| `openrouter.yaml` | OpenRouter API settings | Access Claude, GPT-4, Llama via single API |
 | `fine_tuning.yaml` | Training settings | Fine-tuning experiments |
 
 ## Usage

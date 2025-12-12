@@ -125,9 +125,7 @@ class FredLLMPipeline:
 
         return results
 
-    def _load_data(
-        self, sample_ids: list[str] | None = None
-    ) -> list[dict[str, Any]]:
+    def _load_data(self, sample_ids: list[str] | None = None) -> list[dict[str, Any]]:
         """Load equation data from configured source."""
         # TODO: Implement data loading
         logger.info(f"Loading data from {self.config.dataset.path}")

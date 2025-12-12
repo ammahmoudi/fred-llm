@@ -9,7 +9,7 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Project scaffolding - Complete Python project structure with uv/hatchling
 - [x] CLI interface - Typer-based CLI with rich output formatting
 - [x] Configuration system - YAML-based config with Pydantic validation
-- [x] Logging utilities - Structured logging with configurable levels
+- [x] Logging utilities - Structured logging with file output support
 - [ ] Experiment tracking - MLflow or Weights & Biases integration
 - [ ] Caching layer - Cache LLM responses for reproducibility
 - [ ] Parallel processing - Concurrent batch evaluation

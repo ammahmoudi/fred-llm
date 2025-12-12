@@ -39,6 +39,7 @@ See `docs/pipeline-diagram.md` for the full 4-module pipeline:
 - Python 3.11+ required
 - Format code with Ruff
 - Configuration via `config.yaml` or `configs/*.yaml`
+- **Always update `docs/FEATURES.md`** when adding new features or completing TODO items
 
 ## CLI Usage
 

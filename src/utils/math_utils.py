@@ -206,7 +206,7 @@ def verify_fredholm_solution(
     return {
         "max_residual": float(np.max(residuals)),
         "mean_residual": float(np.mean(residuals)),
-        "rmse": float(np.sqrt(np.mean(residuals ** 2))),
+        "rmse": float(np.sqrt(np.mean(residuals**2))),
         "verified": float(np.max(residuals)) < 1e-6,
     }
 

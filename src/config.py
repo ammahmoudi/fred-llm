@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 class DatasetConfig(BaseModel):
     """Dataset configuration."""
+
     name: str = "FIE-500k"
     path: str = "data/raw/fie_500k.json"
     processed_path: str = "data/processed/"
@@ -22,6 +23,7 @@ class DatasetConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     """LLM model configuration."""
+
     provider: str = "openai"
     name: str = "gpt-4"
     api_key_env: str = "OPENAI_API_KEY"
@@ -33,6 +35,7 @@ class ModelConfig(BaseModel):
 
 class PromptConfig(BaseModel):
     """Prompting configuration."""
+
     style: str = "chain-of-thought"
     template_dir: str = "data/prompts/"
     include_examples: bool = True
@@ -41,6 +44,7 @@ class PromptConfig(BaseModel):
 
 class EvaluationConfig(BaseModel):
     """Evaluation configuration."""
+
     mode: str = "both"
     symbolic_tolerance: float = 1e-10
     numeric_tolerance: float = 1e-6
@@ -50,6 +54,7 @@ class EvaluationConfig(BaseModel):
 
 class OutputConfig(BaseModel):
     """Output configuration."""
+
     format: str = "latex"
     save_intermediate: bool = True
     results_dir: str = "data/processed/results/"
@@ -58,20 +63,28 @@ class OutputConfig(BaseModel):
 
 class DomainConfig(BaseModel):
     """Integration domain configuration."""
+
     a: float = 0.0
     b: float = 1.0
 
 
 class LambdaRangeConfig(BaseModel):
     """Lambda parameter range."""
+
     min: float = 0.1
     max: float = 2.0
 
 
 class EquationConfig(BaseModel):
     """Equation-specific configuration."""
+
     kernel_types: list[str] = Field(
-        default_factory=lambda: ["polynomial", "exponential", "trigonometric", "separable"]
+        default_factory=lambda: [
+            "polynomial",
+            "exponential",
+            "trigonometric",
+            "separable",
+        ]
     )
     domain: DomainConfig = Field(default_factory=DomainConfig)
     lambda_range: LambdaRangeConfig = Field(default_factory=LambdaRangeConfig)
@@ -79,6 +92,7 @@ class EquationConfig(BaseModel):
 
 class Config(BaseModel):
     """Main configuration container."""
+
     dataset: DatasetConfig = Field(default_factory=DatasetConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     prompting: PromptConfig = Field(default_factory=PromptConfig)
@@ -90,42 +104,42 @@ class Config(BaseModel):
 def load_config(config_path: Path | str) -> Config:
     """
     Load configuration from a YAML file.
-    
+
     Args:
         config_path: Path to the configuration file.
-        
+
     Returns:
         Config object with all settings.
-        
+
     Raises:
         FileNotFoundError: If config file doesn't exist.
         yaml.YAMLError: If config file is invalid YAML.
     """
     config_path = Path(config_path)
-    
+
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
-    
+
     with open(config_path, "r", encoding="utf-8") as f:
         raw_config = yaml.safe_load(f)
-    
+
     if raw_config is None:
         raw_config = {}
-    
+
     return Config(**raw_config)
 
 
 def save_config(config: Config, config_path: Path | str) -> None:
     """
     Save configuration to a YAML file.
-    
+
     Args:
         config: Configuration object to save.
         config_path: Path to save the configuration file.
     """
     config_path = Path(config_path)
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(config_path, "w", encoding="utf-8") as f:
         yaml.dump(config.model_dump(), f, default_flow_style=False, sort_keys=False)
 

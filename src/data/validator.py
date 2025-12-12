@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 
 class ValidationError(Exception):
     """Exception raised for validation failures."""
+
     pass
 
 
@@ -84,7 +85,9 @@ def validate_equation(
         if isinstance(domain, (list, tuple)) and len(domain) == 2:
             a, b = domain
             if a >= b:
-                result["errors"].append(f"Invalid domain: a ({a}) must be less than b ({b})")
+                result["errors"].append(
+                    f"Invalid domain: a ({a}) must be less than b ({b})"
+                )
                 result["valid"] = False
         elif isinstance(domain, dict) and "a" in domain and "b" in domain:
             if domain["a"] >= domain["b"]:
@@ -176,16 +179,20 @@ def validate_dataset(
             summary["valid"] += 1
         else:
             summary["invalid"] += 1
-            summary["errors"].append({
-                "index": i,
-                "errors": result["errors"],
-            })
+            summary["errors"].append(
+                {
+                    "index": i,
+                    "errors": result["errors"],
+                }
+            )
 
         if result["warnings"]:
-            summary["warnings"].append({
-                "index": i,
-                "warnings": result["warnings"],
-            })
+            summary["warnings"].append(
+                {
+                    "index": i,
+                    "warnings": result["warnings"],
+                }
+            )
 
     logger.info(
         f"Validation complete: {summary['valid']}/{summary['total']} valid, "

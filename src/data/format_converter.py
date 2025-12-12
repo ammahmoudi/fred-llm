@@ -86,6 +86,7 @@ class FormatConverter:
             return self._sympy_to_tokenized(expr)
         elif format == "python":
             from sympy.printing.pycode import pycode
+
             return pycode(expr)
         else:
             raise ValueError(f"Cannot convert from sympy to {format}")
@@ -110,8 +111,8 @@ class FormatConverter:
             "-": lambda a, b: a - b,
             "*": lambda a, b: a * b,
             "/": lambda a, b: a / b,
-            "^": lambda a, b: a ** b,
-            "**": lambda a, b: a ** b,
+            "^": lambda a, b: a**b,
+            "**": lambda a, b: a**b,
         }
 
         functions = {

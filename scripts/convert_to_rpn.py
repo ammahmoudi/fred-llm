@@ -51,28 +51,28 @@ def parse_args() -> argparse.Namespace:
 def infix_to_rpn(expr: str) -> str:
     """
     Convert infix expression to RPN.
-    
+
     This is a simplified implementation. The full version should use
     the FormatConverter class from src.data.format_converter.
     """
     # TODO: Use proper converter
     # converter = FormatConverter()
     # return converter.convert(expr, "infix", "rpn")
-    
+
     # Placeholder: return tokenized version
     import re
-    
+
     # Add spaces around operators
     expr = re.sub(r"([+\-*/^()])", r" \1 ", expr)
     tokens = expr.split()
-    
+
     # Simple Shunting Yard algorithm
     output = []
     operators = []
-    
+
     precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3}
     right_assoc = {"^"}
-    
+
     for token in tokens:
         if token in precedence:
             while (
@@ -97,17 +97,17 @@ def infix_to_rpn(expr: str) -> str:
                 operators.pop()  # Remove "("
         else:
             output.append(token)
-    
+
     while operators:
         output.append(operators.pop())
-    
+
     return " ".join(output)
 
 
 def convert_equation(item: dict, fields: list[str]) -> dict:
     """Convert specified fields in an equation to RPN."""
     result = item.copy()
-    
+
     for field in fields:
         if field in item and item[field]:
             try:
@@ -115,34 +115,34 @@ def convert_equation(item: dict, fields: list[str]) -> dict:
             except Exception as e:
                 print(f"Warning: Failed to convert {field}: {e}")
                 result[f"{field}_rpn"] = None
-    
+
     return result
 
 
 def main() -> None:
     """Main entry point."""
     args = parse_args()
-    
+
     # Load input data
     print(f"Loading data from {args.input}")
     with open(args.input, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     if isinstance(data, dict) and "data" in data:
         data = data["data"]
-    
+
     print(f"Converting {len(data)} equations to RPN...")
-    
+
     # Convert each equation
     converted = []
     for item in data:
         converted.append(convert_equation(item, args.fields))
-    
+
     # Save output
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(converted, f, indent=2)
-    
+
     print(f"Saved converted data to {args.output}")
 
 

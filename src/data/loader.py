@@ -155,9 +155,7 @@ class DataLoader:
             filtered = [d for d in filtered if d.get("kernel_type") == kernel_type]
 
         if has_solution is not None:
-            filtered = [
-                d for d in filtered if ("solution" in d) == has_solution
-            ]
+            filtered = [d for d in filtered if ("solution" in d) == has_solution]
 
         for key, value in kwargs.items():
             filtered = [d for d in filtered if d.get(key) == value]

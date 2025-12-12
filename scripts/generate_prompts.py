@@ -57,19 +57,19 @@ def parse_args() -> argparse.Namespace:
 def create_prompt(equation: dict, style: str) -> str:
     """
     Create a prompt for the given equation.
-    
+
     TODO: Use the full prompt_templates module.
     """
     kernel = equation.get("kernel", "K(x,t)")
     f = equation.get("f", "f(x)")
     lambda_val = equation.get("lambda_val", 1.0)
     domain = equation.get("domain", [0, 1])
-    
+
     if isinstance(domain, dict):
         a, b = domain.get("a", 0), domain.get("b", 1)
     else:
         a, b = domain[0], domain[1]
-    
+
     if style == "basic":
         prompt = f"""Solve the following Fredholm integral equation of the second kind:
 
@@ -117,44 +117,44 @@ Show your work and state the final u(x)."""
 
     else:
         prompt = f"Solve: u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f}"
-    
+
     return prompt
 
 
 def main() -> None:
     """Main entry point."""
     args = parse_args()
-    
+
     # Load input data
     print(f"Loading equations from {args.input}")
     with open(args.input, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     if isinstance(data, dict) and "data" in data:
         data = data["data"]
-    
+
     print(f"Generating {args.style} prompts for {len(data)} equations...")
-    
+
     # Generate prompts
     prompts = []
     for item in data:
         prompt_text = create_prompt(item, args.style)
-        
+
         prompt_entry = {
             "id": item.get("id", f"eq_{len(prompts)}"),
             "prompt": prompt_text,
             "style": args.style,
         }
-        
+
         if args.include_solution and "solution" in item:
             prompt_entry["expected_solution"] = item["solution"]
-        
+
         prompts.append(prompt_entry)
-    
+
     # Save output
     args.output.mkdir(parents=True, exist_ok=True)
     output_file = args.output / f"prompts_{args.style}.{args.format}"
-    
+
     if args.format == "jsonl":
         with open(output_file, "w", encoding="utf-8") as f:
             for p in prompts:
@@ -168,7 +168,7 @@ def main() -> None:
                 f.write(f"=== {p['id']} ===\n")
                 f.write(p["prompt"])
                 f.write("\n\n")
-    
+
     print(f"Saved {len(prompts)} prompts to {output_file}")
 
 

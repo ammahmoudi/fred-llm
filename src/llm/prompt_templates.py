@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 @dataclass
 class PromptTemplate:
     """Container for prompt template with metadata."""
-    
+
     name: str
     system_prompt: str
     user_template: str
@@ -36,7 +36,6 @@ Given a Fredholm integral equation of the second kind, find the solution u(x).
 The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
 
 Provide your answer as a mathematical expression for u(x).""",
-
     "chain-of-thought": """You are an expert mathematician specializing in integral equations.
 Your task is to solve Fredholm integral equations of the second kind.
 
@@ -51,12 +50,10 @@ Approach each problem systematically:
 6. Present the final solution u(x)
 
 Show your reasoning at each step.""",
-
     "few-shot": """You are an expert mathematician specializing in integral equations.
 I will show you examples of solved Fredholm integral equations, then ask you to solve a new one.
 
 The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)""",
-
     "tool-assisted": """You are an expert mathematician with access to computational tools.
 Your task is to solve Fredholm integral equations of the second kind.
 
@@ -81,7 +78,6 @@ u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
 Domain: [{a}, {b}]
 
 Provide the solution u(x).""",
-
     "chain-of-thought": """Solve the following Fredholm integral equation step by step:
 
 u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
@@ -89,7 +85,6 @@ u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
 Domain: [{a}, {b}]
 
 Please show your complete reasoning process.""",
-
     "few-shot": """Now solve this equation:
 
 u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
@@ -97,7 +92,6 @@ u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
 Domain: [{a}, {b}]
 
 Solution:""",
-
     "tool-assisted": """Solve the following Fredholm integral equation using available tools:
 
 u(x) - {lambda_val} * ∫_{a}^{b} {kernel} * u(t) dt = {f_x}
@@ -159,21 +153,23 @@ Therefore: u(x) = 1 + 2(e-1)/(3-e²) * e^x""",
 def get_template(style: str) -> PromptTemplate:
     """
     Get prompt template for the specified style.
-    
+
     Args:
         style: Prompting style (basic, chain-of-thought, few-shot, tool-assisted).
-        
+
     Returns:
         PromptTemplate object.
-        
+
     Raises:
         ValueError: If style is unknown.
     """
     if style not in SYSTEM_PROMPTS:
-        raise ValueError(f"Unknown prompt style: {style}. Available: {list(SYSTEM_PROMPTS.keys())}")
-    
+        raise ValueError(
+            f"Unknown prompt style: {style}. Available: {list(SYSTEM_PROMPTS.keys())}"
+        )
+
     examples = FEW_SHOT_EXAMPLES if style == "few-shot" else None
-    
+
     return PromptTemplate(
         name=f"{style}_template",
         system_prompt=SYSTEM_PROMPTS[style],
@@ -191,36 +187,36 @@ def generate_prompt(
 ) -> str:
     """
     Generate a complete prompt for the given equation.
-    
+
     Args:
         equation: Either a string equation or dict with kernel, f_x, lambda_val, a, b.
         style: Prompting style.
         include_examples: Whether to include examples (for few-shot).
         num_examples: Number of examples to include.
-        
+
     Returns:
         Complete formatted prompt string.
     """
     template = get_template(style)
-    
+
     # Parse equation if string
     if isinstance(equation, str):
         # TODO: Parse equation string into components
         equation_dict = {"equation": equation}
     else:
         equation_dict = equation
-    
+
     # Build the prompt
     prompt_parts = [template.system_prompt]
-    
+
     # Add examples for few-shot
     if style == "few-shot" and include_examples and template.examples:
         prompt_parts.append("\n\nHere are some solved examples:\n")
         for i, example in enumerate(template.examples[:num_examples]):
-            prompt_parts.append(f"\nExample {i+1}:")
+            prompt_parts.append(f"\nExample {i + 1}:")
             prompt_parts.append(f"Problem: {example['problem']}")
             prompt_parts.append(f"{example['solution']}\n")
-    
+
     # Add the user prompt
     if "equation" in equation_dict:
         prompt_parts.append(f"\n\n{equation_dict['equation']}")
@@ -233,17 +229,17 @@ def generate_prompt(
             b=equation_dict.get("b", 1),
         )
         prompt_parts.append(f"\n\n{user_prompt}")
-    
+
     return "\n".join(prompt_parts)
 
 
 def load_custom_template(template_path: Path | str) -> PromptTemplate:
     """
     Load a custom prompt template from file.
-    
+
     Args:
         template_path: Path to YAML or JSON template file.
-        
+
     Returns:
         PromptTemplate object.
     """

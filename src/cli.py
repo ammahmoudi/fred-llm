@@ -242,7 +242,8 @@ def dataset(
         console.print("[bold blue]Loading dataset statistics...[/bold blue]")
 
         loader = FredholmDatasetLoader(
-            data_path=output_path / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
+            data_path=output_path
+            / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
             auto_download=True,
             variant=variant,
             max_samples=max_samples,
@@ -255,12 +256,20 @@ def dataset(
 
             console.print("\n[bold]Solution (u) expression types:[/bold]")
             for expr_type, count in stats["u_types"].items():
-                pct = (count / stats["total_equations"]) * 100 if stats["total_equations"] > 0 else 0
+                pct = (
+                    (count / stats["total_equations"]) * 100
+                    if stats["total_equations"] > 0
+                    else 0
+                )
                 console.print(f"  • {expr_type}: {count} ({pct:.1f}%)")
 
             console.print("\n[bold]Kernel expression types:[/bold]")
             for expr_type, count in stats["kernel_types"].items():
-                pct = (count / stats["total_equations"]) * 100 if stats["total_equations"] > 0 else 0
+                pct = (
+                    (count / stats["total_equations"]) * 100
+                    if stats["total_equations"] > 0
+                    else 0
+                )
                 console.print(f"  • {expr_type}: {count} ({pct:.1f}%)")
 
         except FileNotFoundError:
@@ -272,7 +281,8 @@ def dataset(
         console.print("[bold blue]Sample equations from dataset:[/bold blue]\n")
 
         loader = FredholmDatasetLoader(
-            data_path=output_dir / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
+            data_path=output_dir
+            / f"Fredholm_Dataset{'_Sample' if variant == 'sample' else ''}.csv",
             auto_download=True,
             variant=variant,
             max_samples=max_samples or 5,

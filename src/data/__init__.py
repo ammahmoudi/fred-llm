@@ -1,10 +1,7 @@
 """Data module for Fred-LLM."""
 
 from src.data.augmentation import augment_dataset
-from src.data.dataset_fetcher import (
-    FredholmDatasetFetcher,
-    download_fredholm_dataset,
-)
+from src.data.dataset_fetcher import FredholmDatasetFetcher, download_fredholm_dataset
 from src.data.format_converter import FormatConverter, convert_format
 from src.data.fredholm_loader import (
     ExpressionType,

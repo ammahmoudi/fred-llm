@@ -125,17 +125,13 @@ class FredholmDatasetFetcher:
 
         if file_info is None:
             available = [f["key"] for f in files]
-            raise ValueError(
-                f"File '{filename}' not found. Available: {available}"
-            )
+            raise ValueError(f"File '{filename}' not found. Available: {available}")
 
         download_url = file_info["links"]["self"]
         expected_checksum = file_info.get("checksum", "").replace("md5:", "")
         file_size = file_info.get("size", 0)
 
-        logger.info(
-            f"Downloading {filename} ({file_size / (1024 * 1024):.2f} MB)..."
-        )
+        logger.info(f"Downloading {filename} ({file_size / (1024 * 1024):.2f} MB)...")
 
         # Download with progress
         with httpx.Client(timeout=self.timeout, follow_redirects=True) as client:
@@ -208,7 +204,7 @@ class FredholmDatasetFetcher:
 
         # First, ensure the full dataset is available
         full_csv_path = self.data_dir / DATASET_FILES["full"]
-        
+
         if not full_csv_path.exists() or force:
             # Download the ZIP archive
             zip_path = self.data_dir / ZENODO_ARCHIVE_NAME
@@ -235,7 +231,7 @@ class FredholmDatasetFetcher:
         # For sample variant, create a random sample from full dataset
         logger.info(f"Creating sample dataset ({SAMPLE_SIZE} rows)...")
         self._create_sample(full_csv_path, csv_path, SAMPLE_SIZE)
-        
+
         logger.info(f"Sample dataset ready: {csv_path}")
         return csv_path
 

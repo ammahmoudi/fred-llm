@@ -72,7 +72,9 @@ class FredholmEquation:
         u = str(row.get("u", row.get("U", ""))).strip()
         f = str(row.get("f", row.get("F", ""))).strip()
         kernel = str(row.get("kernel", row.get("Kernel", ""))).strip()
-        lambda_val = str(row.get("lambda", row.get("Lambda", row.get("lmbda", "")))).strip()
+        lambda_val = str(
+            row.get("lambda", row.get("Lambda", row.get("lmbda", "")))
+        ).strip()
         a = str(row.get("a", row.get("A", "0"))).strip()
         b = str(row.get("b", row.get("B", "1"))).strip()
 
@@ -82,9 +84,13 @@ class FredholmEquation:
         # Expression type flags for u
         if "u_is_polynomial" in row:
             metadata["u_is_polynomial"] = _parse_bool(row["u_is_polynomial"])
-            metadata["u_is_trigonometric"] = _parse_bool(row.get("u_is_trigonometric", False))
+            metadata["u_is_trigonometric"] = _parse_bool(
+                row.get("u_is_trigonometric", False)
+            )
             metadata["u_is_hyperbolic"] = _parse_bool(row.get("u_is_hyperbolic", False))
-            metadata["u_is_exponential"] = _parse_bool(row.get("u_is_exponential", False))
+            metadata["u_is_exponential"] = _parse_bool(
+                row.get("u_is_exponential", False)
+            )
             metadata["u_max_degree"] = _parse_number(row.get("u_max_degree", 1))
             metadata["u_type"] = _determine_expression_type(metadata, "u")
         else:
@@ -94,9 +100,13 @@ class FredholmEquation:
         # Expression type flags for f
         if "f_is_polynomial" in row:
             metadata["f_is_polynomial"] = _parse_bool(row["f_is_polynomial"])
-            metadata["f_is_trigonometric"] = _parse_bool(row.get("f_is_trigonometric", False))
+            metadata["f_is_trigonometric"] = _parse_bool(
+                row.get("f_is_trigonometric", False)
+            )
             metadata["f_is_hyperbolic"] = _parse_bool(row.get("f_is_hyperbolic", False))
-            metadata["f_is_exponential"] = _parse_bool(row.get("f_is_exponential", False))
+            metadata["f_is_exponential"] = _parse_bool(
+                row.get("f_is_exponential", False)
+            )
             metadata["f_max_degree"] = _parse_number(row.get("f_max_degree", 1))
             metadata["f_type"] = _determine_expression_type(metadata, "f")
         else:
@@ -105,10 +115,18 @@ class FredholmEquation:
         # Expression type flags for kernel
         if "kernel_is_polynomial" in row:
             metadata["kernel_is_polynomial"] = _parse_bool(row["kernel_is_polynomial"])
-            metadata["kernel_is_trigonometric"] = _parse_bool(row.get("kernel_is_trigonometric", False))
-            metadata["kernel_is_hyperbolic"] = _parse_bool(row.get("kernel_is_hyperbolic", False))
-            metadata["kernel_is_exponential"] = _parse_bool(row.get("kernel_is_exponential", False))
-            metadata["kernel_max_degree"] = _parse_number(row.get("kernel_max_degree", 1))
+            metadata["kernel_is_trigonometric"] = _parse_bool(
+                row.get("kernel_is_trigonometric", False)
+            )
+            metadata["kernel_is_hyperbolic"] = _parse_bool(
+                row.get("kernel_is_hyperbolic", False)
+            )
+            metadata["kernel_is_exponential"] = _parse_bool(
+                row.get("kernel_is_exponential", False)
+            )
+            metadata["kernel_max_degree"] = _parse_number(
+                row.get("kernel_max_degree", 1)
+            )
             metadata["kernel_type"] = _determine_expression_type(metadata, "kernel")
         else:
             metadata["kernel_type"] = _infer_expression_type(kernel)
@@ -116,10 +134,18 @@ class FredholmEquation:
         # Expression type flags for lambda (lambda is usually just numeric)
         if "lambda_is_polynomial" in row:
             metadata["lambda_is_polynomial"] = _parse_bool(row["lambda_is_polynomial"])
-            metadata["lambda_is_trigonometric"] = _parse_bool(row.get("lambda_is_trigonometric", False))
-            metadata["lambda_is_hyperbolic"] = _parse_bool(row.get("lambda_is_hyperbolic", False))
-            metadata["lambda_is_exponential"] = _parse_bool(row.get("lambda_is_exponential", False))
-            metadata["lambda_max_degree"] = _parse_number(row.get("lambda_max_degree", 1))
+            metadata["lambda_is_trigonometric"] = _parse_bool(
+                row.get("lambda_is_trigonometric", False)
+            )
+            metadata["lambda_is_hyperbolic"] = _parse_bool(
+                row.get("lambda_is_hyperbolic", False)
+            )
+            metadata["lambda_is_exponential"] = _parse_bool(
+                row.get("lambda_is_exponential", False)
+            )
+            metadata["lambda_max_degree"] = _parse_number(
+                row.get("lambda_max_degree", 1)
+            )
             metadata["lambda_type"] = _determine_expression_type(metadata, "lambda")
 
         return cls(
@@ -370,31 +396,26 @@ class FredholmDatasetLoader:
         filtered = equations
 
         if u_type:
-            filtered = [
-                eq for eq in filtered
-                if eq.metadata.get("u_type") == u_type
-            ]
+            filtered = [eq for eq in filtered if eq.metadata.get("u_type") == u_type]
 
         if f_type:
-            filtered = [
-                eq for eq in filtered
-                if eq.metadata.get("f_type") == f_type
-            ]
+            filtered = [eq for eq in filtered if eq.metadata.get("f_type") == f_type]
 
         if kernel_type:
             filtered = [
-                eq for eq in filtered
-                if eq.metadata.get("kernel_type") == kernel_type
+                eq for eq in filtered if eq.metadata.get("kernel_type") == kernel_type
             ]
 
         if max_degree is not None:
             filtered = [
-                eq for eq in filtered
+                eq
+                for eq in filtered
                 if max(
                     eq.metadata.get("u_max_degree", 0),
                     eq.metadata.get("f_max_degree", 0),
                     eq.metadata.get("kernel_max_degree", 0),
-                ) <= max_degree
+                )
+                <= max_degree
             ]
 
         for key, value in kwargs.items():

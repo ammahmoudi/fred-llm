@@ -1,0 +1,120 @@
+# Fred-LLM Registry
+# Maps models, datasets, IDs, and tags for the project
+
+models:
+  gpt-4:
+    provider: openai
+    description: "OpenAI GPT-4"
+    capabilities:
+      - symbolic_reasoning
+      - chain_of_thought
+    context_length: 8192
+
+  gpt-4-turbo:
+    provider: openai
+    description: "OpenAI GPT-4 Turbo"
+    capabilities:
+      - symbolic_reasoning
+      - chain_of_thought
+      - tool_use
+    context_length: 128000
+
+  gpt-3.5-turbo:
+    provider: openai
+    description: "OpenAI GPT-3.5 Turbo"
+    capabilities:
+      - basic_reasoning
+    context_length: 16385
+
+  claude-3-opus:
+    provider: anthropic
+    description: "Anthropic Claude 3 Opus"
+    capabilities:
+      - symbolic_reasoning
+      - chain_of_thought
+    context_length: 200000
+
+  llama-3-70b:
+    provider: local
+    description: "Meta LLaMA 3 70B"
+    capabilities:
+      - symbolic_reasoning
+    context_length: 8192
+
+datasets:
+  FIE-500k:
+    path: "data/raw/fie_500k.json"
+    description: "500k Fredholm integral equations"
+    format: json
+    size: 500000
+    splits:
+      train: 0.8
+      val: 0.1
+      test: 0.1
+
+  FIE-test:
+    path: "data/samples/test_equations.json"
+    description: "Test dataset with verified solutions"
+    format: json
+    size: 100
+
+kernel_types:
+  polynomial:
+    description: "Polynomial kernels K(x,t) = sum of x^i * t^j"
+    examples:
+      - "x*t"
+      - "x^2*t + x*t^2"
+      - "1 + x*t"
+
+  exponential:
+    description: "Exponential kernels involving e^(f(x,t))"
+    examples:
+      - "exp(x+t)"
+      - "exp(x*t)"
+      - "exp(-|x-t|)"
+
+  trigonometric:
+    description: "Trigonometric kernels with sin, cos"
+    examples:
+      - "sin(x)*cos(t)"
+      - "cos(x-t)"
+      - "sin(x+t)"
+
+  separable:
+    description: "Separable kernels K(x,t) = φ(x)ψ(t)"
+    examples:
+      - "x*t"
+      - "exp(x)*exp(t)"
+      - "sin(x)*sin(t)"
+
+  symmetric:
+    description: "Symmetric kernels where K(x,t) = K(t,x)"
+    examples:
+      - "x*t"
+      - "cos(x-t)"
+      - "min(x,t)"
+
+prompt_styles:
+  basic:
+    description: "Direct prompt without reasoning"
+    use_case: "Simple equations, baseline evaluation"
+
+  chain-of-thought:
+    description: "Step-by-step reasoning prompts"
+    use_case: "Complex equations requiring analysis"
+
+  few-shot:
+    description: "Prompts with example solutions"
+    use_case: "Teaching by example, pattern matching"
+
+  tool-assisted:
+    description: "Prompts enabling tool/function calls"
+    use_case: "Numerical verification, symbolic computation"
+
+tags:
+  - verified: "Solution has been verified correct"
+  - synthetic: "Synthetically generated equation"
+  - augmented: "Created via data augmentation"
+  - benchmark: "Part of benchmark test set"
+  - separable: "Has separable kernel"
+  - degenerate: "Degenerate (singular) kernel"

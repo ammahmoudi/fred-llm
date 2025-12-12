@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json.schemastore.org/uv",
+  "python": "3.11",
+  "venv": ".venv",
+  "compile": false,
+  "link-mode": "copy"
+}

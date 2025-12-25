@@ -9,6 +9,7 @@ from pathlib import Path
 
 import sympy as sp
 
+from src.data.format_converter import FormatConverter
 from src.data.formatters import (
     FredholmEquationFormatter,
     InfixFormatter,
@@ -20,7 +21,6 @@ from src.data.formatters import (
     TokenizedEquationFormatter,
     TokenizedFormatter,
 )
-from src.data.format_converter import FormatConverter
 
 
 def example_basic_formatters():
@@ -163,7 +163,7 @@ def example_csv_export():
     print("\n" + "=" * 60)
     print("CSV EXPORT")
     print("=" * 60)
-    
+
     # Sample equations
     equations = [
         {
@@ -183,17 +183,19 @@ def example_csv_export():
             "b": "3.14159",
         },
     ]
-    
+
     converter = FormatConverter()
     output_path = Path("data/examples/formatted_equations.csv")
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Export in different formats
     for fmt in ["infix", "latex", "rpn", "tokenized"]:
         output_file = Path(f"data/examples/equations_{fmt}.csv")
         converter.convert_to_csv(equations, output_file, format=fmt)
-        print(f"✓ Exported {len(equations)} equations to {fmt.upper()} CSV: {output_file}")
-    
+        print(
+            f"✓ Exported {len(equations)} equations to {fmt.upper()} CSV: {output_file}"
+        )
+
     print("\nCSV files preserve the original dataset structure")
     print("Columns: u, f, kernel, lambda, a, b")
 

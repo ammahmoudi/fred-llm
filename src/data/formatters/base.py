@@ -48,10 +48,10 @@ class BaseFormatter(ABC):
     def canonicalize(self, expr: sp.Expr) -> sp.Expr:
         """
         Canonicalize expression for consistent formatting.
-        
+
         Args:
             expr: SymPy expression to canonicalize.
-        
+
         Returns:
             Simplified and sorted expression.
         """

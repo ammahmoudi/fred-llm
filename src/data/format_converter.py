@@ -119,7 +119,7 @@ class FormatConverter:
         formatted_data = []
         for eq in equations:
             formatted_eq = eq.copy()
-            
+
             # Convert expressions if format specified
             if format != "infix" and format in self._formatters:
                 for field in ["u", "f", "kernel"]:
@@ -129,9 +129,9 @@ class FormatConverter:
                             formatted_eq[field] = self._from_sympy(sympy_expr, format)
                         except Exception as e:
                             logger.warning(f"Failed to convert {field}: {e}")
-            
+
             formatted_data.append(formatted_eq)
-        
+
         df = pd.DataFrame(formatted_data)
         df.to_csv(output_path, index=False)
         logger.info(f"Exported {len(formatted_data)} equations to CSV: {output_path}")

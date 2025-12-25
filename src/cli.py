@@ -130,28 +130,34 @@ def convert(
     if output:
         output = Path(output)
         converter = FormatConverter()
-        
+
         # Determine output type from extension if not explicitly set
         if output.suffix == ".csv":
             output_type = "csv"
         elif output.suffix == ".json":
             output_type = "json"
-        
+
         if output_type == "csv":
             # Export to CSV
             converter.convert_to_csv(result, output, format=format)
-            console.print(f"[green]✓ Converted {len(result)} equations saved to CSV: {output}[/green]")
+            console.print(
+                f"[green]✓ Converted {len(result)} equations saved to CSV: {output}[/green]"
+            )
         else:
             # Export to JSON
             with open(output, "w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2)
-            console.print(f"[green]✓ Converted {len(result)} equations saved to JSON: {output}[/green]")
+            console.print(
+                f"[green]✓ Converted {len(result)} equations saved to JSON: {output}[/green]"
+            )
     else:
         # Print first few results
         console.print(f"\n[bold]Converted {len(result)} equations[/bold]")
         console.print("\n[bold cyan]Sample (first 3):[/bold cyan]")
         for i, eq in enumerate(result[:3], 1):
-            console.print(f"\n{i}. u_{format}: {eq.get(f'u_{format}', eq.get('u', 'N/A'))}")
+            console.print(
+                f"\n{i}. u_{format}: {eq.get(f'u_{format}', eq.get('u', 'N/A'))}"
+            )
             console.print(f"   f_{format}: {eq.get(f'f_{format}', eq.get('f', 'N/A'))}")
         console.print(f"\n[yellow]Use --output to save all results[/yellow]")
 

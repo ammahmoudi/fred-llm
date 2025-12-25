@@ -16,22 +16,22 @@ from src.utils.logging_utils import get_logger
 logger = get_logger(__name__)
 
 # Compile regex pattern once for performance
-_IMPLICIT_MULT_PATTERN = re.compile(r'(\d+\.?\d*(?:[eE][+-]?\d+)?)([a-zA-Z])')
+_IMPLICIT_MULT_PATTERN = re.compile(r"(\d+\.?\d*(?:[eE][+-]?\d+)?)([a-zA-Z])")
 
 
 def fix_implicit_multiplication(expression: str) -> str:
     """
     Fix implicit multiplication in mathematical expressions.
-    
+
     Converts expressions like '2x' to '2*x', '3.14x**2' to '3.14*x**2', etc.
     This is needed because SymPy's sympify doesn't handle implicit multiplication.
-    
+
     Args:
         expression: String expression with potential implicit multiplication.
-        
+
     Returns:
         Expression with explicit multiplication operators.
-        
+
     Examples:
         >>> fix_implicit_multiplication("2x + 3y")
         '2*x + 3*y'
@@ -41,7 +41,7 @@ def fix_implicit_multiplication(expression: str) -> str:
         '2.5*x*y'
     """
     # Use pre-compiled pattern for better performance on large datasets
-    return _IMPLICIT_MULT_PATTERN.sub(r'\1*\2', expression)
+    return _IMPLICIT_MULT_PATTERN.sub(r"\1*\2", expression)
 
 
 def integrate_kernel(

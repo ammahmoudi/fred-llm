@@ -143,19 +143,14 @@ class TestFormatConversion:
     def test_fredholm_equation_formatter_infix(self) -> None:
         """Test FredholmEquationFormatter with infix format."""
         from src.data.formatters.fredholm_formatter import FredholmEquationFormatter
-        
+
         formatter = FredholmEquationFormatter(expression_format="infix")
-        
+
         # Test format_equation
         equation = formatter.format_equation(
-            u="u(x)",
-            f="x**2 + 2*x",
-            kernel="x*t",
-            lambda_val="0.5",
-            a="0",
-            b="1"
+            u="u(x)", f="x**2 + 2*x", kernel="x*t", lambda_val="0.5", a="0", b="1"
         )
-        
+
         assert "u(x)" in equation
         assert "∫" in equation or "integral" in equation.lower()
         assert "x**2" in equation or "x^2" in equation
@@ -164,18 +159,13 @@ class TestFormatConversion:
     def test_fredholm_equation_formatter_latex(self) -> None:
         """Test FredholmEquationFormatter with LaTeX format."""
         from src.data.formatters.fredholm_formatter import FredholmEquationFormatter
-        
+
         formatter = FredholmEquationFormatter(expression_format="latex")
-        
+
         equation = formatter.format_equation(
-            u="u(x)",
-            f="x**2",
-            kernel="x*t",
-            lambda_val="1",
-            a="0",
-            b="1"
+            u="u(x)", f="x**2", kernel="x*t", lambda_val="1", a="0", b="1"
         )
-        
+
         assert "u(x)" in equation
         assert "\\int" in equation
         assert "x^{2}" in equation or "x**2" in equation
@@ -183,18 +173,13 @@ class TestFormatConversion:
     def test_fredholm_equation_formatter_rpn(self) -> None:
         """Test FredholmEquationFormatter with RPN format."""
         from src.data.formatters.fredholm_formatter import FredholmEquationFormatter
-        
+
         formatter = FredholmEquationFormatter(expression_format="rpn")
-        
+
         equation = formatter.format_equation(
-            u="u(x)",
-            f="x + 1",
-            kernel="x*t",
-            lambda_val="1",
-            a="0",
-            b="1"
+            u="u(x)", f="x + 1", kernel="x*t", lambda_val="1", a="0", b="1"
         )
-        
+
         # RPN format should be present
         assert isinstance(equation, str)
         assert len(equation) > 0
@@ -202,18 +187,13 @@ class TestFormatConversion:
     def test_tokenized_equation_formatter(self) -> None:
         """Test TokenizedEquationFormatter with special tokens."""
         from src.data.formatters.fredholm_formatter import TokenizedEquationFormatter
-        
+
         formatter = TokenizedEquationFormatter()
-        
+
         equation = formatter.format_equation(
-            u="u(x)",
-            f="x**2",
-            kernel="x*t",
-            lambda_val="0.5",
-            a="0",
-            b="1"
+            u="u(x)", f="x**2", kernel="x*t", lambda_val="0.5", a="0", b="1"
         )
-        
+
         # Check for special tokens
         assert "<LAMBDA>" in equation
         assert "<INT>" in equation
@@ -224,44 +204,44 @@ class TestFormatConversion:
     def test_simplify_parameter(self) -> None:
         """Test that simplify parameter canonicalizes expressions."""
         from src.data.formatters.infix_formatter import InfixFormatter
-        
+
         formatter = InfixFormatter()
-        
+
         # Create a non-simplified expression
         expr = sp.sympify("x + x + 1")
-        
+
         # Without simplify
         result1 = formatter.from_sympy(expr, simplify=False)
-        
+
         # With simplify
         result2 = formatter.from_sympy(expr, simplify=True)
-        
+
         # Simplified version should be cleaner
         assert "2*x" in result2 or "x + x" in result1
 
     def test_series_formatter_taylor(self) -> None:
         """Test SeriesFormatter with Taylor series."""
         from src.data.formatters.series_formatter import SeriesFormatter
-        
+
         formatter = SeriesFormatter(order=5, x_var="x", x0=0)
-        
+
         # Test with sin(x)
         expr = sp.sin(sp.Symbol("x"))
         series = formatter.from_sympy(expr)
-        
+
         # Should contain series terms
         assert "x" in series
         assert "O(x" in series or "..." in series
-        
+
     def test_series_formatter_polynomial(self) -> None:
         """Test SeriesFormatter polynomial approximation."""
         from src.data.formatters.series_formatter import SeriesFormatter
-        
+
         formatter = SeriesFormatter(order=3)
-        
+
         # Test polynomial approximation
         poly = formatter.format_polynomial_approximation("exp(x)", degree=3)
-        
+
         # Should be polynomial without O() term
         assert "O(" not in poly
         assert "x" in poly
@@ -269,50 +249,44 @@ class TestFormatConversion:
     def test_series_formatter_roundtrip(self) -> None:
         """Test SeriesFormatter roundtrip conversion."""
         from src.data.formatters.series_formatter import SeriesFormatter
-        
+
         formatter = SeriesFormatter(order=5)
-        
+
         # Convert to series and back
         expr = sp.sympify("x**2 + 2*x + 1")
         series_str = formatter.from_sympy(expr)
         back_to_expr = formatter.to_sympy(series_str)
-        
+
         # Should be equivalent (series expansion of polynomial is itself)
         assert sp.simplify(expr - back_to_expr) == 0
 
     def test_neumann_series_formatter(self) -> None:
         """Test NeumannSeriesFormatter for Fredholm equations."""
         from src.data.formatters.series_formatter import NeumannSeriesFormatter
-        
+
         formatter = NeumannSeriesFormatter(n_terms=3)
-        
+
         # Format Neumann series
         series = formatter.format_neumann_series(
-            f="x**2",
-            kernel="x*t",
-            lambda_val=0.5,
-            bounds=(0, 1)
+            f="x**2", kernel="x*t", lambda_val=0.5, bounds=(0, 1)
         )
-        
+
         # Should contain series terms
         assert "u(x)" in series
         assert "λ" in series or "lambda" in series.lower()
         assert "K" in series
-        
+
     def test_neumann_series_truncated(self) -> None:
         """Test NeumannSeriesFormatter truncated solution."""
         from src.data.formatters.series_formatter import NeumannSeriesFormatter
-        
+
         formatter = NeumannSeriesFormatter(n_terms=4)
-        
+
         # Format truncated series
         truncated = formatter.format_truncated_solution(
-            f="x",
-            kernel="x*t",
-            lambda_val=1.0,
-            n_terms=3
+            f="x", kernel="x*t", lambda_val=1.0, n_terms=3
         )
-        
+
         # Should contain approximation
         assert "u(x)" in truncated
         assert "≈" in truncated

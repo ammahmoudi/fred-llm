@@ -334,7 +334,8 @@ class FredholmDatasetLoader:
         logger.info(f"Loaded {len(self._df)} rows from CSV")
 
         # Convert to FredholmEquation objects with progress bar
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+        from rich.progress import (BarColumn, Progress, SpinnerColumn,
+                                   TextColumn, TimeRemainingColumn)
         
         self._equations = []
         with Progress(
@@ -494,6 +495,12 @@ def load_fredholm_dataset(
         List of FredholmEquation objects.
     """
     loader = FredholmDatasetLoader(
+        data_path=path,
+        variant=variant,
+        max_samples=max_samples,
+        auto_download=auto_download,
+    )
+    return loader.load()
         data_path=path,
         variant=variant,
         max_samples=max_samples,

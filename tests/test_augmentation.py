@@ -142,10 +142,10 @@ class TestDataAugmentation:
         fredholm_loader.max_samples = 1
         equations = fredholm_loader.load()
         eq_dicts = [eq.to_dict() for eq in equations]
-        
+
         augmenter = DataAugmenter(strategies=["scale"])
         augmented = augmenter.augment(eq_dicts, multiplier=2)
-        
+
         # Check that augmented equations have required fields
         for aug_eq in augmented:
             assert "u" in aug_eq

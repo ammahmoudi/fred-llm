@@ -501,9 +501,4 @@ def load_fredholm_dataset(
         auto_download=auto_download,
     )
     return loader.load()
-        data_path=path,
-        variant=variant,
-        max_samples=max_samples,
-        auto_download=auto_download,
-    )
-    return loader.load()
+

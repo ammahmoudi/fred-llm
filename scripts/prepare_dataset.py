@@ -53,6 +53,13 @@ def parse_args() -> argparse.Namespace:
         help="Augmentation multiplier",
     )
     parser.add_argument(
+        "--augment-strategies",
+        nargs="+",
+        default=["substitute", "scale", "shift"],
+        choices=["substitute", "scale", "shift", "compose", "no_solution", "approximate_only", "ill_posed"],
+        help="Augmentation strategies to use (default: substitute scale shift)",
+    )
+    parser.add_argument(
         "--convert",
         action="store_true",
         default=True,
@@ -139,7 +146,7 @@ def main() -> None:
     data = [eq.to_dict() for eq in track(equations, description="  Processing")]
     console.print(f"  ✓ Loaded {len(data)} equations\n")
 
-    # Save base data
+    # Save base data (in root of output directory)
     console.print("  Saving base data...")
     _save_data(data, args.output / "base_equations", "base", args.output_format)
     console.print(f"  ✓ Saved base data\n")
@@ -150,12 +157,16 @@ def main() -> None:
         console.print(
             f"[bold]Step 2: Augmenting data (multiplier={args.augment_multiplier})[/bold]"
         )
-        augmenter = DataAugmenter(strategies=["scale", "shift", "substitute"])
+        console.print(f"  Strategies: {', '.join(args.augment_strategies)}")
+        augmenter = DataAugmenter(strategies=args.augment_strategies)
         augmented_data = augmenter.augment(data, multiplier=args.augment_multiplier)
         console.print(f"  ✓ Generated {len(augmented_data)} augmented equations\n")
+        # Create augmented subdirectory
+        augmented_dir = args.output / "augmented"
+        augmented_dir.mkdir(parents=True, exist_ok=True)
         _save_data(
             augmented_data,
-            args.output / "augmented_equations",
+            augmented_dir / "augmented_equations",
             "augmented",
             args.output_format,
         )
@@ -167,6 +178,10 @@ def main() -> None:
         console.print("[bold]Step 3: Converting formats[/bold]")
         converter = FormatConverter()
         convert_data = augmented_data if augmented_data else data
+
+        # Create formatted subdirectory
+        formatted_dir = args.output / "formatted"
+        formatted_dir.mkdir(parents=True, exist_ok=True)
 
         # Use specified formats or all by default
         formats_to_convert = args.convert_formats
@@ -215,8 +230,8 @@ def main() -> None:
                 except Exception as e:
                     console.print(f"    [yellow]Warning: {e}[/yellow]")
 
-            # Save with input filename + format suffix: Fredholm_Dataset_Sample_latex.csv
-            output_path = args.output / f"{base_filename}_{fmt}"
+            # Save with input filename + format suffix in formatted/ subdirectory
+            output_path = formatted_dir / f"{base_filename}_{fmt}"
 
             _save_data(formatted_equations, output_path, fmt, args.output_format)
             console.print(f"  ✓ {fmt.upper()}: {len(formatted_equations)} equations")

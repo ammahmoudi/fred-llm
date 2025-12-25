@@ -29,9 +29,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Expression canonicalization - Simplify parameter ✅ **Available in all formatters**
   - [x] CSV export support - Export formatted equations to CSV ✅ **Matches original dataset format**
 - [x] Data augmentation framework - All 4 strategies implemented ✅ **Tested: substitute, scale, shift, compose (5.3x expansion)**
+- [x] **Edge case augmentations (3 strategies)** ✅ **No-solution, approximate-only, ill-posed cases - All tested**
+  - [x] No-solution cases - Equations where λ is eigenvalue (violates Fredholm Alternative) ✅ **Tested: 3 variants, eigenvalue detection**
+  - [x] Approximate-only cases - No symbolic solution (Gaussian, exponential kernels) ✅ **Tested: 3 variants, sample point generation**
+  - [x] Ill-posed cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, regularization metadata**
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
 - [ ] Special function augmentation - Add Bessel, Legendre equations ❌ **Not started**
-- [ ] No-solution cases - Generate equations without closed-form solutions ❌ **Not started**
 - [ ] Numeric ground truth - SciPy-based numerical solutions ❌ **Not started**
 
 ## LLM Integration

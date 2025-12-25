@@ -7,8 +7,10 @@ Converts structured equation components to formatted strings.
 
 import sympy as sp
 
-from src.data.formatters import InfixFormatter, LaTeXFormatter, RPNFormatter
 from src.data.formatters.base import BaseFormatter
+from src.data.formatters.infix_formatter import InfixFormatter
+from src.data.formatters.latex_formatter import LaTeXFormatter
+from src.data.formatters.rpn_formatter import RPNFormatter
 
 
 class FredholmEquationFormatter:

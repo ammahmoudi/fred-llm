@@ -23,8 +23,10 @@ where:
 - 📝 **Multiple prompting styles**: Basic, Chain-of-Thought, Few-Shot, Tool-Assisted
 - 🔢 **Symbolic & numeric evaluation**: SymPy-based parsing and verification
 - 📊 **8 specialized formatters**: LaTeX, RPN, Infix, Python, Tokenized, Fredholm equations, Series expansions
-- 🎯 **LLM-optimized formatting**: Special tokens for improved model understanding (based on FIE-500k paper)
+- 🎯 **LLM-optimized formatting**: Special tokens for improved model understanding
+- 🔄 **7 augmentation strategies**: Variable substitution, scaling, domain shifting, kernel composition, plus edge cases (no-solution, approximate-only, ill-posed)
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
+- ⚠️ **Realistic edge cases**: Teach LLMs to recognize singular problems, numerical-only solutions, and ill-posed equations
 
 ## Pipeline Architecture
 
@@ -145,10 +147,27 @@ flowchart LR
 
 | Module | Purpose | Key Components |
 |--------|---------|----------------|
-| **Dataset Preparation** | Prepare and augment training data | Augmentation, LaTeX/RPN conversion, tokenization |
+| **Dataset Preparation** | Prepare and augment training data | 7 augmentation strategies (basic + edge cases), 8 formatters (LaTeX/RPN/Python/etc.), CSV/JSON export |
 | **Prompt Engineering** | Design effective prompts for LLMs | Direct, CoT, approximation prompts; symbolic/series/code output |
 | **LLM Methods** | Model training and inference | Fine-tuning (Phi/T5), few-shot learning, tool use |
 | **Evaluation** | Assess solution quality | Symbolic matching, BLEU, MAE/MSE, robustness testing |
+
+### Data Augmentation Strategies
+
+The project includes **7 augmentation strategies** to expand and diversify training data:
+
+**Basic Transformations:**
+- **Substitute**: Variable transformations (x → x², 2x, x+1)
+- **Scale**: Lambda coefficient scaling (×0.5, ×2.0, ×0.1, ×10.0)
+- **Shift**: Integration domain shifting ([a,b] → [a±1, b±1])
+- **Compose**: Kernel composition (K → K+x, K+t, K×x)
+
+**Edge Cases (FIE-Edge-Cases):**
+- **No-solution**: Singular cases where λ is eigenvalue (violates Fredholm Alternative)
+- **Approximate-only**: No symbolic solution (Gaussian/exponential kernels, requires numerical methods)
+- **Ill-posed**: Fredholm 1st kind equations (require regularization like Tikhonov/TSVD)
+
+These teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. See [augmentations README](src/data/augmentations/README.md) for details.
 
 ## Installation
 
@@ -278,12 +297,24 @@ uv run python scripts/prepare_dataset.py --no-convert
 # Convert specific formats only
 uv run python scripts/prepare_dataset.py --convert-formats latex rpn
 
-# Full pipeline: augment, convert, validate, split
+# Full pipeline with edge case augmentations
 uv run python scripts/prepare_dataset.py \
   --augment --augment-multiplier 3 \
   --validate \
   --split \
   --output-format csv
+
+# Include edge cases: no-solution, approximate-only, ill-posed
+# These teach LLMs to recognize equations without symbolic solutions
+uv run python scripts/prepare_dataset.py \
+  --augment \
+  --augment-strategies substitute scale no_solution approximate_only ill_posed
+
+# All augmentation strategies (4 basic + 3 edge cases)
+uv run python scripts/prepare_dataset.py \
+  --augment \
+  --augment-strategies substitute scale shift compose no_solution approximate_only ill_posed \
+  --augment-multiplier 5
 
 # Quick test with 100 samples
 uv run python scripts/prepare_dataset.py \

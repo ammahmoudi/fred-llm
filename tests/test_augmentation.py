@@ -313,7 +313,8 @@ class TestEdgeCaseAugmentations:
         augmenter = DataAugmenter(
             strategies=["substitute", "scale", "no_solution", "approximate_only"]
         )
-        augmented = augmenter.augment([sample_eq], multiplier=5)
+        # Use higher multiplier to ensure all strategies get applied
+        augmented = augmenter.augment([sample_eq], multiplier=15)
 
         # Should have mix of regular and edge cases
         regular_cases = [eq for eq in augmented if not eq.get("edge_case")]

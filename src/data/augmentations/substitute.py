@@ -17,12 +17,12 @@ logger = get_logger(__name__)
 class SubstituteAugmentation(BaseAugmentation):
     """
     Substitute variables with expressions.
-    
+
     Applies transformations like:
     - x -> 2x (double the variable)
     - x -> x² (square the variable)
     - x -> x + 1 (shift the variable)
-    
+
     This generates variations that test the model's understanding of
     variable transformations and function composition.
     """

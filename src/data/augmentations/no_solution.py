@@ -18,20 +18,20 @@ logger = get_logger(__name__)
 class NoSolutionAugmentation(BaseAugmentation):
     """
     Generate no-solution cases where λ is an eigenvalue.
-    
+
     Category 1: The "No Solution" (Singular) Case
-    
+
     The Logic:
         Find a kernel where λ is an eigenvalue. For example:
         - If K(x,t) = 1 and limits are [0,1], then λ = 1 is an eigenvalue
         - The homogeneous equation u(x) - λ∫K(x,t)u(t)dt = 0 has non-trivial solutions
-        
+
     The Problem:
         If you set f(x) = x (not orthogonal to eigenfunctions), the equation
         u(x) - ∫₀¹ u(t)dt = x has no solution because:
         - The integral of any solution must equal constant
         - But f(x) = x cannot be represented this way
-        
+
     Label:
         {"has_solution": false, "reason": "Violates Fredholm Alternative - λ is eigenvalue"}
     """
@@ -47,7 +47,7 @@ class NoSolutionAugmentation(BaseAugmentation):
     def augment(self, item: dict[str, Any]) -> list[dict[str, Any]]:
         """Generate no-solution cases."""
         results = []
-        
+
         try:
             # Case 1: Constant kernel K(x,t) = 1, λ = 1/(b-a), f(x) = x
             # The eigenvalue is λ = 1/(b-a) for homogeneous case
@@ -55,7 +55,7 @@ class NoSolutionAugmentation(BaseAugmentation):
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
             eigenvalue = 1.0 / (b - a) if b != a else 1.0
-            
+
             case1 = {
                 "u": "None",  # No solution exists
                 "f": "x",
@@ -73,7 +73,7 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "augmentation_variant": "constant_kernel_eigenvalue",
             }
             results.append(case1)
-            
+
             # Case 2: Separable kernel K(x,t) = x*t, λ = 3/(b³-a³), f(x) = x²
             # For kernel x*t on [a,b], eigenvalue approximately 3/(b³-a³)
             if a >= 0:  # Avoid negative issues
@@ -95,7 +95,7 @@ class NoSolutionAugmentation(BaseAugmentation):
                     "augmentation_variant": "separable_kernel_eigenvalue",
                 }
                 results.append(case2)
-            
+
             # Case 3: Symmetric kernel K(x,t) = cos(x-t), λ = 1, f(x) = sin(x)
             # For many symmetric kernels, λ = 1 is often an eigenvalue
             case3 = {
@@ -115,8 +115,8 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "augmentation_variant": "symmetric_kernel_eigenvalue",
             }
             results.append(case3)
-            
+
         except Exception as e:
             logger.debug(f"No-solution augmentation failed: {e}")
-        
+
         return results

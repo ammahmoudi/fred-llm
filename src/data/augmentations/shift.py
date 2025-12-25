@@ -17,12 +17,12 @@ logger = get_logger(__name__)
 class ShiftAugmentation(BaseAugmentation):
     """
     Shift integration domain to create variations.
-    
+
     Creates variations like:
     - [a, b] -> [a-1, b-1] (shift left)
     - [a, b] -> [a+1, b+1] (shift right)
     - [a, b] -> [a, b+1] (extend right)
-    
+
     This tests the model's understanding of how integration bounds
     affect the solution.
     """

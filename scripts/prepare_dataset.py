@@ -56,7 +56,15 @@ def parse_args() -> argparse.Namespace:
         "--augment-strategies",
         nargs="+",
         default=["substitute", "scale", "shift"],
-        choices=["substitute", "scale", "shift", "compose", "no_solution", "approximate_only", "ill_posed"],
+        choices=[
+            "substitute",
+            "scale",
+            "shift",
+            "compose",
+            "no_solution",
+            "approximate_only",
+            "ill_posed",
+        ],
         help="Augmentation strategies to use (default: substitute scale shift)",
     )
     parser.add_argument(

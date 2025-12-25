@@ -95,7 +95,9 @@ def _apply_augmentation(
         augmenter = ApproximateOnlyAugmentation(num_sample_points=10)
         return augmenter.augment(item)
     elif strategy == "ill_posed":
-        augmenter = IllPosedAugmentation(num_sample_points=10, regularization_param=0.01)
+        augmenter = IllPosedAugmentation(
+            num_sample_points=10, regularization_param=0.01
+        )
         return augmenter.augment(item)
     else:
         return []

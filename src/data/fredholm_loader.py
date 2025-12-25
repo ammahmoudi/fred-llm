@@ -73,7 +73,9 @@ class FredholmEquation:
         # Fix implicit multiplication in expressions (e.g., "2x" -> "2*x")
         u = fix_implicit_multiplication(str(row.get("u", row.get("U", ""))).strip())
         f = fix_implicit_multiplication(str(row.get("f", row.get("F", ""))).strip())
-        kernel = fix_implicit_multiplication(str(row.get("kernel", row.get("Kernel", ""))).strip())
+        kernel = fix_implicit_multiplication(
+            str(row.get("kernel", row.get("Kernel", ""))).strip()
+        )
         lambda_val = str(
             row.get("lambda", row.get("Lambda", row.get("lmbda", "")))
         ).strip()
@@ -334,9 +336,14 @@ class FredholmDatasetLoader:
         logger.info(f"Loaded {len(self._df)} rows from CSV")
 
         # Convert to FredholmEquation objects with progress bar
-        from rich.progress import (BarColumn, Progress, SpinnerColumn,
-                                   TextColumn, TimeRemainingColumn)
-        
+        from rich.progress import (
+            BarColumn,
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            TimeRemainingColumn,
+        )
+
         self._equations = []
         with Progress(
             SpinnerColumn(),
@@ -346,7 +353,7 @@ class FredholmDatasetLoader:
             TimeRemainingColumn(),
         ) as progress:
             task = progress.add_task("  Processing equations...", total=len(self._df))
-            
+
             for _, row in self._df.iterrows():
                 try:
                     eq = FredholmEquation.from_csv_row(row.to_dict())
@@ -501,4 +508,3 @@ def load_fredholm_dataset(
         auto_download=auto_download,
     )
     return loader.load()
-

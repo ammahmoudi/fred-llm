@@ -166,7 +166,7 @@ class TestEdgeCaseAugmentations:
     def test_no_solution_augmentation(self) -> None:
         """Test no-solution (singular) case generation."""
         augmenter = NoSolutionAugmentation()
-        
+
         # Create a sample equation
         sample_eq = {
             "u": "x",
@@ -177,13 +177,13 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         # Generate no-solution cases
         no_sol_cases = augmenter.augment(sample_eq)
-        
+
         # Should generate 3 cases (constant, separable, symmetric kernels)
         assert len(no_sol_cases) == 3
-        
+
         # All should be marked as no solution
         for case in no_sol_cases:
             assert case["has_solution"] is False
@@ -199,7 +199,7 @@ class TestEdgeCaseAugmentations:
     def test_approximate_only_augmentation(self) -> None:
         """Test approximate-only (numerical) case generation."""
         augmenter = ApproximateOnlyAugmentation(num_sample_points=5)
-        
+
         sample_eq = {
             "u": "x",
             "f": "x",
@@ -209,13 +209,13 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         # Generate approximate-only cases
         approx_cases = augmenter.augment(sample_eq)
-        
+
         # Should generate 3 cases (Gaussian, exponential, sinc kernels)
         assert len(approx_cases) == 3
-        
+
         # All should require numerical methods
         for case in approx_cases:
             assert case["has_solution"] is True
@@ -234,11 +234,8 @@ class TestEdgeCaseAugmentations:
 
     def test_ill_posed_augmentation(self) -> None:
         """Test ill-posed (1st kind) case generation."""
-        augmenter = IllPosedAugmentation(
-            num_sample_points=5, 
-            regularization_param=0.01
-        )
-        
+        augmenter = IllPosedAugmentation(num_sample_points=5, regularization_param=0.01)
+
         sample_eq = {
             "u": "x",
             "f": "x",
@@ -248,13 +245,13 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         # Generate ill-posed cases
         ill_posed_cases = augmenter.augment(sample_eq)
-        
+
         # Should generate 3 cases (simple, exponential, oscillatory)
         assert len(ill_posed_cases) == 3
-        
+
         # All should be ill-posed first kind
         for case in ill_posed_cases:
             assert case["equation_type"] == "fredholm_first_kind"
@@ -284,17 +281,17 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         # Test no_solution strategy
         augmenter = DataAugmenter(strategies=["no_solution"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
         assert any(eq.get("edge_case") == "no_solution" for eq in augmented)
-        
+
         # Test approximate_only strategy
         augmenter = DataAugmenter(strategies=["approximate_only"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
         assert any(eq.get("edge_case") == "approximate_only" for eq in augmented)
-        
+
         # Test ill_posed strategy
         augmenter = DataAugmenter(strategies=["ill_posed"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
@@ -311,17 +308,17 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         # Combine basic and edge case strategies
         augmenter = DataAugmenter(
             strategies=["substitute", "scale", "no_solution", "approximate_only"]
         )
         augmented = augmenter.augment([sample_eq], multiplier=5)
-        
+
         # Should have mix of regular and edge cases
         regular_cases = [eq for eq in augmented if not eq.get("edge_case")]
         edge_cases = [eq for eq in augmented if eq.get("edge_case")]
-        
+
         assert len(regular_cases) > 0
         assert len(edge_cases) > 0
         assert len(augmented) > 1
@@ -329,7 +326,7 @@ class TestEdgeCaseAugmentations:
     def test_no_solution_eigenvalue_detection(self) -> None:
         """Test that no-solution cases correctly identify eigenvalues."""
         augmenter = NoSolutionAugmentation()
-        
+
         sample_eq = {
             "u": "x",
             "f": "x",
@@ -339,18 +336,22 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         cases = augmenter.augment(sample_eq)
-        
+
         # First case should be constant kernel with eigenvalue 1/(b-a) = 1
-        constant_kernel_case = [c for c in cases if c.get("augmentation_variant") == "constant_kernel_eigenvalue"][0]
+        constant_kernel_case = [
+            c
+            for c in cases
+            if c.get("augmentation_variant") == "constant_kernel_eigenvalue"
+        ][0]
         assert constant_kernel_case["kernel"] == "1"
         assert float(constant_kernel_case["lambda"]) == 1.0  # 1/(1-0)
 
     def test_approximate_only_sample_points(self) -> None:
         """Test that approximate-only cases generate valid sample points."""
         augmenter = ApproximateOnlyAugmentation(num_sample_points=10)
-        
+
         sample_eq = {
             "u": "x",
             "f": "1",
@@ -360,9 +361,9 @@ class TestEdgeCaseAugmentations:
             "a": "0",
             "b": "1",
         }
-        
+
         cases = augmenter.augment(sample_eq)
-        
+
         for case in cases:
             # Sample points should be within domain
             assert all(0 <= x <= 1 for x in case["sample_points"])

@@ -17,12 +17,12 @@ logger = get_logger(__name__)
 class ComposeAugmentation(BaseAugmentation):
     """
     Compose kernels by adding or multiplying with simple functions.
-    
+
     Creates variations like:
     - K(x,t) -> K(x,t) + x
     - K(x,t) -> K(x,t) + t
     - K(x,t) -> K(x,t) * x
-    
+
     This tests the model's ability to handle more complex kernel structures
     and understand kernel composition.
     """

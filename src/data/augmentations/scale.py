@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 class ScaleAugmentation(BaseAugmentation):
     """
     Scale lambda coefficients by multiplying with different factors.
-    
+
     Multiplies λ by factors like 0.5, 2.0, 0.1, 10.0 to generate variations
     with different equation scales. This tests the model's sensitivity to
     parameter magnitude.

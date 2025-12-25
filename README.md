@@ -22,7 +22,8 @@ where:
 - 🤖 **Multi-provider LLM support**: OpenAI API, local models (HuggingFace, vLLM)
 - 📝 **Multiple prompting styles**: Basic, Chain-of-Thought, Few-Shot, Tool-Assisted
 - 🔢 **Symbolic & numeric evaluation**: SymPy-based parsing and verification
-- 📊 **Format conversion**: LaTeX, RPN, tokenized representations
+- 📊 **8 specialized formatters**: LaTeX, RPN, Infix, Python, Tokenized, Fredholm equations, Series expansions
+- 🎯 **LLM-optimized formatting**: Special tokens for improved model understanding (based on FIE-500k paper)
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
 
 ## Pipeline Architecture
@@ -179,6 +180,8 @@ uv pip install -e ".[dev]"
 source .venv/bin/activate
 ```
 
+> **Note**: You can skip activating the virtual environment by using `uv run` to execute commands (e.g., `uv run python -m src.cli ...`). This ensures dependencies are automatically managed.
+
 4. Set up environment variables:
 ```bash
 # Copy the sample env file
@@ -192,24 +195,37 @@ cp .env.sample .env
 
 ### CLI
 
+> **Note**: All commands below use `uv run` to automatically manage dependencies. If you have activated the virtual environment, you can omit `uv run` and use `python` directly.
+
 Run the main pipeline:
 ```bash
-python -m src.cli run --config config.yaml
+uv run python -m src.cli run --config config.yaml
 ```
 
 Evaluate results:
 ```bash
-python -m src.cli evaluate data/processed/results.json --mode both
+uv run python -m src.cli evaluate data/processed/results.json --mode both
 ```
 
 Convert equation formats:
 ```bash
-python -m src.cli convert data/raw/equations.json --format rpn
+# Convert to RPN format and save as JSON
+uv run python -m src.cli convert data/raw/equations.csv --format rpn --output data/processed/equations_rpn.json
+
+# Convert to LaTeX format and save as CSV
+uv run python -m src.cli convert data/raw/equations.csv --format latex --output data/processed/equations_latex.csv
+
+# Convert to tokenized format (default JSON output)
+uv run python -m src.cli convert data/raw/equations.csv --format tokenized --output data/processed/equations_tokenized.json
+
+# Auto-detect output type from file extension
+uv run python -m src.cli convert data/raw/equations.csv --format rpn --output output.csv  # Creates CSV
+uv run python -m src.cli convert data/raw/equations.csv --format rpn --output output.json  # Creates JSON
 ```
 
 Generate prompts:
 ```bash
-python -m src.cli prompt "u(x) - ∫_0^1 x*t*u(t)dt = x" --style chain-of-thought
+uv run python -m src.cli prompt "u(x) - ∫_0^1 x*t*u(t)dt = x" --style chain-of-thought
 ```
 
 ### Python API
@@ -238,17 +254,51 @@ solution = pipeline.run_single(
 
 Prepare dataset:
 ```bash
-python scripts/prepare_dataset.py --input data/raw/fie_500k.json --output data/processed/ --split
+# Default: converts full dataset to ALL formats (both CSV and JSON output)
+uv run python scripts/prepare_dataset.py
+
+# This creates (if input is Fredholm_Dataset.csv):
+# data/processed/
+#   ├── base_equations.json + base_equations.csv
+#   ├── Fredholm_Dataset_infix.json + Fredholm_Dataset_infix.csv
+#   ├── Fredholm_Dataset_latex.json + Fredholm_Dataset_latex.csv
+#   ├── Fredholm_Dataset_rpn.json + Fredholm_Dataset_rpn.csv
+#   ├── Fredholm_Dataset_tokenized.json + Fredholm_Dataset_tokenized.csv
+#   └── Fredholm_Dataset_python.json + Fredholm_Dataset_python.csv
+
+# JSON only
+uv run python scripts/prepare_dataset.py --output-format json
+
+# CSV only
+uv run python scripts/prepare_dataset.py --output-format csv
+
+# Disable conversion (just load and save base data)
+uv run python scripts/prepare_dataset.py --no-convert
+
+# Convert specific formats only
+uv run python scripts/prepare_dataset.py --convert-formats latex rpn
+
+# Full pipeline: augment, convert, validate, split
+uv run python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 3 \
+  --validate \
+  --split \
+  --output-format csv
+
+# Quick test with 100 samples
+uv run python scripts/prepare_dataset.py \
+  --max-samples 100 \
+  --convert-limit 100
 ```
 
 Convert to RPN:
 ```bash
-python scripts/convert_to_rpn.py --input data/processed/train.json --output data/processed/train_rpn.json
+uv run python scripts/convert_to_rpn.py --input data/processed/train.json --output data/processed/train_rpn.json
 ```
 
 Generate prompts:
 ```bash
-python scripts/generate_prompts.py --input data/processed/test.json --style chain-of-thought
+uv run python scripts/generate_prompts.py --input data/processed/test.json --style chain-of-thought
 ```
 
 ## Dataset
@@ -299,6 +349,46 @@ The dataset includes equations with various expression types:
 - **Trigonometric**: `sin(x)`, `cos(t)`
 - **Hyperbolic**: `sinh(x)`, `cosh(t)`
 - **Exponential**: `exp(x)`, `exp(-t**2)`
+
+## Data Formatters
+
+The project includes 8 specialized formatters for converting mathematical expressions:
+
+### Basic Formatters
+- **InfixFormatter** - Standard notation: `x**2 + 2*x + 1`
+- **LaTeXFormatter** - LaTeX format: `x^{2} + 2 x + 1`
+- **RPNFormatter** - Reverse Polish Notation: `x 2 ^ 2 x * + 1 +`
+- **PythonFormatter** - Executable Python code
+- **TokenizedFormatter** - Space-separated tokens for LLMs
+
+### Equation Formatters
+- **FredholmEquationFormatter** - Complete equations with all components (u, f, kernel, λ, bounds)
+  ```python
+  # Result: "u(x) - 0.5 * ∫[0,1] (x*t) u(t) dt = x**2 + 2*x"
+  ```
+- **TokenizedEquationFormatter** - With special tokens for structured representation
+  ```python
+  # Result: "u ( x ) - <LAMBDA> 0.5 <INT> <LOWER> 0 <UPPER> 1 ..."
+  # Special tokens: <LAMBDA>, <INT>, <LOWER>, <UPPER>, <SEP>
+  ```
+
+### Series Formatters
+- **SeriesFormatter** - Taylor/Maclaurin series expansions
+  ```python
+  # Result: "x - x**3/6 + x**5/120 + O(x**6)"
+  ```
+- **NeumannSeriesFormatter** - Iterative Fredholm solutions
+  ```python
+  # Result: "u(x) = f + λKf + λ²K²f + O(λ³)"
+  ```
+
+All formatters support:
+- **Canonicalization**: Optional `simplify` parameter for consistent formatting
+- **Roundtrip conversion**: Expression → SymPy → Target format
+- **SymPy integration**: Uses SymPy as intermediate canonical form
+- **CSV export**: Direct export to CSV format matching original dataset structure
+
+See [src/data/formatters/README.md](src/data/formatters/README.md) for detailed examples.
 
 ## Project Structure
 

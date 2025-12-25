@@ -1,28 +1,48 @@
 """
 Format converter for mathematical expressions.
 
-Converts between LaTeX, RPN, tokenized, and SymPy formats.
+Unified interface for converting between different mathematical formats.
+Uses individual formatter classes for each format.
 """
 
 from pathlib import Path
 from typing import Any
 
 import sympy as sp
-from sympy.parsing.latex import parse_latex
 
+from src.data.formatters import (
+    InfixFormatter,
+    LaTeXFormatter,
+    PythonFormatter,
+    RPNFormatter,
+    TokenizedFormatter,
+)
 from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
 
 class FormatConverter:
-    """Converter between mathematical expression formats."""
+    """
+    Converter between mathematical expression formats.
 
-    FORMATS = ["latex", "rpn", "sympy", "tokenized", "python", "infix"]
+    Uses formatter classes to convert between formats via SymPy as intermediate.
+    """
 
     def __init__(self) -> None:
-        """Initialize the format converter."""
-        self._cache: dict[str, Any] = {}
+        """Initialize formatters."""
+        self._formatters = {
+            "latex": LaTeXFormatter(),
+            "rpn": RPNFormatter(),
+            "infix": InfixFormatter(),
+            "python": PythonFormatter(),
+            "tokenized": TokenizedFormatter(),
+        }
+
+    @property
+    def supported_formats(self) -> list[str]:
+        """Return list of supported format names."""
+        return list(self._formatters.keys()) + ["sympy"]
 
     def convert(
         self,
@@ -34,22 +54,23 @@ class FormatConverter:
         Convert expression between formats.
 
         Args:
-            expression: Input expression.
-            source_format: Source format (latex, rpn, sympy, etc.).
-            target_format: Target format.
+            expression: Input expression (string or SymPy).
+            source_format: Source format name.
+            target_format: Target format name.
 
         Returns:
             Converted expression.
-        """
-        if source_format not in self.FORMATS:
-            raise ValueError(f"Unknown source format: {source_format}")
-        if target_format not in self.FORMATS:
-            raise ValueError(f"Unknown target format: {target_format}")
 
-        # First convert to SymPy (canonical form)
+        Raises:
+            ValueError: If format is not supported.
+        """
+        if source_format == target_format:
+            return expression
+
+        # Convert to SymPy (canonical form)
         sympy_expr = self._to_sympy(expression, source_format)
 
-        # Then convert to target format
+        # Convert to target format
         return self._from_sympy(sympy_expr, target_format)
 
     def _to_sympy(self, expression: str | sp.Expr, format: str) -> sp.Expr:
@@ -59,144 +80,61 @@ class FormatConverter:
 
         if format == "sympy":
             return sp.sympify(expression)
-        elif format == "latex":
-            return self._latex_to_sympy(expression)
-        elif format == "rpn":
-            return self._rpn_to_sympy(expression)
-        elif format == "infix":
-            return sp.sympify(expression)
-        elif format == "tokenized":
-            return self._tokenized_to_sympy(expression)
-        elif format == "python":
-            return sp.sympify(expression)
-        else:
-            raise ValueError(f"Cannot convert from {format} to sympy")
+
+        if format not in self._formatters:
+            raise ValueError(
+                f"Unknown format: {format}. Supported: {self.supported_formats}"
+            )
+
+        return self._formatters[format].to_sympy(expression)
 
     def _from_sympy(self, expr: sp.Expr, format: str) -> str | sp.Expr:
         """Convert SymPy expression to target format."""
         if format == "sympy":
             return expr
-        elif format == "latex":
-            return sp.latex(expr)
-        elif format == "rpn":
-            return self._sympy_to_rpn(expr)
-        elif format == "infix":
-            return str(expr)
-        elif format == "tokenized":
-            return self._sympy_to_tokenized(expr)
-        elif format == "python":
-            from sympy.printing.pycode import pycode
 
-            return pycode(expr)
-        else:
-            raise ValueError(f"Cannot convert from sympy to {format}")
+        if format not in self._formatters:
+            raise ValueError(
+                f"Unknown format: {format}. Supported: {self.supported_formats}"
+            )
 
-    def _latex_to_sympy(self, latex_str: str) -> sp.Expr:
-        """Convert LaTeX string to SymPy expression."""
-        try:
-            return parse_latex(latex_str)
-        except Exception as e:
-            logger.warning(f"LaTeX parsing failed: {e}")
-            # Fallback: try basic sympify with substitutions
-            cleaned = latex_str.replace("\\", "").replace("{", "(").replace("}", ")")
-            return sp.sympify(cleaned)
+        return self._formatters[format].from_sympy(expr)
 
-    def _rpn_to_sympy(self, rpn_str: str) -> sp.Expr:
-        """Convert RPN (Reverse Polish Notation) to SymPy expression."""
-        tokens = rpn_str.split()
-        stack: list[sp.Expr] = []
+    def convert_to_csv(
+        self,
+        equations: list[dict[str, Any]],
+        output_path: Path | str,
+        format: str = "infix",
+    ) -> None:
+        """
+        Export equations to CSV format with formatted expressions.
 
-        operators = {
-            "+": lambda a, b: a + b,
-            "-": lambda a, b: a - b,
-            "*": lambda a, b: a * b,
-            "/": lambda a, b: a / b,
-            "^": lambda a, b: a**b,
-            "**": lambda a, b: a**b,
-        }
+        Args:
+            equations: List of equation dictionaries.
+            output_path: Output CSV file path.
+            format: Format for expressions (infix, latex, rpn, tokenized).
+        """
+        import pandas as pd
 
-        functions = {
-            "sin": sp.sin,
-            "cos": sp.cos,
-            "tan": sp.tan,
-            "exp": sp.exp,
-            "log": sp.log,
-            "sqrt": sp.sqrt,
-        }
-
-        x, t = sp.symbols("x t")
-        symbols = {"x": x, "t": t}
-
-        for token in tokens:
-            if token in operators:
-                b = stack.pop()
-                a = stack.pop()
-                stack.append(operators[token](a, b))
-            elif token in functions:
-                a = stack.pop()
-                stack.append(functions[token](a))
-            elif token in symbols:
-                stack.append(symbols[token])
-            else:
-                try:
-                    stack.append(sp.Rational(token))
-                except Exception:
-                    stack.append(sp.Symbol(token))
-
-        return stack[0] if stack else sp.Integer(0)
-
-    def _sympy_to_rpn(self, expr: sp.Expr) -> str:
-        """Convert SymPy expression to RPN string."""
-        # TODO: Implement full RPN conversion
-        # This is a simplified version
-        tokens = []
-        self._expr_to_rpn_tokens(expr, tokens)
-        return " ".join(tokens)
-
-    def _expr_to_rpn_tokens(self, expr: sp.Expr, tokens: list[str]) -> None:
-        """Recursively convert expression to RPN tokens."""
-        if expr.is_number:
-            tokens.append(str(expr))
-        elif expr.is_symbol:
-            tokens.append(str(expr))
-        elif expr.is_Add:
-            args = list(expr.args)
-            self._expr_to_rpn_tokens(args[0], tokens)
-            for arg in args[1:]:
-                self._expr_to_rpn_tokens(arg, tokens)
-                tokens.append("+")
-        elif expr.is_Mul:
-            args = list(expr.args)
-            self._expr_to_rpn_tokens(args[0], tokens)
-            for arg in args[1:]:
-                self._expr_to_rpn_tokens(arg, tokens)
-                tokens.append("*")
-        elif expr.is_Pow:
-            base, exp = expr.as_base_exp()
-            self._expr_to_rpn_tokens(base, tokens)
-            self._expr_to_rpn_tokens(exp, tokens)
-            tokens.append("^")
-        else:
-            # For functions like sin, cos, etc.
-            func_name = expr.func.__name__
-            for arg in expr.args:
-                self._expr_to_rpn_tokens(arg, tokens)
-            tokens.append(func_name)
-
-    def _tokenized_to_sympy(self, tokenized: str) -> sp.Expr:
-        """Convert tokenized format to SymPy expression."""
-        # TODO: Implement tokenized parsing
-        # Tokenized format: space-separated tokens
-        return sp.sympify(tokenized.replace(" ", ""))
-
-    def _sympy_to_tokenized(self, expr: sp.Expr) -> str:
-        """Convert SymPy expression to tokenized format."""
-        # TODO: Implement full tokenization
-        expr_str = str(expr)
-        # Add spaces around operators
-        for op in ["+", "-", "*", "/", "^", "(", ")"]:
-            expr_str = expr_str.replace(op, f" {op} ")
-        return " ".join(expr_str.split())
+        formatted_data = []
+        for eq in equations:
+            formatted_eq = eq.copy()
+            
+            # Convert expressions if format specified
+            if format != "infix" and format in self._formatters:
+                for field in ["u", "f", "kernel"]:
+                    if field in eq:
+                        try:
+                            sympy_expr = self._to_sympy(eq[field], "infix")
+                            formatted_eq[field] = self._from_sympy(sympy_expr, format)
+                        except Exception as e:
+                            logger.warning(f"Failed to convert {field}: {e}")
+            
+            formatted_data.append(formatted_eq)
+        
+        df = pd.DataFrame(formatted_data)
+        df.to_csv(output_path, index=False)
+        logger.info(f"Exported {len(formatted_data)} equations to CSV: {output_path}")
 
 
 def convert_format(
@@ -215,30 +153,76 @@ def convert_format(
     Returns:
         List of converted equations.
     """
-    # TODO: Implement file-based conversion
+    from src.data.fredholm_loader import FredholmDatasetLoader
+
     logger.info(f"Converting {input_file} to {target_format} format")
-    return []
+
+    # Load the dataset
+    loader = FredholmDatasetLoader(data_path=input_file)
+    equations = loader.load()
+
+    # Convert each equation
+    converter = FormatConverter()
+    converted = []
+
+    for eq in equations:
+        try:
+            # Convert u, f, and kernel
+            converted_eq = {
+                "original_u": eq.u,
+                "original_f": eq.f,
+                "original_kernel": eq.kernel,
+                "lambda": eq.lambda_val,
+                "a": eq.a,
+                "b": eq.b,
+            }
+
+            # Parse and convert expressions
+            if source_format is None:
+                source_format = "infix"  # Assume infix by default
+
+            u_sympy = converter._to_sympy(eq.u, source_format)
+            f_sympy = converter._to_sympy(eq.f, source_format)
+            kernel_sympy = converter._to_sympy(eq.kernel, source_format)
+
+            converted_eq[f"u_{target_format}"] = converter._from_sympy(
+                u_sympy, target_format
+            )
+            converted_eq[f"f_{target_format}"] = converter._from_sympy(
+                f_sympy, target_format
+            )
+            converted_eq[f"kernel_{target_format}"] = converter._from_sympy(
+                kernel_sympy, target_format
+            )
+
+            converted.append(converted_eq)
+
+        except Exception as e:
+            logger.warning(f"Failed to convert equation: {e}")
+            continue
+
+    logger.info(
+        f"Converted {len(converted)}/{len(equations)} equations to {target_format}"
+    )
+    return converted
 
 
 # Convenience functions
 def latex_to_sympy(latex_str: str) -> sp.Expr:
     """Convert LaTeX to SymPy."""
-    converter = FormatConverter()
-    return converter._latex_to_sympy(latex_str)
+    return LaTeXFormatter().to_sympy(latex_str)
 
 
 def sympy_to_latex(expr: sp.Expr) -> str:
     """Convert SymPy to LaTeX."""
-    return sp.latex(expr)
+    return LaTeXFormatter().from_sympy(expr)
 
 
 def sympy_to_rpn(expr: sp.Expr) -> str:
     """Convert SymPy to RPN."""
-    converter = FormatConverter()
-    return converter._sympy_to_rpn(expr)
+    return RPNFormatter().from_sympy(expr)
 
 
 def rpn_to_sympy(rpn_str: str) -> sp.Expr:
     """Convert RPN to SymPy."""
-    converter = FormatConverter()
-    return converter._rpn_to_sympy(rpn_str)
+    return RPNFormatter().to_sympy(rpn_str)

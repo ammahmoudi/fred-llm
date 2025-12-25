@@ -17,6 +17,7 @@ import pandas as pd
 
 from src.data.dataset_fetcher import download_fredholm_dataset
 from src.utils.logging_utils import get_logger
+from src.utils.math_utils import fix_implicit_multiplication
 
 logger = get_logger(__name__)
 
@@ -69,9 +70,10 @@ class FredholmEquation:
             FredholmEquation instance.
         """
         # Extract core fields (handle column name variations)
-        u = str(row.get("u", row.get("U", ""))).strip()
-        f = str(row.get("f", row.get("F", ""))).strip()
-        kernel = str(row.get("kernel", row.get("Kernel", ""))).strip()
+        # Fix implicit multiplication in expressions (e.g., "2x" -> "2*x")
+        u = fix_implicit_multiplication(str(row.get("u", row.get("U", ""))).strip())
+        f = fix_implicit_multiplication(str(row.get("f", row.get("F", ""))).strip())
+        kernel = fix_implicit_multiplication(str(row.get("kernel", row.get("Kernel", ""))).strip())
         lambda_val = str(
             row.get("lambda", row.get("Lambda", row.get("lmbda", "")))
         ).strip()
@@ -331,14 +333,26 @@ class FredholmDatasetLoader:
         self._df = pd.read_csv(path)
         logger.info(f"Loaded {len(self._df)} rows from CSV")
 
-        # Convert to FredholmEquation objects
+        # Convert to FredholmEquation objects with progress bar
+        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
+        
         self._equations = []
-        for _, row in self._df.iterrows():
-            try:
-                eq = FredholmEquation.from_csv_row(row.to_dict())
-                self._equations.append(eq)
-            except Exception as e:
-                logger.warning(f"Skipping invalid row: {e}")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeRemainingColumn(),
+        ) as progress:
+            task = progress.add_task("  Processing equations...", total=len(self._df))
+            
+            for _, row in self._df.iterrows():
+                try:
+                    eq = FredholmEquation.from_csv_row(row.to_dict())
+                    self._equations.append(eq)
+                except Exception as e:
+                    logger.warning(f"Skipping invalid row: {e}")
+                progress.update(task, advance=1)
 
         if self.max_samples:
             self._equations = self._equations[: self.max_samples]

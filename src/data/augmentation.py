@@ -67,40 +67,107 @@ def _apply_augmentation(
 
 
 def _substitute_variables(item: dict[str, Any]) -> list[dict[str, Any]]:
-    """Substitute variables with expressions."""
-    # TODO: Implement variable substitution
-    # e.g., x -> x^2, t -> sin(t)
-    return []
+    """Substitute variables with expressions like x -> x^2, x -> 2*x."""
+    results = []
+    substitutions = [
+        ("x", "2*x", "double_x"),
+        ("x", "x**2", "square_x"),
+        ("x", "x + 1", "shift_x"),
+    ]
+
+    try:
+        x = sp.Symbol("x")
+        u_expr = sp.sympify(item.get("u", "0"))
+        f_expr = sp.sympify(item.get("f", "0"))
+        kernel_expr = sp.sympify(item.get("kernel", "0"))
+
+        for old_var, new_var_str, aug_name in substitutions:
+            new_var = sp.sympify(new_var_str)
+            new_item = item.copy()
+            new_item["u"] = str(sp.simplify(u_expr.subs(x, new_var)))
+            new_item["f"] = str(sp.simplify(f_expr.subs(x, new_var)))
+            new_item["kernel"] = str(sp.simplify(kernel_expr.subs(x, new_var)))
+            new_item["augmented"] = True
+            new_item["augmentation_type"] = "substitute"
+            new_item["augmentation_name"] = aug_name
+            results.append(new_item)
+    except Exception as e:
+        logger.debug(f"Variable substitution failed: {e}")
+
+    return results
 
 
 def _scale_coefficients(item: dict[str, Any]) -> list[dict[str, Any]]:
-    """Scale numerical coefficients."""
-    # TODO: Implement coefficient scaling
-    # e.g., multiply lambda by different factors
+    """Scale numerical coefficients by multiplying lambda with different factors."""
     results = []
 
-    if "lambda_val" in item:
-        for factor in [0.5, 2.0, 0.1]:
+    try:
+        lambda_val = sp.sympify(item.get("lambda_val", "1"))
+        for factor in [0.5, 2.0, 0.1, 10.0]:
             new_item = item.copy()
-            new_item["lambda_val"] = item["lambda_val"] * factor
+            new_item["lambda_val"] = str(sp.simplify(lambda_val * factor))
             new_item["augmented"] = True
             new_item["augmentation_type"] = "scale"
+            new_item["augmentation_factor"] = factor
             results.append(new_item)
+    except Exception as e:
+        logger.debug(f"Coefficient scaling failed: {e}")
 
     return results
 
 
 def _shift_domain(item: dict[str, Any]) -> list[dict[str, Any]]:
-    """Shift integration domain."""
-    # TODO: Implement domain shifting
-    # e.g., [0,1] -> [0,2], [-1,1]
-    return []
+    """Shift integration domain to create variations like [a,b] -> [a-1, b-1]."""
+    results = []
+
+    try:
+        a = sp.sympify(item.get("a", "0"))
+        b = sp.sympify(item.get("b", "1"))
+        shifts = [
+            (a - 1, b - 1, "shift_left"),
+            (a + 1, b + 1, "shift_right"),
+            (a, b + 1, "extend_right"),
+        ]
+
+        for new_a, new_b, shift_name in shifts:
+            new_item = item.copy()
+            new_item["a"] = str(sp.simplify(new_a))
+            new_item["b"] = str(sp.simplify(new_b))
+            new_item["augmented"] = True
+            new_item["augmentation_type"] = "shift_domain"
+            new_item["augmentation_name"] = shift_name
+            results.append(new_item)
+    except Exception as e:
+        logger.debug(f"Domain shifting failed: {e}")
+
+    return results
 
 
 def _compose_kernels(item: dict[str, Any]) -> list[dict[str, Any]]:
-    """Compose kernels to create new equations."""
-    # TODO: Implement kernel composition
-    return []
+    """Compose kernels by adding or multiplying with simple functions."""
+    results = []
+
+    try:
+        x = sp.Symbol("x")
+        t = sp.Symbol("t")
+        kernel_expr = sp.sympify(item.get("kernel", "0"))
+        compositions = [
+            (kernel_expr + x, "add_x"),
+            (kernel_expr + t, "add_t"),
+            (kernel_expr * x, "mul_x"),
+        ]
+
+        for new_kernel, comp_name in compositions:
+            new_item = item.copy()
+            new_item["kernel"] = str(sp.simplify(new_kernel))
+            new_item["augmented"] = True
+            new_item["augmentation_type"] = "compose"
+            new_item["augmentation_name"] = comp_name
+            results.append(new_item)
+    except Exception as e:
+        logger.debug(f"Kernel composition failed: {e}")
+
+    return results
 
 
 class DataAugmenter:

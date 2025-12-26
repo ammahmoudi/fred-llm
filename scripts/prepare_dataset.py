@@ -159,7 +159,9 @@ def main() -> None:
 
     # Save base data (in root of output directory)
     console.print("  Saving base data...")
-    created_files.extend(_save_data(data, args.output / "base_equations", "base", args.output_format))
+    created_files.extend(
+        _save_data(data, args.output / "base_equations", "base", args.output_format)
+    )
     console.print(f"  ✓ Saved base data\n")
 
     # Step 2: Augment data if requested
@@ -175,12 +177,14 @@ def main() -> None:
         # Create augmented subdirectory
         augmented_dir = args.output / "augmented"
         augmented_dir.mkdir(parents=True, exist_ok=True)
-        created_files.extend(_save_data(
-            augmented_data,
-            augmented_dir / "augmented_equations",
-            "augmented",
-            args.output_format,
-        ))
+        created_files.extend(
+            _save_data(
+                augmented_data,
+                augmented_dir / "augmented_equations",
+                "augmented",
+                args.output_format,
+            )
+        )
 
     # Step 3: Convert formats (enabled by default)
     should_convert = args.convert and not args.no_convert
@@ -244,7 +248,9 @@ def main() -> None:
             # Save with input filename + format suffix in formatted/ subdirectory
             output_path = formatted_dir / f"{base_filename}_{fmt}"
 
-            created_files.extend(_save_data(formatted_equations, output_path, fmt, args.output_format))
+            created_files.extend(
+                _save_data(formatted_equations, output_path, fmt, args.output_format)
+            )
             console.print(f"  ✓ {fmt.upper()}: {len(formatted_equations)} equations")
 
         console.print()
@@ -295,7 +301,9 @@ def _extract_equation_fields(eq_dict: dict) -> dict:
     }
 
 
-def _save_data(data: list[dict], path: Path, label: str, format: str = "json") -> list[Path]:
+def _save_data(
+    data: list[dict], path: Path, label: str, format: str = "json"
+) -> list[Path]:
     """Save data as JSON, CSV, or both, handling enum serialization. Returns list of created file paths."""
     import pandas as pd
     from rich.progress import track

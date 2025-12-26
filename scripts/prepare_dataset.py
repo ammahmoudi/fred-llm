@@ -48,9 +48,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--augment-multiplier",
-        type=int,
+        type=float,
         default=2,
-        help="Augmentation multiplier",
+        help="Augmentation multiplier (can be fractional, e.g., 1.5 for 50% more data)",
     )
     parser.add_argument(
         "--augment-strategies",
@@ -140,6 +140,9 @@ def main() -> None:
     # Ensure output directory exists
     args.output.mkdir(parents=True, exist_ok=True)
 
+    # Track created files for summary
+    created_files = []
+
     # Step 1: Load data using FredholmDatasetLoader
     console.print("[bold]Step 1: Loading data[/bold]")
     loader = FredholmDatasetLoader(args.input)
@@ -156,7 +159,7 @@ def main() -> None:
 
     # Save base data (in root of output directory)
     console.print("  Saving base data...")
-    _save_data(data, args.output / "base_equations", "base", args.output_format)
+    created_files.extend(_save_data(data, args.output / "base_equations", "base", args.output_format))
     console.print(f"  ✓ Saved base data\n")
 
     # Step 2: Augment data if requested
@@ -172,12 +175,12 @@ def main() -> None:
         # Create augmented subdirectory
         augmented_dir = args.output / "augmented"
         augmented_dir.mkdir(parents=True, exist_ok=True)
-        _save_data(
+        created_files.extend(_save_data(
             augmented_data,
             augmented_dir / "augmented_equations",
             "augmented",
             args.output_format,
-        )
+        ))
 
     # Step 3: Convert formats (enabled by default)
     should_convert = args.convert and not args.no_convert
@@ -241,7 +244,7 @@ def main() -> None:
             # Save with input filename + format suffix in formatted/ subdirectory
             output_path = formatted_dir / f"{base_filename}_{fmt}"
 
-            _save_data(formatted_equations, output_path, fmt, args.output_format)
+            created_files.extend(_save_data(formatted_equations, output_path, fmt, args.output_format))
             console.print(f"  ✓ {fmt.upper()}: {len(formatted_equations)} equations")
 
         console.print()
@@ -272,11 +275,12 @@ def main() -> None:
     # Summary
     console.print("[bold green]✓ Dataset preparation complete![/bold green]\n")
     console.print(f"Output directory: {args.output.absolute()}")
-    # Show both JSON and CSV files
-    for file in sorted(args.output.glob("*.*")):
-        if file.suffix in [".json", ".csv"]:
-            size_kb = file.stat().st_size / 1024
-            console.print(f"  • {file.name} ({size_kb:.1f} KB)")
+    console.print("\n[bold]Files created in this run:[/bold]")
+    for file in created_files:
+        size_kb = file.stat().st_size / 1024
+        # Show relative path from output directory
+        rel_path = file.relative_to(args.output)
+        console.print(f"  • {rel_path} ({size_kb:.1f} KB)")
 
 
 def _extract_equation_fields(eq_dict: dict) -> dict:
@@ -291,8 +295,8 @@ def _extract_equation_fields(eq_dict: dict) -> dict:
     }
 
 
-def _save_data(data: list[dict], path: Path, label: str, format: str = "json") -> None:
-    """Save data as JSON, CSV, or both, handling enum serialization."""
+def _save_data(data: list[dict], path: Path, label: str, format: str = "json") -> list[Path]:
+    """Save data as JSON, CSV, or both, handling enum serialization. Returns list of created file paths."""
     import pandas as pd
     from rich.progress import track
 
@@ -314,7 +318,7 @@ def _save_data(data: list[dict], path: Path, label: str, format: str = "json") -
         json_path = path.with_suffix(".json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(serializable, f, indent=2)
-        saved_files.append(json_path.name)
+        saved_files.append(json_path)
         console.print(f"    ✓ JSON saved")
 
     # Save as CSV
@@ -323,11 +327,12 @@ def _save_data(data: list[dict], path: Path, label: str, format: str = "json") -
         csv_path = path.with_suffix(".csv")
         df = pd.DataFrame(serializable)
         df.to_csv(csv_path, index=False)
-        saved_files.append(csv_path.name)
+        saved_files.append(csv_path)
         console.print(f"    ✓ CSV saved")
 
-    files_str = " & ".join(saved_files)
+    files_str = " & ".join([f.name for f in saved_files])
     console.print(f"  ✓ Saved {label} data: {len(data)} samples → {files_str}")
+    return saved_files
 
 
 def _split_dataset(

@@ -21,12 +21,90 @@ class MyAugmentation(BaseAugmentation):
         return results
 ```
 
+## Dataset Balance Guidelines
+
+When augmenting datasets with edge cases, maintain proper balance for optimal LLM training:
+
+### Recommended Multipliers
+
+**For 5,000 Sample Dataset (Development/Testing):**
+- Multiplier: **1.25-1.43** (recommended: **1.33**)
+- Total size: 6,250-7,150 equations
+- Composition: 70-80% exact solutions, 20-30% edge cases
+- Use case: Development, testing, proof-of-concept
+- Example with 1.33x: 6,650 total (5,000 exact + 1,650 edge cases = **75% exact**)
+
+**For 500,000 Full Dataset (Production Training):**
+- Multiplier: **1.25-1.43** (recommended: **1.33**)
+- Total size: 625,000-715,000 equations
+- Composition: 70-80% exact solutions, 20-30% edge cases
+- Use case: Production LLM training, research experiments
+- Example with 1.33x: 665,000 total (500k exact + 165k edge cases = **75% exact**)
+
+**Multiplier Guide:**
+- **1.25** → 80% exact, 20% edge cases (conservative)
+- **1.33** → 75% exact, 25% edge cases (recommended)
+- **1.43** → 70% exact, 30% edge cases (more edge case exposure)
+- **1.50** → 67% exact, 33% edge cases (balanced)
+- **2.00** → 50% exact, 50% edge cases (only for specialized research)
+
+### Why NOT 1:1 Balance?
+
+1. **Real-world distribution**: Most Fredholm equations have exact solutions; edge cases are rare exceptions
+2. **Task priority**: Primary goal is teaching solution methods, edge case recognition is secondary
+3. **Bias prevention**: Equal representation causes models to incorrectly flag solvable equations as edge cases
+4. **Learning efficiency**: Solution patterns are complex and need more training examples
+
+### Practical Examples
+
+```bash
+# Sample dataset: Balanced for testing (1.33x multiplier = 75% exact)
+# Windows PowerShell - use backtick (`) for line continuation
+uv run python scripts/prepare_dataset.py `
+  --input data/raw/Fredholm_Dataset_Sample.csv `
+  --augment --augment-multiplier 1.33 `
+  --augment-strategies no_solution approximate_only ill_posed `
+  --no-convert
+# Output: ~6,650 total (5,000 exact + ~1,650 edge cases = 75% exact)
+
+# Full dataset: Production training (1.33x multiplier = 75% exact)
+uv run python scripts/prepare_dataset.py `
+  --input data/raw/Fredholm_Dataset.csv `
+  --augment --augment-multiplier 1.33 `
+  --augment-strategies no_solution approximate_only ill_posed `
+  --no-convert
+# Output: ~665,000 total (500k exact + ~165k edge cases = 75% exact)
+
+# Conservative balance (1.25x multiplier = 80% exact)
+uv run python scripts/prepare_dataset.py `
+  --augment --augment-multiplier 1.25 `
+  --augment-strategies no_solution approximate_only ill_posed
+# Output: 80% exact, 20% edge cases
+
+# More edge case exposure (1.5x multiplier = 67% exact)
+uv run python scripts/prepare_dataset.py `
+  --augment --augment-multiplier 1.5 `
+  --augment-strategies no_solution approximate_only ill_posed
+# Output: 67% exact, 33% edge cases
+
+# Linux/macOS - use backslash (\) for line continuation
+uv run python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --augment --augment-multiplier 1.33 \
+  --augment-strategies no_solution approximate_only ill_posed \
+  --no-convert
+```
+
 ## Available Strategies
 
 ### Basic Transformations
 
+> ⚠️ **Note**: Basic transformation strategies (substitute, scale, shift, compose) are implemented but **not currently tested or validated**. They are maintained for future use but not recommended for production datasets until comprehensive testing is completed. Use edge case strategies instead for production training.
+
 #### 1. Variable Substitution (`substitute.py`)
 **Purpose**: Transform variables with expressions to test function composition understanding.
+
+**Status**: ⚠️ Not tested/validated
 
 **Transformations**:
 - `x → 2*x` (double_x): Tests scaling behavior
@@ -46,6 +124,8 @@ class MyAugmentation(BaseAugmentation):
 #### 2. Coefficient Scaling (`scale.py`)
 **Purpose**: Scale the λ parameter to test sensitivity to magnitude.
 
+**Status**: ⚠️ Not tested/validated
+
 **Scale Factors**: 0.5, 2.0, 0.1, 10.0
 
 **Example**:
@@ -60,6 +140,8 @@ class MyAugmentation(BaseAugmentation):
 
 #### 3. Domain Shifting (`shift.py`)
 **Purpose**: Shift integration bounds to test domain understanding.
+
+**Status**: ⚠️ Not tested/validated
 
 **Transformations**:
 - `[a, b] → [a-1, b-1]` (shift_left): Move domain left
@@ -81,6 +163,8 @@ class MyAugmentation(BaseAugmentation):
 #### 4. Kernel Composition (`compose.py`)
 **Purpose**: Create more complex kernels through composition.
 
+**Status**: ⚠️ Not tested/validated
+
 **Compositions**:
 - `K(x,t) → K(x,t) + x` (add_x): Add x-dependence
 - `K(x,t) → K(x,t) + t` (add_t): Add t-dependence
@@ -98,6 +182,8 @@ class MyAugmentation(BaseAugmentation):
 ---
 
 ### Edge Cases (FIE-Edge-Cases)
+
+> ✅ **Production Ready**: All edge case strategies are thoroughly tested and validated for production use.
 
 These augmentations create realistic problem scenarios where standard symbolic methods fail.
 

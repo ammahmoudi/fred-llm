@@ -169,6 +169,54 @@ The project includes **7 augmentation strategies** to expand and diversify train
 
 These teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. See [augmentations README](src/data/augmentations/README.md) for details.
 
+### Dataset Balance Recommendations
+
+For optimal LLM training, maintain **70-80% exact solutions** and **20-30% edge cases**:
+
+**5,000 Sample Dataset (Development/Testing):**
+- Multiplier: **1.25-1.43** (recommended: 1.33 for 75% exact)
+- Total: 6,250-7,150 equations
+- Exact solutions: 5,000 (70-80%)
+- Edge case variants: 1,250-2,150 (20-30%)
+
+**500,000 Full Dataset (Production Training):**
+- Multiplier: **1.25-1.43** (recommended: 1.33 for 75% exact)
+- Total: 625,000-715,000 equations
+- Exact solutions: 500,000 (70-80%)
+- Edge case variants: 125,000-215,000 (20-30%)
+
+**Multiplier Guide:**
+- 1.25 → 80% exact, 20% edge cases
+- 1.33 → 75% exact, 25% edge cases (recommended)
+- 1.43 → 70% exact, 30% edge cases
+- 1.50 → 67% exact, 33% edge cases
+
+**Rationale:**
+- Most real-world Fredholm equations have exact solutions
+- Primary goal is teaching solution methods, not just edge case detection
+- Equal representation can cause models to be overly cautious
+- Lower edge case ratio prevents false positives in production
+
+```bash
+# Recommended: Sample dataset with balanced edge cases (Windows PowerShell)
+uv run python scripts/prepare_dataset.py `
+  --input data/raw/Fredholm_Dataset_Sample.csv `
+  --augment --augment-multiplier 1.33 `
+  --augment-strategies no_solution approximate_only ill_posed
+
+# Recommended: Full dataset for production training (Windows PowerShell)
+uv run python scripts/prepare_dataset.py `
+  --input data/raw/Fredholm_Dataset.csv `
+  --augment --augment-multiplier 1.33 `
+  --augment-strategies no_solution approximate_only ill_posed
+
+# Linux/macOS (use backslash \)
+uv run python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --augment --augment-multiplier 1.33 \
+  --augment-strategies no_solution approximate_only ill_posed
+```
+
 ## Installation
 
 ### Prerequisites

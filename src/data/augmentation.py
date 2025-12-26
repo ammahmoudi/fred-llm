@@ -56,14 +56,17 @@ def augment_dataset(
             original_item["solution_type"] = "exact"
         augmented.append(original_item)
 
+    # Generate augmented variants up to target size
+    target_size = int(len(data) * multiplier)
     for item in data:
+        if len(augmented) >= target_size:
+            break
         for strategy in strategies:
+            if len(augmented) >= target_size:
+                break
             try:
                 new_items = _apply_augmentation(item, strategy)
                 augmented.extend(new_items)
-
-                if len(augmented) >= len(data) * multiplier:
-                    break
             except Exception as e:
                 logger.debug(f"Augmentation failed for {strategy}: {e}")
 

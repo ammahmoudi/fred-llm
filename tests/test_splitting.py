@@ -77,12 +77,8 @@ class TestDatasetSplitting:
 
     def test_split_reproducibility(self, sample_data: list[dict]) -> None:
         """Test that split is reproducible with same seed."""
-        train1, val1, test1 = split_dataset(
-            sample_data, train_ratio=0.8, val_ratio=0.1
-        )
-        train2, val2, test2 = split_dataset(
-            sample_data, train_ratio=0.8, val_ratio=0.1
-        )
+        train1, val1, test1 = split_dataset(sample_data, train_ratio=0.8, val_ratio=0.1)
+        train2, val2, test2 = split_dataset(sample_data, train_ratio=0.8, val_ratio=0.1)
 
         # Check same IDs in each split
         assert [item["id"] for item in train1] == [item["id"] for item in train2]
@@ -129,7 +125,9 @@ class TestDatasetSplitting:
         original_keys = set(sample_data[0].keys())
 
         for item in train + val + test:
-            assert set(item.keys()) == original_keys, f"Keys mismatch: {set(item.keys())} vs {original_keys}"
+            assert set(item.keys()) == original_keys, (
+                f"Keys mismatch: {set(item.keys())} vs {original_keys}"
+            )
 
     def test_split_invalid_ratios(self, sample_data: list[dict]) -> None:
         """Test that invalid ratios are handled gracefully."""
@@ -182,20 +180,24 @@ class TestSplitStatistics:
         data = []
         # 80 original
         for i in range(80):
-            data.append({
-                "id": i,
-                "augmented": False,
-                "solution_type": "exact",
-                "edge_case": "",
-            })
+            data.append(
+                {
+                    "id": i,
+                    "augmented": False,
+                    "solution_type": "exact",
+                    "edge_case": "",
+                }
+            )
         # 20 augmented
         for i in range(20):
-            data.append({
-                "id": i + 80,
-                "augmented": True,
-                "solution_type": "numerical",
-                "edge_case": "gaussian_kernel",
-            })
+            data.append(
+                {
+                    "id": i + 80,
+                    "augmented": True,
+                    "solution_type": "numerical",
+                    "edge_case": "gaussian_kernel",
+                }
+            )
 
         train, val, test = split_dataset(data, train_ratio=0.8, val_ratio=0.1)
         stats = get_split_statistics(train, val, test)
@@ -219,22 +221,24 @@ class TestStratifiedSplitting:
     def augmented_sample_data(self) -> list[dict]:
         """Create sample dataset with augmented data mimicking real distribution."""
         data = []
-        
+
         # Original data (86.7% ≈ 87 items) - all exact solutions
         for i in range(87):
-            data.append({
-                "u": f"x**{i}",
-                "f": f"x**{i} + x",
-                "kernel": f"x*t + {i}",
-                "lambda_val": str(i * 0.1),
-                "a": "0",
-                "b": "1",
-                "id": f"orig_{i}",
-                "augmented": False,
-                "solution_type": "exact",
-                "edge_case": "",
-            })
-        
+            data.append(
+                {
+                    "u": f"x**{i}",
+                    "f": f"x**{i} + x",
+                    "kernel": f"x*t + {i}",
+                    "lambda_val": str(i * 0.1),
+                    "a": "0",
+                    "b": "1",
+                    "id": f"orig_{i}",
+                    "augmented": False,
+                    "solution_type": "exact",
+                    "edge_case": "",
+                }
+            )
+
         # Augmented data (13.3% ≈ 13 items) - various edge cases
         edge_cases = [
             ("numerical", "weakly_singular"),
@@ -243,23 +247,25 @@ class TestStratifiedSplitting:
             ("none", "divergent_kernel"),
             ("regularized", "ill_posed"),
         ]
-        
+
         for i, (sol_type, edge_type) in enumerate(edge_cases * 3):  # 15 items
             if i >= 13:  # Keep exactly 13 augmented
                 break
-            data.append({
-                "u": "",
-                "f": f"x**2",
-                "kernel": f"exp(-(x-t)**2)",
-                "lambda_val": "0.5",
-                "a": "0",
-                "b": "1",
-                "id": f"aug_{i}",
-                "augmented": True,
-                "solution_type": sol_type,
-                "edge_case": edge_type,
-            })
-        
+            data.append(
+                {
+                    "u": "",
+                    "f": f"x**2",
+                    "kernel": f"exp(-(x-t)**2)",
+                    "lambda_val": "0.5",
+                    "a": "0",
+                    "b": "1",
+                    "id": f"aug_{i}",
+                    "augmented": True,
+                    "solution_type": sol_type,
+                    "edge_case": edge_type,
+                }
+            )
+
         return data
 
     def test_stratified_split_maintains_original_ratio(
@@ -269,20 +275,20 @@ class TestStratifiedSplitting:
         train, val, test = split_dataset(
             augmented_sample_data, train_ratio=0.8, val_ratio=0.1
         )
-        
+
         # Count original vs augmented in each split
         def count_originals(split):
             return sum(1 for item in split if not item["augmented"])
-        
+
         train_orig_ratio = count_originals(train) / len(train) if len(train) > 0 else 0
         val_orig_ratio = count_originals(val) / len(val) if len(val) > 0 else 0
         test_orig_ratio = count_originals(test) / len(test) if len(test) > 0 else 0
-        
+
         # All splits should have similar ratio to original (~87%)
         # Allow wider tolerance for small samples (stratification with small groups has variance)
         # The important thing is train set is well-balanced since it's the largest
         assert 0.70 <= train_orig_ratio <= 0.95, f"Train ratio: {train_orig_ratio:.2%}"
-        
+
         # Val and test may vary more due to small sample sizes
         if len(val) > 5:
             assert 0.50 <= val_orig_ratio <= 1.0, f"Val ratio: {val_orig_ratio:.2%}"
@@ -296,19 +302,22 @@ class TestStratifiedSplitting:
         train, val, test = split_dataset(
             augmented_sample_data, train_ratio=0.8, val_ratio=0.1
         )
-        
+
         # Count solution types in original data
         from collections import Counter
-        original_counts = Counter(item["solution_type"] for item in augmented_sample_data)
-        
+
+        original_counts = Counter(
+            item["solution_type"] for item in augmented_sample_data
+        )
+
         # Check each solution type appears proportionally in splits
         for sol_type in original_counts.keys():
             original_ratio = original_counts[sol_type] / len(augmented_sample_data)
-            
+
             train_count = sum(1 for item in train if item["solution_type"] == sol_type)
             val_count = sum(1 for item in val if item["solution_type"] == sol_type)
             test_count = sum(1 for item in test if item["solution_type"] == sol_type)
-            
+
             # At least one split should have this type if it's >5% of data
             if original_ratio > 0.05:
                 assert train_count > 0, f"{sol_type} missing from train"
@@ -320,20 +329,24 @@ class TestStratifiedSplitting:
         train, val, test = split_dataset(
             augmented_sample_data, train_ratio=0.8, val_ratio=0.1
         )
-        
+
         # Get all edge case types from augmented data
         augmented_items = [item for item in augmented_sample_data if item["augmented"]]
-        edge_types = {item["edge_case"] for item in augmented_items if item["edge_case"]}
-        
+        edge_types = {
+            item["edge_case"] for item in augmented_items if item["edge_case"]
+        }
+
         # Collect edge cases in all splits
         all_splits_edge_types = set()
         for split in [train, val, test]:
             for item in split:
                 if item["augmented"] and item["edge_case"]:
                     all_splits_edge_types.add(item["edge_case"])
-        
+
         # All edge case types should appear somewhere in the splits
-        assert edge_types == all_splits_edge_types, "Some edge cases missing from splits"
+        assert edge_types == all_splits_edge_types, (
+            "Some edge cases missing from splits"
+        )
 
     def test_stratified_split_no_data_leakage(
         self, augmented_sample_data: list[dict]
@@ -342,12 +355,12 @@ class TestStratifiedSplitting:
         train, val, test = split_dataset(
             augmented_sample_data, train_ratio=0.8, val_ratio=0.1
         )
-        
+
         # Extract IDs
         train_ids = {item["id"] for item in train}
         val_ids = {item["id"] for item in val}
         test_ids = {item["id"] for item in test}
-        
+
         # Check no overlap
         assert len(train_ids & val_ids) == 0
         assert len(train_ids & test_ids) == 0
@@ -364,9 +377,9 @@ class TestStratifiedSplitting:
             }
             for i in range(100)
         ]
-        
+
         train, val, test = split_dataset(uniform_data, train_ratio=0.8, val_ratio=0.1)
-        
+
         # Should still split correctly
         assert len(train) == 80
         assert len(val) == 10

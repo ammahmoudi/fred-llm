@@ -47,7 +47,7 @@ def split_dataset(
     if len(data) == 0:
         logger.info("Split complete: empty dataset")
         return [], [], []
-    
+
     # Validate ratios
     if train_ratio + val_ratio > 1.0:
         logger.warning(
@@ -57,7 +57,7 @@ def split_dataset(
         total = train_ratio + val_ratio
         train_ratio = train_ratio / total * 0.9  # Leave 10% for test
         val_ratio = val_ratio / total * 0.9
-    
+
     # Handle 100% train case
     test_ratio = 1.0 - train_ratio - val_ratio
     if test_ratio <= 0:
@@ -66,7 +66,7 @@ def split_dataset(
 
     # Convert to DataFrame for easier manipulation
     df = pd.DataFrame(data)
-    
+
     # Fill missing columns with defaults
     if "augmented" not in df.columns:
         df["augmented"] = False
@@ -98,7 +98,7 @@ def split_dataset(
     # Count strata
     strata_counts = df["_strat_key"].value_counts()
     logger.info(f"Found {len(strata_counts)} distinct strata")
-    
+
     # Check if dataset is too small for splitting
     if len(df) == 1:
         logger.warning("Dataset has only 1 sample. Assigning to train.")
@@ -110,7 +110,7 @@ def split_dataset(
     elif val_ratio > 0:
         min_stratum_size = strata_counts.min()
         can_stratify = min_stratum_size >= 2
-        
+
         if not can_stratify:
             logger.warning(
                 f"Some strata have only {min_stratum_size} sample(s). "
@@ -130,7 +130,7 @@ def split_dataset(
 
             # Second split: val vs test from temp
             val_size_from_temp = val_ratio / temp_test_size
-            
+
             # Check if temp still has small strata
             temp_min_size = temp_df["_strat_key"].value_counts().min()
             can_stratify_temp = temp_min_size >= 2
@@ -180,10 +180,20 @@ def split_dataset(
     for col in ["augmented", "solution_type", "edge_case"]:
         if col in train_df.columns and col not in original_columns:
             columns_to_drop.append(col)
-    
-    train_df = train_df.drop(columns=[c for c in columns_to_drop if c in train_df.columns])
-    val_df = val_df.drop(columns=[c for c in columns_to_drop if c in val_df.columns]) if not val_df.empty else val_df
-    test_df = test_df.drop(columns=[c for c in columns_to_drop if c in test_df.columns]) if not test_df.empty else test_df
+
+    train_df = train_df.drop(
+        columns=[c for c in columns_to_drop if c in train_df.columns]
+    )
+    val_df = (
+        val_df.drop(columns=[c for c in columns_to_drop if c in val_df.columns])
+        if not val_df.empty
+        else val_df
+    )
+    test_df = (
+        test_df.drop(columns=[c for c in columns_to_drop if c in test_df.columns])
+        if not test_df.empty
+        else test_df
+    )
 
     # Convert back to list of dicts
     train = train_df.to_dict("records")
@@ -191,9 +201,9 @@ def split_dataset(
     test = test_df.to_dict("records")
 
     logger.info(
-        f"Split complete: train={len(train)} ({100*len(train)/len(data):.1f}%), "
-        f"val={len(val)} ({100*len(val)/len(data):.1f}%), "
-        f"test={len(test)} ({100*len(test)/len(data):.1f}%)"
+        f"Split complete: train={len(train)} ({100 * len(train) / len(data):.1f}%), "
+        f"val={len(val)} ({100 * len(val) / len(data):.1f}%), "
+        f"test={len(test)} ({100 * len(test) / len(data):.1f}%)"
     )
 
     return train, val, test
@@ -232,13 +242,17 @@ def get_split_statistics(
             }
 
         df = pd.DataFrame(split)
-        
+
         augmented_count = df.get("augmented", pd.Series([False])).sum()
         original_count = len(df) - augmented_count
 
         # Count solution types
-        solution_types = df.get("solution_type", pd.Series(["exact"] * len(df))).value_counts().to_dict()
-        
+        solution_types = (
+            df.get("solution_type", pd.Series(["exact"] * len(df)))
+            .value_counts()
+            .to_dict()
+        )
+
         # Count edge cases (only for augmented items)
         augmented_df = df[df.get("augmented", False)]
         edge_cases = {}

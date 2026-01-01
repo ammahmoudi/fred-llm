@@ -5,6 +5,10 @@ Unified interface for converting between different mathematical formats.
 Uses individual formatter classes for each format.
 """
 
+import contextlib
+import io
+import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +24,18 @@ from src.data.formatters import (
 from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+# Suppress SymPy warnings for edge cases (empty strings, complex piecewise, etc.)
+warnings.filterwarnings("ignore", category=SyntaxWarning)
+warnings.filterwarnings("ignore", message="could not parse")
+warnings.filterwarnings("ignore", message="cannot determine truth value")
+
+
+@contextlib.contextmanager
+def suppress_sympy_output():
+    """Context manager to suppress SymPy stderr output (warnings/errors)."""
+    with contextlib.redirect_stderr(io.StringIO()):
+        yield
 
 
 class FormatConverter:
@@ -77,16 +93,24 @@ class FormatConverter:
         """Convert any format to SymPy expression."""
         if isinstance(expression, sp.Expr):
             return expression
+        
+        # Handle empty strings (edge cases where no solution exists)
+        if not expression or expression.strip() == "":
+            return sp.S.Zero  # Return zero as placeholder for empty expressions
 
         if format == "sympy":
-            return sp.sympify(expression)
+            with warnings.catch_warnings(), suppress_sympy_output():
+                warnings.simplefilter("ignore")
+                return sp.sympify(expression)
 
         if format not in self._formatters:
             raise ValueError(
                 f"Unknown format: {format}. Supported: {self.supported_formats}"
             )
 
-        return self._formatters[format].to_sympy(expression)
+        with warnings.catch_warnings(), suppress_sympy_output():
+            warnings.simplefilter("ignore")
+            return self._formatters[format].to_sympy(expression)
 
     def _from_sympy(self, expr: sp.Expr, format: str) -> str | sp.Expr:
         """Convert SymPy expression to target format."""
@@ -98,7 +122,9 @@ class FormatConverter:
                 f"Unknown format: {format}. Supported: {self.supported_formats}"
             )
 
-        return self._formatters[format].from_sympy(expr)
+        with warnings.catch_warnings(), suppress_sympy_output():
+            warnings.simplefilter("ignore")
+            return self._formatters[format].from_sympy(expr)
 
     def convert_to_csv(
         self,

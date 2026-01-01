@@ -222,14 +222,16 @@ def main() -> None:
     train_data = None
     val_data = None
     test_data = None
-    
+
     if args.split:
         console.print("[bold]Step 4: Splitting dataset[/bold]")
         split_data = augmented_data if augmented_data else data
         train_data, val_data, test_data = split_dataset(
             split_data, args.train_ratio, args.val_ratio, seed=42
         )
-        console.print(f"  ✓ Train: {len(train_data)}, Val: {len(val_data)}, Test: {len(test_data)}\n")
+        console.print(
+            f"  ✓ Train: {len(train_data)}, Val: {len(val_data)}, Test: {len(test_data)}\n"
+        )
 
         # Get and display split statistics
         stats = get_split_statistics(train_data, val_data, test_data)
@@ -250,7 +252,7 @@ def main() -> None:
     if should_convert:
         console.print("[bold]Step 5: Converting formats[/bold]")
         converter = FormatConverter()
-        
+
         # Use specified formats or all by default
         formats_to_convert = args.convert_formats
         console.print(
@@ -266,26 +268,28 @@ def main() -> None:
             splits_to_convert = [
                 ("train", train_data),
                 ("val", val_data),
-                ("test", test_data)
+                ("test", test_data),
             ]
         else:
             # Convert full dataset (backward compatibility)
             convert_data = augmented_data if augmented_data else data
-            
+
             # Apply conversion limit if specified
             if args.convert_limit:
                 convert_data = convert_data[: args.convert_limit]
                 console.print(f"  Converting {len(convert_data)} equations (limited)")
-            
+
             splits_to_convert = [("full", convert_data)]
 
         # Convert each split to each format
         for split_name, split_data in splits_to_convert:
             if not split_data:  # Skip empty splits (e.g., val_ratio=0)
                 continue
-                
-            console.print(f"  Converting {split_name} split ({len(split_data)} equations):")
-            
+
+            console.print(
+                f"  Converting {split_name} split ({len(split_data)} equations):"
+            )
+
             for fmt in formats_to_convert:
                 formatted_equations = []
 
@@ -293,7 +297,9 @@ def main() -> None:
                     try:
                         if fmt == "infix":
                             # Infix is already the source format
-                            formatted_equations.append(_extract_equation_fields(eq_dict))
+                            formatted_equations.append(
+                                _extract_equation_fields(eq_dict)
+                            )
                         else:
                             # Convert to target format
                             formatted_eq = {
@@ -323,10 +329,17 @@ def main() -> None:
                     output_path = formatted_dir / f"{base_filename}_{fmt}"
 
                 created_files.extend(
-                    _save_data(formatted_equations, output_path, f"{split_name}_{fmt}", args.output_format)
+                    _save_data(
+                        formatted_equations,
+                        output_path,
+                        f"{split_name}_{fmt}",
+                        args.output_format,
+                    )
                 )
-                console.print(f"    ✓ {fmt.upper()}: {len(formatted_equations)} equations")
-            
+                console.print(
+                    f"    ✓ {fmt.upper()}: {len(formatted_equations)} equations"
+                )
+
             console.print()
     elif args.split:
         # Save unformatted splits
@@ -412,7 +425,6 @@ def _save_data(
     files_str = " & ".join([f.name for f in saved_files])
     console.print(f"  ✓ Saved {label} data: {len(data)} samples → {files_str}")
     return saved_files
-
 
     return shuffled[:train_end], shuffled[train_end:val_end], shuffled[val_end:]
 

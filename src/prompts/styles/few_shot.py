@@ -29,10 +29,10 @@ The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)"""
         examples_text = "\n\n"
         for i, example in enumerate(FEW_SHOT_EXAMPLES[: self.num_examples], 1):
             examples_text += f"""Example {i}:
-{example['problem']}
+{example["problem"]}
 
 Solution:
-{example['solution']}
+{example["solution"]}
 
 """
 

@@ -230,12 +230,10 @@ def prompt_generate(
     """Generate prompts from a dataset (CSV file)."""
     from src.prompts import create_processor
 
-    console.print("\n" + "="*60)
-    console.print(
-        f"[bold blue]🎯 Generating {style} prompts[/bold blue]"
-    )
+    console.print("\n" + "=" * 60)
+    console.print(f"[bold blue]🎯 Generating {style} prompts[/bold blue]")
     console.print(f"[cyan]Input:[/cyan] {input_file}")
-    console.print("="*60 + "\n")
+    console.print("=" * 60 + "\n")
 
     # Create processor
     processor = create_processor(
@@ -265,14 +263,12 @@ def prompt_generate(
             show_progress=True,
         )
 
-        console.print("\n" + "="*60)
-        console.print(
-            f"[bold green]✓ Prompts generated successfully![/bold green]"
-        )
+        console.print("\n" + "=" * 60)
+        console.print(f"[bold green]✓ Prompts generated successfully![/bold green]")
         console.print(f"[cyan]Output:[/cyan] {output_file}")
         console.print(f"[cyan]Format:[/cyan] {format_type}")
         console.print(f"[cyan]Style:[/cyan] {style}")
-        console.print("="*60 + "\n")
+        console.print("=" * 60 + "\n")
 
     except Exception as e:
         console.print(f"[bold red]✗ Error generating prompts: {e}[/bold red]")
@@ -324,14 +320,12 @@ def prompt_batch(
         console.print(f"[red]No CSV files found matching pattern: {pattern}[/red]")
         raise typer.Exit(1)
 
-    console.print("\n" + "="*60)
-    console.print(
-        f"[bold blue]📦 Batch Prompt Generation[/bold blue]"
-    )
+    console.print("\n" + "=" * 60)
+    console.print(f"[bold blue]📦 Batch Prompt Generation[/bold blue]")
     console.print(f"[cyan]Files:[/cyan] {len(input_files)}")
     console.print(f"[cyan]Styles:[/cyan] {', '.join(style_list)}")
     console.print(f"[cyan]Output:[/cyan] {output_dir}")
-    console.print("="*60 + "\n")
+    console.print("=" * 60 + "\n")
 
     total_generated = 0
 
@@ -360,13 +354,11 @@ def prompt_batch(
             console.print(f"[red]✗ Error processing {style}: {e}[/red]")
             continue
 
-    console.print("\n" + "="*60)
-    console.print(
-        f"[bold green]✓ Batch generation complete![/bold green]"
-    )
+    console.print("\n" + "=" * 60)
+    console.print(f"[bold green]✓ Batch generation complete![/bold green]")
     console.print(f"[cyan]Generated:[/cyan] {total_generated} prompt files")
     console.print(f"[cyan]Location:[/cyan] {output_dir}")
-    console.print("="*60 + "\n")
+    console.print("=" * 60 + "\n")
 
 
 @app.command()

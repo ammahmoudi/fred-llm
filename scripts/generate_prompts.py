@@ -34,20 +34,13 @@ table.add_column("Command", style="white")
 
 table.add_row(
     "1️⃣  Batch Generation Script",
-    "python scripts/run_prompt_generation.py --input <path> --styles all"
+    "python scripts/run_prompt_generation.py --input <path> --styles all",
 )
 table.add_row(
-    "2️⃣  Python API",
-    "from src.prompts import create_prompt_style, EquationData"
+    "2️⃣  Python API", "from src.prompts import create_prompt_style, EquationData"
 )
-table.add_row(
-    "3️⃣  Example Scripts",
-    "python examples/prompts/simple_demo.py"
-)
-table.add_row(
-    "4️⃣  CLI Command",
-    "uv run python -m src.cli prompt generate <file.csv>"
-)
+table.add_row("3️⃣  Example Scripts", "python examples/prompts/simple_demo.py")
+table.add_row("4️⃣  CLI Command", "uv run python -m src.cli prompt generate <file.csv>")
 
 console.print(table)
 console.print()

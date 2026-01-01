@@ -179,6 +179,7 @@ PROMPT_METADATA = {
 # USAGE EXAMPLES
 # ============================================================================
 
+
 def show_examples():
     """Print all prompt examples."""
     from rich.console import Console
@@ -202,7 +203,7 @@ def show_examples():
 
 def generate_custom_prompt():
     """Example: Generate a custom prompt using the API."""
-    from src.prompts import create_prompt_style, EquationData
+    from src.prompts import EquationData, create_prompt_style
 
     # Create equation
     eq = EquationData(
@@ -217,14 +218,14 @@ def generate_custom_prompt():
 
     # Generate different styles
     styles = ["basic", "chain-of-thought", "few-shot", "tool-assisted"]
-    
+
     for style_name in styles:
         style = create_prompt_style(style_name)
         prompt = style.generate(eq, include_ground_truth=True)
-        
-        print(f"\n{'='*80}")
+
+        print(f"\n{'=' * 80}")
         print(f"Style: {prompt.style}")
-        print(f"{'='*80}")
+        print(f"{'=' * 80}")
         print(prompt.prompt)
 
 

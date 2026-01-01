@@ -8,13 +8,13 @@ Provides a high-level interface for common prompt generation workflows.
 Usage:
     # Generate prompts for all training data with multiple styles
     python scripts/run_prompt_generation.py --input data/processed/training_data_v2/ --styles all
-    
+
     # Generate specific style for test data
     python scripts/run_prompt_generation.py --input data/processed/training_data_v2/test_infix.csv --style chain-of-thought
-    
+
     # Generate prompts without ground truth (for inference)
     python scripts/run_prompt_generation.py --input data/processed/test.csv --no-ground-truth --style few-shot
-    
+
     # Custom output directory
     python scripts/run_prompt_generation.py --input data/processed/ --output data/my_prompts/ --styles basic,few-shot
 """
@@ -106,22 +106,26 @@ def expand_styles(styles_str: str) -> list[str]:
         return [s.strip() for s in styles_str.split(",")]
 
 
-def display_config(args: argparse.Namespace, csv_files: list[Path], styles: list[str]) -> None:
+def display_config(
+    args: argparse.Namespace, csv_files: list[Path], styles: list[str]
+) -> None:
     """Display configuration summary."""
     console.print()
     console.print(Panel.fit("🎯 Prompt Generation Configuration", style="bold blue"))
-    
+
     table = Table(show_header=False, box=None)
     table.add_column("Setting", style="cyan")
     table.add_column("Value", style="white")
-    
+
     table.add_row("Input", str(args.input))
     table.add_row("Output", str(args.output))
     table.add_row("Files", f"{len(csv_files)} CSV files")
     table.add_row("Styles", ", ".join(styles))
     table.add_row("Ground Truth", "❌ No" if args.no_ground_truth else "✅ Yes")
-    table.add_row("Examples", "❌ No" if args.no_examples else f"✅ Yes ({args.num_examples})")
-    
+    table.add_row(
+        "Examples", "❌ No" if args.no_examples else f"✅ Yes ({args.num_examples})"
+    )
+
     console.print(table)
     console.print()
 
@@ -157,10 +161,11 @@ def main() -> None:
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
-        
         for style in styles:
-            task = progress.add_task(f"[cyan]Generating {style} prompts...", total=len(csv_files))
-            
+            task = progress.add_task(
+                f"[cyan]Generating {style} prompts...", total=len(csv_files)
+            )
+
             # Create processor for this style
             processor = create_processor(
                 style=style,
@@ -172,7 +177,7 @@ def main() -> None:
 
             for csv_file in csv_files:
                 progress.update(task, description=f"[cyan]{style}: {csv_file.name}")
-                
+
                 # Determine format
                 format_type = args.format
                 if format_type is None:
@@ -194,27 +199,23 @@ def main() -> None:
                     generated_files.append(output_file)
                 except Exception as e:
                     console.print(f"[red]✗ Error processing {csv_file.name}: {e}[/red]")
-                
+
                 progress.update(task, advance=1)
 
     # Display results
     console.print()
     console.print(Panel.fit("✅ Prompt Generation Complete", style="bold green"))
-    
+
     results_table = Table(title="Generated Files", show_lines=True)
     results_table.add_column("Style", style="cyan")
     results_table.add_column("File", style="white")
     results_table.add_column("Size", justify="right", style="yellow")
-    
+
     for output_file in generated_files:
         style_name = output_file.parent.name
         file_size = output_file.stat().st_size / 1024  # KB
-        results_table.add_row(
-            style_name,
-            output_file.name,
-            f"{file_size:.1f} KB"
-        )
-    
+        results_table.add_row(style_name, output_file.name, f"{file_size:.1f} KB")
+
     console.print(results_table)
     console.print()
     console.print(f"[green]✓ Generated {len(generated_files)} prompt files[/green]")

@@ -150,7 +150,9 @@ class BatchPromptProcessor:
         logger.info(f"Generating prompts in {self.prompt_style.style_name} style")
         prompts = []
 
-        iterator = tqdm(equations, desc="Generating prompts") if show_progress else equations
+        iterator = (
+            tqdm(equations, desc="Generating prompts") if show_progress else equations
+        )
 
         for eq in iterator:
             prompt = self.prompt_style.generate(

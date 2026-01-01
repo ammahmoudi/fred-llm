@@ -7,12 +7,13 @@ These strategies create equations where no solution exists due to:
 - Divergent kernels (non-integrable singularities)
 """
 
-from src.data.augmentations.no_solution.divergent_kernel import \
-    DivergentKernelAugmentation
-from src.data.augmentations.no_solution.eigenvalue_cases import \
-    NoSolutionAugmentation
-from src.data.augmentations.no_solution.range_violation import \
-    RangeViolationAugmentation
+from src.data.augmentations.no_solution.divergent_kernel import (
+    DivergentKernelAugmentation,
+)
+from src.data.augmentations.no_solution.eigenvalue_cases import NoSolutionAugmentation
+from src.data.augmentations.no_solution.range_violation import (
+    RangeViolationAugmentation,
+)
 
 __all__ = [
     "NoSolutionAugmentation",

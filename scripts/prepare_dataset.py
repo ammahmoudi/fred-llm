@@ -302,8 +302,12 @@ def main() -> None:
                             # Convert to target format - preserve all original columns
                             formatted_eq = eq_dict.copy()
                             # Only update the expression fields
-                            formatted_eq["u"] = converter.convert(eq_dict["u"], "infix", fmt)
-                            formatted_eq["f"] = converter.convert(eq_dict["f"], "infix", fmt)
+                            formatted_eq["u"] = converter.convert(
+                                eq_dict["u"], "infix", fmt
+                            )
+                            formatted_eq["f"] = converter.convert(
+                                eq_dict["f"], "infix", fmt
+                            )
                             formatted_eq["kernel"] = converter.convert(
                                 eq_dict["kernel"], "infix", fmt
                             )

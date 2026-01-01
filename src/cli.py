@@ -162,8 +162,12 @@ def convert(
         console.print(f"\n[yellow]Use --output to save all results[/yellow]")
 
 
-@app.command()
-def prompt(
+prompt_app = typer.Typer(help="Prompt generation commands")
+app.add_typer(prompt_app, name="prompt")
+
+
+@prompt_app.command("single")
+def prompt_single(
     equation: str = typer.Argument(
         ...,
         help="Equation string or file path",
@@ -175,12 +179,194 @@ def prompt(
         help="Prompt style: basic, chain-of-thought, few-shot, tool-assisted",
     ),
 ) -> None:
-    """Generate a prompt for a given equation."""
+    """Generate a prompt for a single equation."""
     from src.llm.prompt_templates import generate_prompt
 
-    # TODO: Implement prompt generation
     prompt_text = generate_prompt(equation, style=style)
     console.print(prompt_text)
+
+
+@prompt_app.command("generate")
+def prompt_generate(
+    input_file: Path = typer.Argument(
+        ...,
+        help="Input CSV file with equations (train/test data)",
+    ),
+    output_dir: Path = typer.Option(
+        Path("data/prompts"),
+        "--output",
+        "-o",
+        help="Output directory for generated prompts",
+    ),
+    style: str = typer.Option(
+        "chain-of-thought",
+        "--style",
+        "-s",
+        help="Prompt style: basic, chain-of-thought, few-shot, tool-assisted",
+    ),
+    format_type: Optional[str] = typer.Option(
+        None,
+        "--format",
+        "-f",
+        help="Format type: infix, latex, rpn (auto-detected if not specified)",
+    ),
+    include_ground_truth: bool = typer.Option(
+        True,
+        "--ground-truth/--no-ground-truth",
+        help="Include solutions in output",
+    ),
+    include_examples: bool = typer.Option(
+        True,
+        "--examples/--no-examples",
+        help="Include few-shot examples (for few-shot style)",
+    ),
+    num_examples: int = typer.Option(
+        2,
+        "--num-examples",
+        "-n",
+        help="Number of few-shot examples to include",
+    ),
+) -> None:
+    """Generate prompts from a dataset (CSV file)."""
+    from src.prompts import create_processor
+
+    console.print("\n" + "="*60)
+    console.print(
+        f"[bold blue]🎯 Generating {style} prompts[/bold blue]"
+    )
+    console.print(f"[cyan]Input:[/cyan] {input_file}")
+    console.print("="*60 + "\n")
+
+    # Create processor
+    processor = create_processor(
+        style=style,
+        output_dir=output_dir,
+        include_ground_truth=include_ground_truth,
+        include_examples=include_examples,
+        num_examples=num_examples,
+    )
+
+    # Auto-detect format if not specified
+    if format_type is None:
+        file_str = str(input_file).lower()
+        if "latex" in file_str:
+            format_type = "latex"
+        elif "rpn" in file_str:
+            format_type = "rpn"
+        else:
+            format_type = "infix"
+        console.print(f"[cyan]Auto-detected format: {format_type}[/cyan]")
+
+    try:
+        # Process dataset
+        output_file = processor.process_dataset(
+            input_csv=input_file,
+            format_type=format_type,
+            show_progress=True,
+        )
+
+        console.print("\n" + "="*60)
+        console.print(
+            f"[bold green]✓ Prompts generated successfully![/bold green]"
+        )
+        console.print(f"[cyan]Output:[/cyan] {output_file}")
+        console.print(f"[cyan]Format:[/cyan] {format_type}")
+        console.print(f"[cyan]Style:[/cyan] {style}")
+        console.print("="*60 + "\n")
+
+    except Exception as e:
+        console.print(f"[bold red]✗ Error generating prompts: {e}[/bold red]")
+        raise typer.Exit(1) from e
+
+
+@prompt_app.command("batch")
+def prompt_batch(
+    input_dir: Path = typer.Argument(
+        ...,
+        help="Directory containing CSV files (e.g., data/processed/training_data_v2/)",
+    ),
+    output_dir: Path = typer.Option(
+        Path("data/prompts"),
+        "--output",
+        "-o",
+        help="Output directory for generated prompts",
+    ),
+    styles: Optional[str] = typer.Option(
+        None,
+        "--styles",
+        "-s",
+        help="Comma-separated styles (e.g., 'basic,chain-of-thought') or 'all'",
+    ),
+    pattern: str = typer.Option(
+        "*.csv",
+        "--pattern",
+        "-p",
+        help="File pattern to match (e.g., 'train_*.csv')",
+    ),
+    include_ground_truth: bool = typer.Option(
+        True,
+        "--ground-truth/--no-ground-truth",
+        help="Include solutions in output",
+    ),
+) -> None:
+    """Generate prompts for multiple datasets in batch."""
+    from src.llm.batch_prompt_processor import create_processor
+
+    # Parse styles
+    if styles is None or styles == "all":
+        style_list = ["basic", "chain-of-thought", "few-shot", "tool-assisted"]
+    else:
+        style_list = [s.strip() for s in styles.split(",")]
+
+    # Find CSV files
+    input_files = list(Path(input_dir).glob(pattern))
+    if not input_files:
+        console.print(f"[red]No CSV files found matching pattern: {pattern}[/red]")
+        raise typer.Exit(1)
+
+    console.print("\n" + "="*60)
+    console.print(
+        f"[bold blue]📦 Batch Prompt Generation[/bold blue]"
+    )
+    console.print(f"[cyan]Files:[/cyan] {len(input_files)}")
+    console.print(f"[cyan]Styles:[/cyan] {', '.join(style_list)}")
+    console.print(f"[cyan]Output:[/cyan] {output_dir}")
+    console.print("="*60 + "\n")
+
+    total_generated = 0
+
+    # Process each style
+    for style in style_list:
+        console.print(f"\n[bold yellow]Processing style: {style}[/bold yellow]")
+
+        processor = create_processor(
+            style=style,
+            output_dir=output_dir / style,
+            include_ground_truth=include_ground_truth,
+        )
+
+        # Process all files
+        try:
+            output_files = processor.process_multiple_datasets(
+                input_files=input_files,
+                show_progress=True,
+            )
+            total_generated += len(output_files)
+            console.print(
+                f"[green]✓ Generated {len(output_files)} prompt files for {style}[/green]"
+            )
+
+        except Exception as e:
+            console.print(f"[red]✗ Error processing {style}: {e}[/red]")
+            continue
+
+    console.print("\n" + "="*60)
+    console.print(
+        f"[bold green]✓ Batch generation complete![/bold green]"
+    )
+    console.print(f"[cyan]Generated:[/cyan] {total_generated} prompt files")
+    console.print(f"[cyan]Location:[/cyan] {output_dir}")
+    console.print("="*60 + "\n")
 
 
 @app.command()

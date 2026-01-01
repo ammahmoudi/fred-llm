@@ -62,6 +62,15 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Chain-of-thought prompts - Step-by-step reasoning ✅ **Implemented in prompt_templates.py**
 - [x] Few-shot prompts - Include worked examples ✅ **Implemented in prompt_templates.py**
 - [x] Tool-assisted prompts - Enable tool use for computation ✅ **Template defined in prompt_templates.py**
+- [x] **Prompt generation system** ✅ **Complete modular architecture (January 1, 2026)**
+  - [x] PromptGenerator - Core logic for all 4 styles (basic, CoT, few-shot, tool-assisted) ✅
+  - [x] BatchPromptProcessor - Batch processing with progress tracking ✅
+  - [x] CSV to JSONL pipeline - Load equations, generate prompts, save metadata ✅
+  - [x] CLI commands - `prompt generate` and `prompt batch` with rich output ✅
+  - [x] Format support - Works with infix, latex, rpn formats ✅
+  - [x] Ground truth inclusion - Optional solution embedding for evaluation ✅
+  - [x] Metadata preservation - Includes equation_id, style, format, domain ✅
+  - [x] Test coverage - 16 tests covering all components ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**
 - [ ] Error correction prompts - Self-correction mechanisms ❌ **Not started**
@@ -144,12 +153,12 @@ This document tracks all features - implemented and planned. Check off items as 
 | Core Infrastructure | 4 | 8 | 50% |
 | Data Pipeline | 6 | 9 | 67% |
 | LLM Integration | 4 | 8 | 50% |
-| Prompt Engineering | 4 | 8 | 50% |
+| Prompt Engineering | 5 | 9 | 56% |
 | Evaluation | 3 | 7 | 43% |
 | Output Formats | 2 | 5 | 40% |
 | Data Exploration | 5 | 7 | 71% |
 | Configuration | 6 | 6 | 100% |
-| **Total** | **39** | **66** | **59%** |
+| **Total** | **40** | **67** | **60%** |
 
 ---
 

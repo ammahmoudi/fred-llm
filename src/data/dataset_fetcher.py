@@ -345,6 +345,10 @@ if __name__ == "__main__":
     # Example usage
     import sys
 
+    from rich.console import Console
+
+    console = Console()
+
     variant = sys.argv[1] if len(sys.argv) > 1 else "sample"
     path = download_fredholm_dataset(variant=variant)
-    print(f"Dataset downloaded to: {path}")
+    console.print(f"[bold green]✓ Dataset downloaded to:[/bold green] {path}")

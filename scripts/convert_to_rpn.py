@@ -13,6 +13,11 @@ import argparse
 import json
 from pathlib import Path
 
+from rich.console import Console
+from rich.progress import track
+
+console = Console()
+
 # TODO: Import from src once package is installed
 # from src.data.format_converter import FormatConverter
 
@@ -113,7 +118,9 @@ def convert_equation(item: dict, fields: list[str]) -> dict:
             try:
                 result[f"{field}_rpn"] = infix_to_rpn(str(item[field]))
             except Exception as e:
-                print(f"Warning: Failed to convert {field}: {e}")
+                console.print(
+                    f"[yellow]Warning: Failed to convert {field}: {e}[/yellow]"
+                )
                 result[f"{field}_rpn"] = None
 
     return result
@@ -123,19 +130,26 @@ def main() -> None:
     """Main entry point."""
     args = parse_args()
 
+    console.print("\n" + "=" * 60)
+    console.print("[bold blue]📝 RPN Conversion Tool[/bold blue]")
+    console.print(f"[cyan]Input:[/cyan] {args.input}")
+    console.print(f"[cyan]Output:[/cyan] {args.output}")
+    console.print("=" * 60 + "\n")
+
     # Load input data
-    print(f"Loading data from {args.input}")
+    console.print("[bold]Loading equations...[/bold]")
     with open(args.input, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     if isinstance(data, dict) and "data" in data:
         data = data["data"]
 
-    print(f"Converting {len(data)} equations to RPN...")
+    console.print(f"  Loaded {len(data)} equations\n")
 
     # Convert each equation
+    console.print("[bold]Converting to RPN...[/bold]")
     converted = []
-    for item in data:
+    for item in track(data, description="  Processing"):
         converted.append(convert_equation(item, args.fields))
 
     # Save output
@@ -143,7 +157,11 @@ def main() -> None:
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(converted, f, indent=2)
 
-    print(f"Saved converted data to {args.output}")
+    console.print("\n" + "=" * 60)
+    console.print("[bold green]✓ Conversion complete![/bold green]")
+    console.print(f"[cyan]Saved:[/cyan] {len(converted)} equations")
+    console.print(f"[cyan]Output:[/cyan] {args.output}")
+    console.print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

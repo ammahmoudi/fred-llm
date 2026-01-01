@@ -10,7 +10,8 @@ from src.data.fredholm_loader import (
     load_fredholm_dataset,
 )
 from src.data.loader import DataLoader, load_dataset
-from src.data.validator import validate_equation
+from src.data.splitter import get_split_statistics, split_dataset
+from src.data.validator import validate_dataset, validate_equation
 
 __all__ = [
     # Loaders
@@ -28,4 +29,7 @@ __all__ = [
     "FormatConverter",
     "augment_dataset",
     "validate_equation",
+    "validate_dataset",
+    "split_dataset",
+    "get_split_statistics",
 ]

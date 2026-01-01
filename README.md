@@ -137,6 +137,7 @@ python scripts/prepare_dataset.py \
 - 🔄 **11 augmentation strategies**: Variable substitution, scaling, domain shifting, kernel composition, plus 11 edge case strategies (no-solution, approximate-only, ill-posed, weakly-singular, boundary-layer, resonance, range-violation, divergent-kernel, mixed-type, oscillatory-solution, compact-support)
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
 - ⚠️ **Realistic edge cases**: Teach LLMs to recognize singular problems, numerical-only solutions, and ill-posed equations
+- 🎲 **Stratified dataset splitting**: Maintains dataset balance using scikit-learn, preserves original/augmented ratios and solution types
 
 ## Pipeline Architecture
 
@@ -381,6 +382,53 @@ uv run python scripts/prepare_dataset.py \
   --augment-strategies numerical_only
 ```
 
+---
+
+## Dataset Splitting with Stratification
+
+The project includes production-ready stratified splitting to maintain dataset balance across train/validation/test sets.
+
+### Features
+
+- **Industry-standard libraries**: Uses scikit-learn's `train_test_split` with pandas DataFrames
+- **Stratified splitting**: Maintains balance across:
+  - Original vs augmented equations (typically 86.7% / 13.3%)
+  - Solution types (exact, numerical, none, regularized, family)
+  - Edge case types (12 different categories)
+- **Flexible split ratios**: Default 80/0/20 (train/val/test), customizable
+- **Robust edge case handling**:
+  - Auto-adjusts invalid ratios
+  - Handles empty datasets and single items
+  - Graceful fallback for small strata
+  - Reproducible with seed control
+
+### Usage
+
+```bash
+# Default split (80% train, 0% validation, 20% test)
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --split
+
+# Custom split ratios
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --split --train-ratio 0.7 --val-ratio 0.15 --test-ratio 0.15
+
+# Full pipeline: augment + validate + split
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --augment --augment-multiplier 1.15 \
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution \
+  --validate \
+  --split --train-ratio 0.8 --val-ratio 0.0 --test-ratio 0.2 \
+  --convert --convert-formats infix latex
+```
+
+**Output**: Creates separate files for each split (e.g., `training_data_train.csv`, `training_data_test.csv`) with balanced distributions.
+
+---
+
 ## Installation
 
 ### Prerequisites
@@ -509,11 +557,11 @@ uv run python scripts/prepare_dataset.py --no-convert
 # Convert specific formats only
 uv run python scripts/prepare_dataset.py --convert-formats latex rpn
 
-# Full pipeline with edge case augmentations
+# Full pipeline with edge case augmentations and stratified splitting
 uv run python scripts/prepare_dataset.py \
-  --augment --augment-multiplier 3 \
+  --augment --augment-multiplier 1.15 \
   --validate \
-  --split \
+  --split --train-ratio 0.8 --val-ratio 0.0 --test-ratio 0.2 \
   --output-format csv
 
 # Include edge cases: folder-based strategies run all contained strategies

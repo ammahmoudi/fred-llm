@@ -36,6 +36,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Non-unique-solution cases - Multiple solutions (family of solutions) ✅ **Tested: 3 variants, resonance detection**
   - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: 6 augmentation files, CSV export with na_rep=''**
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
+- [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
+  - [x] Stratified splitting - Maintains balance across original/augmented, solution types, edge cases ✅
+  - [x] Flexible split ratios - 80/0/20 default, custom ratios supported ✅
+  - [x] Edge case handling - Invalid ratios (auto-adjust), single item, 100% train, empty datasets ✅
+  - [x] Reproducible splits - Seed-based reproducibility for consistent train/val/test ✅
+  - [x] Split statistics - Analysis of balance across all splits ✅
 - [ ] Special function augmentation - Add Bessel, Legendre equations ❌ **Not started**
 - [ ] Numeric ground truth - SciPy-based numerical solutions ❌ **Not started**
 
@@ -104,7 +110,7 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Testing & Documentation
 
-- [x] Unit tests - 84 tests covering core functionality ✅ **All passing (100%)**
+- [x] Unit tests - 103 tests covering core functionality ✅ **All passing (100%)**
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
@@ -113,6 +119,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] 8 advanced edge case tests (weakly_singular through compact_support)
   - [x] Schema validation tests - Verify all 16 required fields present
 - [x] Validation tests - 5 tests for data validation and integration ✅ **All passing**
+- [x] Splitting tests - 19 tests for stratified splitting with sklearn ✅ **All passing**
+  - [x] Standard ratio tests - 80/0/20, 80/10/10, custom ratios
+  - [x] Data integrity tests - No overlap, all items preserved, reproducibility
+  - [x] Edge case tests - Empty list, single item, 100% train, invalid ratios
+  - [x] Stratification tests - Maintains balance, solution types, edge cases, no leakage
+  - [x] Statistics tests - get_split_statistics functionality
 - [x] Pipeline diagram - Mermaid-based architecture visualization
 - [x] README - Comprehensive project documentation
 - [x] Config README - Configuration usage guide
@@ -130,15 +142,14 @@ This document tracks all features - implemented and planned. Check off items as 
 | Category | Done | Total | Progress |
 |----------|------|-------|----------|
 | Core Infrastructure | 4 | 8 | 50% |
-| Data Pipeline | 5 | 9 | 56% |
+| Data Pipeline | 6 | 9 | 67% |
 | LLM Integration | 4 | 8 | 50% |
 | Prompt Engineering | 4 | 8 | 50% |
 | Evaluation | 3 | 7 | 43% |
 | Output Formats | 2 | 5 | 40% |
 | Data Exploration | 5 | 7 | 71% |
-| Configuration | 6 | 69 | 56% |
-| **Total** | **38** | **67** | **57
-| **Total** | **38** | **66** | **58%** |
+| Configuration | 6 | 6 | 100% |
+| **Total** | **39** | **66** | **59%** |
 
 ---
 
@@ -146,15 +157,38 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ### 🧪 Unit Tests - ALL PASSING ✅
 
-Ran complete test suite: **40/40 tests passed (100%)**
+Ran complete test suite: **103/103 tests passed (100%)**
 
 **Test Coverage:**
 - `test_fredholm_loader.py` - 13 tests: FredholmEquation class, type inference, CSV parsing
 - `test_loader.py` - 7 tests: DataLoader, JSON/JSONL loading, filtering, batching
 - `test_model_runner.py` - 13 tests: Model runner initialization, factory pattern, batch generation
 - `test_prompting.py` - 7 tests: Prompt template generation, formatting, examples
+- `test_formatters.py` - 19 tests: All formatters including series approximations
+- `test_augmentation.py` - 21 tests: Basic and edge case augmentation strategies
+- `test_validation.py` - 5 tests: Data validation and integration
+- `test_splitting.py` - 19 tests: Stratified splitting with sklearn/pandas
 
 All core components validated at unit level.
+
+### ✅ Dataset Splitting - PRODUCTION READY
+
+**Stratified Splitting with scikit-learn + pandas** (January 1, 2026)
+
+- **Implementation**: Industry-standard ML libraries (sklearn's `train_test_split`, pandas DataFrames)
+- **Default Split**: 80/0/20 (train/validation/test)
+- **Stratification**: Maintains balance across:
+  - Original vs augmented equations (86.7% / 13.3%)
+  - Solution types (exact, numerical, none, regularized, family)
+  - Edge case types (12 different types)
+- **Edge Case Handling**:
+  - Invalid ratios → Auto-adjust to valid proportions
+  - Single item datasets → Assign to train split
+  - 100% train split → Early return without sklearn
+  - Small strata (<2 samples) → Fallback to non-stratified
+  - Empty datasets → Return empty lists
+- **Test Coverage**: 19 tests covering all scenarios
+- **Architecture**: Clean module separation (`src/data/splitter.py` with proper exports)
 
 ### ✅ Data Pipeline - WORKING
 

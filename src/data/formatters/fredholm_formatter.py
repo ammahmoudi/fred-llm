@@ -118,7 +118,7 @@ class FredholmEquationFormatter:
                 expr = self._prepare_expr(equation_dict[key])
                 formatted[key] = expr
 
-        for key in ["lambda", "lambda_val", "a", "b"]:
+        for key in ["lambda_val", "a", "b"]:
             if key in equation_dict:
                 formatted[key] = str(equation_dict[key])
 

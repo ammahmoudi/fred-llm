@@ -198,7 +198,7 @@ def convert_format(
                 "original_u": eq.u,
                 "original_f": eq.f,
                 "original_kernel": eq.kernel,
-                "lambda": eq.lambda_val,
+                "lambda_val": eq.lambda_val,
                 "a": eq.a,
                 "b": eq.b,
             }

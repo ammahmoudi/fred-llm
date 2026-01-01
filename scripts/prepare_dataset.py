@@ -296,24 +296,17 @@ def main() -> None:
                 for eq_dict in track(split_data, description=f"    {fmt.upper()}"):
                     try:
                         if fmt == "infix":
-                            # Infix is already the source format
-                            formatted_equations.append(
-                                _extract_equation_fields(eq_dict)
-                            )
+                            # Infix is already the source format - keep all columns
+                            formatted_equations.append(eq_dict.copy())
                         else:
-                            # Convert to target format
-                            formatted_eq = {
-                                "u": converter.convert(eq_dict["u"], "infix", fmt),
-                                "f": converter.convert(eq_dict["f"], "infix", fmt),
-                                "kernel": converter.convert(
-                                    eq_dict["kernel"], "infix", fmt
-                                ),
-                                "lambda": eq_dict.get(
-                                    "lambda", eq_dict.get("lambda_val", "1.0")
-                                ),
-                                "a": eq_dict["a"],
-                                "b": eq_dict["b"],
-                            }
+                            # Convert to target format - preserve all original columns
+                            formatted_eq = eq_dict.copy()
+                            # Only update the expression fields
+                            formatted_eq["u"] = converter.convert(eq_dict["u"], "infix", fmt)
+                            formatted_eq["f"] = converter.convert(eq_dict["f"], "infix", fmt)
+                            formatted_eq["kernel"] = converter.convert(
+                                eq_dict["kernel"], "infix", fmt
+                            )
                             formatted_equations.append(formatted_eq)
                     except Exception as e:
                         console.print(f"      [yellow]Warning: {e}[/yellow]")

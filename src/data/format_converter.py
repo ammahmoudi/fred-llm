@@ -93,7 +93,7 @@ class FormatConverter:
         """Convert any format to SymPy expression."""
         if isinstance(expression, sp.Expr):
             return expression
-        
+
         # Handle empty strings (edge cases where no solution exists)
         if not expression or expression.strip() == "":
             return sp.S.Zero  # Return zero as placeholder for empty expressions

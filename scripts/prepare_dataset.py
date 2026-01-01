@@ -50,22 +50,31 @@ def parse_args() -> argparse.Namespace:
         "--augment-multiplier",
         type=float,
         default=2,
-        help="Augmentation multiplier (can be fractional, e.g., 1.5 for 50% more data)",
+        help="Augmentation multiplier (can be fractional, e.g., 1.5 for 50%% more data)",
     )
     parser.add_argument(
         "--augment-strategies",
         nargs="+",
         default=["substitute", "scale", "shift"],
         choices=[
+            # Basic transformations (untested)
             "substitute",
             "scale",
             "shift",
             "compose",
-            "no_solution",
-            "approximate_only",
-            "ill_posed",
+            # Solution-type folders (each runs all strategies in folder)
+            "no_solution",  # 3 strategies × 3 variants = 9 edge cases
+            "numerical_only",  # 6 strategies × 3 variants = 18 edge cases
+            "regularization_required",  # 1 strategy × 3 variants = 3 edge cases
+            "non_unique_solution",  # 1 strategy × 3 variants = 3 edge cases
         ],
-        help="Augmentation strategies to use (default: substitute scale shift)",
+        help=(
+            "Folder-based augmentation strategies:\n"
+            "no_solution: eigenvalue + range_violation + divergent_kernel (9 variants)\n"
+            "numerical_only: complex_kernels + weakly_singular + boundary_layer + oscillatory + mixed + compact (18 variants)\n"
+            "regularization_required: ill_posed (3 variants)\n"
+            "non_unique_solution: resonance (3 variants)"
+        ),
     )
     parser.add_argument(
         "--convert",
@@ -155,12 +164,22 @@ def main() -> None:
 
     console.print("  Converting to dictionaries...")
     data = [eq.to_dict() for eq in track(equations, description="  Processing")]
+
+    # Add source file metadata to all items
+    source_filename = args.input.name
+    for item in data:
+        item["source_file"] = source_filename
+        item["source_path"] = str(args.input)
+
     console.print(f"  ✓ Loaded {len(data)} equations\n")
 
     # Save base data (in root of output directory)
     console.print("  Saving base data...")
+    base_filename = args.input.stem  # e.g., "Fredholm_Dataset_Sample"
     created_files.extend(
-        _save_data(data, args.output / "base_equations", "base", args.output_format)
+        _save_data(
+            data, args.output / f"{base_filename}_base", "base", args.output_format
+        )
     )
     console.print(f"  ✓ Saved base data\n")
 
@@ -180,7 +199,7 @@ def main() -> None:
         created_files.extend(
             _save_data(
                 augmented_data,
-                augmented_dir / "augmented_equations",
+                augmented_dir / f"{base_filename}_augmented",
                 "augmented",
                 args.output_format,
             )
@@ -295,7 +314,7 @@ def _extract_equation_fields(eq_dict: dict) -> dict:
         "u": eq_dict["u"],
         "f": eq_dict["f"],
         "kernel": eq_dict["kernel"],
-        "lambda": eq_dict.get("lambda", eq_dict.get("lambda_val", "1.0")),
+        "lambda_val": eq_dict.get("lambda_val", "1.0"),
         "a": eq_dict["a"],
         "b": eq_dict["b"],
     }
@@ -304,18 +323,30 @@ def _extract_equation_fields(eq_dict: dict) -> dict:
 def _save_data(
     data: list[dict], path: Path, label: str, format: str = "json"
 ) -> list[Path]:
-    """Save data as JSON, CSV, or both, handling enum serialization. Returns list of created file paths."""
+    """Save data as JSON, CSV, or both, handling enum and SymPy serialization. Returns list of created file paths."""
     import pandas as pd
+    import sympy as sp
     from rich.progress import track
 
     # Prepare serializable data
     serializable = []
     for item in track(data, description=f"    Serializing {len(data)} items"):
         item_copy = item.copy()
-        # Convert enums to strings
-        for key in ["u_type", "f_type", "kernel_type"]:
-            if key in item_copy and hasattr(item_copy[key], "value"):
-                item_copy[key] = item_copy[key].value
+
+        # Convert all values to JSON-serializable types
+        for key, value in list(item_copy.items()):
+            # Convert enums to strings
+            if hasattr(value, "value"):
+                item_copy[key] = value.value
+            # Convert SymPy expressions to strings
+            elif isinstance(value, (sp.Basic, sp.Expr)):
+                item_copy[key] = str(value)
+            # Convert lists containing SymPy objects
+            elif isinstance(value, list):
+                item_copy[key] = [
+                    str(v) if isinstance(v, (sp.Basic, sp.Expr)) else v for v in value
+                ]
+
         serializable.append(item_copy)
 
     saved_files = []
@@ -334,7 +365,8 @@ def _save_data(
         console.print(f"    Writing CSV to {path.with_suffix('.csv').name}...")
         csv_path = path.with_suffix(".csv")
         df = pd.DataFrame(serializable)
-        df.to_csv(csv_path, index=False)
+        # Preserve empty strings instead of converting to NaN
+        df.to_csv(csv_path, index=False, na_rep="")
         saved_files.append(csv_path)
         console.print(f"    ✓ CSV saved")
 

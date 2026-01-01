@@ -53,8 +53,15 @@ class ShiftAugmentation(BaseAugmentation):
                 new_item["a"] = str(sp.simplify(new_a))
                 new_item["b"] = str(sp.simplify(new_b))
                 new_item["augmented"] = True
-                new_item["augmentation_type"] = "shift_domain"
-                new_item["augmentation_name"] = shift_name
+                new_item["augmentation_type"] = "shift"
+                new_item["augmentation_variant"] = shift_name
+                # Required standard fields
+                new_item["has_solution"] = True
+                new_item["solution_type"] = "exact"
+                new_item["edge_case"] = None
+                new_item["reason"] = "Integration domain shift transformation"
+                new_item["recommended_methods"] = []
+                new_item["numerical_challenge"] = None
                 results.append(new_item)
         except Exception as e:
             logger.debug(f"Domain shifting failed: {e}")

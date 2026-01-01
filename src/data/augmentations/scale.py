@@ -41,10 +41,16 @@ class ScaleAugmentation(BaseAugmentation):
                 new_item = item.copy()
                 new_lambda = str(sp.simplify(lambda_val * factor))
                 new_item["lambda_val"] = new_lambda
-                new_item["lambda"] = new_lambda
                 new_item["augmented"] = True
                 new_item["augmentation_type"] = "scale"
-                new_item["augmentation_factor"] = factor
+                new_item["augmentation_variant"] = f"scale_{factor}x"
+                # Required standard fields
+                new_item["has_solution"] = True
+                new_item["solution_type"] = "exact"
+                new_item["edge_case"] = None
+                new_item["reason"] = f"Lambda coefficient scaled by factor {factor}"
+                new_item["recommended_methods"] = []
+                new_item["numerical_challenge"] = None
                 results.append(new_item)
         except Exception as e:
             logger.debug(f"Coefficient scaling failed: {e}")

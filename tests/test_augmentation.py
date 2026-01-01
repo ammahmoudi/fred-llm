@@ -7,8 +7,16 @@ import pytest
 from src.data.augmentation import DataAugmenter
 from src.data.augmentations import (
     ApproximateOnlyAugmentation,
+    BoundaryLayerAugmentation,
+    CompactSupportAugmentation,
+    DivergentKernelAugmentation,
     IllPosedAugmentation,
+    MixedTypeAugmentation,
     NoSolutionAugmentation,
+    OscillatorySolutionAugmentation,
+    RangeViolationAugmentation,
+    ResonanceAugmentation,
+    WeaklySingularAugmentation,
 )
 from src.data.fredholm_loader import FredholmDatasetLoader
 
@@ -143,7 +151,7 @@ class TestDataAugmentation:
         sample_dataset_path: Path,
         fredholm_loader: FredholmDatasetLoader,
     ) -> None:
-        """Test that augmentation preserves equation structure."""
+        """Test that all dataset entries (original and augmented) have unified schema."""
         fredholm_loader.max_samples = 1
         equations = fredholm_loader.load()
         eq_dicts = [eq.to_dict() for eq in equations]
@@ -151,13 +159,91 @@ class TestDataAugmentation:
         augmenter = DataAugmenter(strategies=["scale"])
         augmented = augmenter.augment(eq_dicts, multiplier=2)
 
-        # Check that augmented equations have required fields
-        for aug_eq in augmented:
-            assert "u" in aug_eq
-            assert "f" in aug_eq
-            assert "kernel" in aug_eq
-            assert "a" in aug_eq
-            assert "b" in aug_eq
+        # Check core required fields are present in ALL entries (original + augmented)
+        core_fields = [
+            "u",
+            "f",
+            "kernel",
+            "lambda_val",
+            "a",
+            "b",
+            "augmented",
+            "augmentation_type",
+            "augmentation_variant",
+            "has_solution",
+            "solution_type",
+            "edge_case",
+            "reason",
+            "recommended_methods",
+            "numerical_challenge",
+        ]
+
+        assert len(augmented) > 0, "No entries found"
+
+        for entry in augmented:
+            for field in core_fields:
+                assert field in entry, f"Missing required field: {field}"
+
+            # Verify correct types
+            assert isinstance(entry["augmented"], bool)
+            assert isinstance(entry["has_solution"], bool)
+            assert isinstance(entry["recommended_methods"], list)
+            assert entry["solution_type"] in [
+                "exact",
+                "none",
+                "numerical",
+                "regularized",
+                "family",
+            ]
+            assert entry["edge_case"] is None or isinstance(entry["edge_case"], str)
+
+            # Verify augmentation tracking
+            if entry["augmented"]:
+                assert entry["augmentation_type"] != "original"
+            else:
+                assert entry["augmentation_type"] == "original"
+                assert entry["augmentation_variant"] == "fredholm_dataset"
+
+    def test_unified_schema_basic_augmentations(self) -> None:
+        """Test that basic augmentations output unified 16-field schema."""
+        from src.data.augmentations import (
+            ComposeAugmentation,
+            ScaleAugmentation,
+            ShiftAugmentation,
+            SubstituteAugmentation,
+        )
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "lambda_val": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        strategies = [
+            SubstituteAugmentation(),
+            ScaleAugmentation(),
+            ShiftAugmentation(),
+            ComposeAugmentation(),
+        ]
+
+        for strategy in strategies:
+            results = strategy.augment(sample_eq)
+            assert len(results) > 0, f"{strategy.strategy_name} produced no results"
+
+            for result in results:
+                # Check all 16 fields present
+                assert result["has_solution"] is True
+                assert result["solution_type"] == "exact"
+                assert result["edge_case"] is None
+                assert isinstance(result["reason"], str)
+                assert isinstance(result["recommended_methods"], list)
+                assert result["recommended_methods"] == []
+                assert result["numerical_challenge"] is None
+                assert "augmentation_variant" in result
 
 
 class TestEdgeCaseAugmentations:
@@ -193,8 +279,8 @@ class TestEdgeCaseAugmentations:
             assert case["augmented"] is True
             assert case["augmentation_type"] == "no_solution"
             assert case["edge_case"] == "no_solution"
-            # Solution should be "None" for no-solution cases
-            assert case["u"] == "None"
+            # Solution should be empty for no-solution cases
+            assert case["u"] == ""
 
     def test_approximate_only_augmentation(self) -> None:
         """Test approximate-only (numerical) case generation."""
@@ -229,8 +315,8 @@ class TestEdgeCaseAugmentations:
             assert case["augmentation_type"] == "approximate_only"
             assert case["edge_case"] == "approximate_only"
             assert "reason" in case
-            # Solution should be "Numerical" for approximate-only cases
-            assert case["u"] == "Numerical"
+            # Solution should be empty for numerical-only cases (no closed form)
+            assert case["u"] == ""
 
     def test_ill_posed_augmentation(self) -> None:
         """Test ill-posed (1st kind) case generation."""
@@ -266,8 +352,7 @@ class TestEdgeCaseAugmentations:
             assert "reason" in case
             assert "warning" in case
             assert case["regularization_param"] == 0.01
-            # Lambda should be N/A or 0 for first kind
-            assert case["lambda"] == "N/A"
+            # Lambda should be 0 for first kind (no lambda parameter)
             assert case["lambda_val"] == "0"
 
     def test_edge_case_strategies_with_augmenter(self) -> None:
@@ -282,18 +367,33 @@ class TestEdgeCaseAugmentations:
             "b": "1",
         }
 
-        # Test no_solution strategy
+        # Test no_solution folder strategy (runs 3 strategies: eigenvalue + range_violation + divergent_kernel)
         augmenter = DataAugmenter(strategies=["no_solution"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
-        assert any(eq.get("edge_case") == "no_solution" for eq in augmented)
+        assert any(
+            eq.get("edge_case")
+            in ["no_solution", "range_violation", "divergent_kernel"]
+            for eq in augmented
+        )
 
-        # Test approximate_only strategy
-        augmenter = DataAugmenter(strategies=["approximate_only"])
+        # Test numerical_only folder strategy (runs 6 strategies)
+        augmenter = DataAugmenter(strategies=["numerical_only"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
-        assert any(eq.get("edge_case") == "approximate_only" for eq in augmented)
+        assert any(
+            eq.get("edge_case")
+            in [
+                "approximate_only",
+                "weakly_singular",
+                "boundary_layer",
+                "oscillatory_solution",
+                "mixed_type",
+                "compact_support",
+            ]
+            for eq in augmented
+        )
 
-        # Test ill_posed strategy
-        augmenter = DataAugmenter(strategies=["ill_posed"])
+        # Test regularization_required folder strategy (runs ill_posed)
+        augmenter = DataAugmenter(strategies=["regularization_required"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
         assert any(eq.get("edge_case") == "ill_posed" for eq in augmented)
 
@@ -309,9 +409,9 @@ class TestEdgeCaseAugmentations:
             "b": "1",
         }
 
-        # Combine basic and edge case strategies
+        # Combine basic and folder-based edge case strategies
         augmenter = DataAugmenter(
-            strategies=["substitute", "scale", "no_solution", "approximate_only"]
+            strategies=["substitute", "scale", "no_solution", "numerical_only"]
         )
         # Use higher multiplier to ensure all strategies get applied
         augmented = augmenter.augment([sample_eq], multiplier=15)
@@ -347,7 +447,7 @@ class TestEdgeCaseAugmentations:
             if c.get("augmentation_variant") == "constant_kernel_eigenvalue"
         ][0]
         assert constant_kernel_case["kernel"] == "1"
-        assert float(constant_kernel_case["lambda"]) == 1.0  # 1/(1-0)
+        assert float(constant_kernel_case["lambda_val"]) == 1.0  # 1/(1-0)
 
     def test_approximate_only_sample_points(self) -> None:
         """Test that approximate-only cases generate valid sample points."""
@@ -372,3 +472,207 @@ class TestEdgeCaseAugmentations:
             assert all(abs(val) < 1e6 for val in case["sample_values"])
             # Should have correct number of points
             assert len(case["sample_points"]) == 10
+
+
+class TestAdvancedEdgeCases:
+    """Test advanced edge case augmentation strategies."""
+
+    def test_weakly_singular_augmentation(self) -> None:
+        """Test weakly singular kernel generation."""
+        augmenter = WeaklySingularAugmentation(num_sample_points=15)
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "weakly_singular"
+            assert case["augmentation_type"] == "weakly_singular"
+            assert "singularity_type" in case
+            assert case["singularity_type"] in [
+                "logarithmic",
+                "power_law",
+                "algebraic_mixed",
+            ]
+            assert "singularity_order" in case
+
+    def test_boundary_layer_augmentation(self) -> None:
+        """Test boundary layer solution generation."""
+        augmenter = BoundaryLayerAugmentation(epsilon=0.01, num_sample_points=20)
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "boundary_layer"
+            assert case["augmentation_type"] == "boundary_layer"
+            assert case["layer_location"] in ["left", "right", "both"]
+            assert case["layer_width_estimate"] == 0.01
+            assert case["gradient_scale"] == 100.0
+
+    def test_resonance_augmentation(self) -> None:
+        """Test resonance/critical point generation."""
+        augmenter = ResonanceAugmentation(perturbation=0.001)
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["augmentation_type"] == "resonance"
+            if "is_critical" in case and case["is_critical"]:
+                assert case["edge_case"] == "resonance"
+                assert "eigenvalue_approximate" in case
+                assert "solution_multiplicity" in case
+            else:
+                assert case["edge_case"] == "near_resonance"
+
+    def test_range_violation_augmentation(self) -> None:
+        """Test range space violation generation."""
+        augmenter = RangeViolationAugmentation()
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "range_violation"
+            assert case["has_solution"] is False
+            assert case["solution_type"] == "none"
+            assert "operator_property" in case
+            assert case["operator_property"] in [
+                "even_symmetry",
+                "separable_rank_one",
+                "finite_rank",
+            ]
+
+    def test_divergent_kernel_augmentation(self) -> None:
+        """Test non-integrable singularity generation."""
+        augmenter = DivergentKernelAugmentation()
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "divergent_kernel"
+            assert case["has_solution"] is False
+            assert "singularity_order" in case
+            assert case["singularity_order"] >= 1.0
+            assert "divergence_type" in case
+
+    def test_mixed_type_augmentation(self) -> None:
+        """Test Volterra-Fredholm mixed type generation."""
+        augmenter = MixedTypeAugmentation()
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "mixed_type"
+            assert case["has_solution"] is True
+            assert case["solution_type"] == "numerical"
+            assert "causal_structure" in case
+            assert case["causal_structure"] in ["partial", "approximate", "explicit"]
+
+    def test_oscillatory_solution_augmentation(self) -> None:
+        """Test rapidly oscillating solution generation."""
+        augmenter = OscillatorySolutionAugmentation(
+            base_frequency=10.0, num_sample_points=100
+        )
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "oscillatory_solution"
+            assert case["has_solution"] is True
+            # Check frequency info (varies by variant)
+            assert "oscillation_frequency" in case or "frequencies" in case
+            assert "nyquist_samples_required" in case
+
+    def test_compact_support_augmentation(self) -> None:
+        """Test compact support kernel generation."""
+        augmenter = CompactSupportAugmentation(bandwidth=0.1)
+
+        sample_eq = {
+            "u": "x",
+            "f": "x",
+            "kernel": "x*t",
+            "lambda": "1",
+            "a": "0",
+            "b": "1",
+        }
+
+        cases = augmenter.augment(sample_eq)
+
+        assert len(cases) == 3
+        for case in cases:
+            assert case["edge_case"] == "compact_support"
+            assert "support_type" in case
+            assert case["support_type"] in [
+                "band",
+                "localized_box",
+                "disconnected_regions",
+            ]
+            assert "zero_fraction" in case
+            assert 0 < case["zero_fraction"] < 1

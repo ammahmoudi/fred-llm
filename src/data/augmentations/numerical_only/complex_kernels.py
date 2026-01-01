@@ -115,10 +115,10 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 u_approx.append(float(u_val))
 
             return {
-                "u": "Numerical",  # No symbolic form
+                "u": "",  # No closed-form symbolic solution
                 "f": "1",
                 "kernel": "exp(-(x**2 + t**2))",
-                "lambda": str(lambda_val),
+                "lambda_val": str(lambda_val),
                 "lambda_val": str(lambda_val),
                 "a": str(a),
                 "b": str(b),
@@ -132,6 +132,12 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "augmented": True,
                 "augmentation_type": "approximate_only",
                 "augmentation_variant": "gaussian_kernel",
+                "recommended_methods": [
+                    "fixed_point_iteration",
+                    "quadrature",
+                    "Neumann_series",
+                ],
+                "numerical_challenge": "No symbolic antiderivative - requires numerical integration",
             }
         except Exception as e:
             logger.debug(f"Gaussian kernel case failed: {e}")
@@ -160,10 +166,10 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 u_approx.append(float(u_val))
 
             return {
-                "u": "Numerical",
+                "u": "",  # No closed-form symbolic solution
                 "f": "x",
                 "kernel": "exp(-abs(x - t))",
-                "lambda": str(lambda_val),
+                "lambda_val": str(lambda_val),
                 "lambda_val": str(lambda_val),
                 "a": str(a),
                 "b": str(b),
@@ -177,6 +183,8 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "augmented": True,
                 "augmentation_type": "approximate_only",
                 "augmentation_variant": "exponential_decay",
+                "recommended_methods": ["quadrature", "collocation", "Nyström"],
+                "numerical_challenge": "Non-smooth absolute value requires careful quadrature",
             }
         except Exception as e:
             logger.debug(f"Exponential decay case failed: {e}")
@@ -210,10 +218,10 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 u_approx.append(float(u_val))
 
             return {
-                "u": "Numerical",
+                "u": "",  # No closed-form symbolic solution
                 "f": "cos(x)",
                 "kernel": "sin(x*t) / (x*t)",
-                "lambda": str(lambda_val),
+                "lambda_val": str(lambda_val),
                 "lambda_val": str(lambda_val),
                 "a": str(a),
                 "b": str(b),
@@ -227,6 +235,12 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "augmented": True,
                 "augmentation_type": "approximate_only",
                 "augmentation_variant": "sinc_kernel",
+                "recommended_methods": [
+                    "quadrature",
+                    "Neumann_series",
+                    "spectral_methods",
+                ],
+                "numerical_challenge": "Oscillatory kernel with removable singularity at origin",
             }
         except Exception as e:
             logger.debug(f"Sinc kernel case failed: {e}")

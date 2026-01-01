@@ -54,7 +54,14 @@ class ComposeAugmentation(BaseAugmentation):
                 new_item["kernel"] = str(sp.simplify(new_kernel))
                 new_item["augmented"] = True
                 new_item["augmentation_type"] = "compose"
-                new_item["augmentation_name"] = comp_name
+                new_item["augmentation_variant"] = comp_name
+                # Required standard fields
+                new_item["has_solution"] = True
+                new_item["solution_type"] = "exact"
+                new_item["edge_case"] = None
+                new_item["reason"] = "Kernel composition transformation"
+                new_item["recommended_methods"] = []
+                new_item["numerical_challenge"] = None
                 results.append(new_item)
         except Exception as e:
             logger.debug(f"Kernel composition failed: {e}")

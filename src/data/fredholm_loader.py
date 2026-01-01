@@ -163,14 +163,37 @@ class FredholmEquation:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary format."""
+        """
+        Convert to dictionary format with unified 16-field schema.
+
+        All entries (original and augmented) follow the same schema for consistency.
+        Original dataset entries from Fredholm-LLM (DOI: 10.5281/zenodo.16784707)
+        contain well-posed second-kind equations with exact symbolic solutions.
+        """
         return {
+            # Core equation fields (7 fields)
             "u": self.u,
             "f": self.f,
             "kernel": self.kernel,
-            "lambda": self.lambda_val,
+            "lambda_val": self.lambda_val,
             "a": self.a,
             "b": self.b,
+            # Augmentation tracking fields (3 fields)
+            "augmented": False,
+            "augmentation_type": "original",
+            "augmentation_variant": "fredholm_dataset",
+            # Solution metadata fields (6 fields)
+            "has_solution": True,
+            "solution_type": "exact",
+            "edge_case": None,
+            "reason": "Original Fredholm-LLM dataset equation (DOI: 10.5281/zenodo.16784707) - well-posed second kind with exact symbolic solution",
+            "recommended_methods": [
+                "symbolic_solution",
+                "Neumann_series",
+                "separable_kernel_method",
+            ],
+            "numerical_challenge": None,
+            # Additional metadata from dataset
             **self.metadata,
         }
 

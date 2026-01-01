@@ -29,10 +29,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Expression canonicalization - Simplify parameter ✅ **Available in all formatters**
   - [x] CSV export support - Export formatted equations to CSV ✅ **Matches original dataset format**
 - [x] Data augmentation framework - All 4 strategies implemented ✅ **Tested: substitute, scale, shift, compose (5.3x expansion)**
-- [x] **Edge case augmentations (3 strategies)** ✅ **No-solution, approximate-only, ill-posed cases - All tested**
+- [x] **Edge case augmentations (4 strategies, 15% target ratio)** ✅ **Tested on 5K sample: 767 augmented (15.3%)**
   - [x] No-solution cases - Equations where λ is eigenvalue (violates Fredholm Alternative) ✅ **Tested: 3 variants, eigenvalue detection**
-  - [x] Approximate-only cases - No symbolic solution (Gaussian, exponential kernels) ✅ **Tested: 3 variants, sample point generation**
-  - [x] Ill-posed cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, regularization metadata**
+  - [x] Numerical-only cases - No symbolic solution (Gaussian, exponential kernels) ✅ **Tested: 3 variants, sample point generation**
+  - [x] Regularization-required cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, ill-posed handling**
+  - [x] Non-unique-solution cases - Multiple solutions (family of solutions) ✅ **Tested: 3 variants, resonance detection**
+  - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: 6 augmentation files, CSV export with na_rep=''**
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
 - [ ] Special function augmentation - Add Bessel, Legendre equations ❌ **Not started**
 - [ ] Numeric ground truth - SciPy-based numerical solutions ❌ **Not started**
@@ -79,13 +81,17 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Data Exploration
 
-- [x] Dataset overview tables - Column info, types, sample values
-- [x] Expression length analysis - Min/max/mean/median for u, f, kernel
-- [x] Expression type distribution - Polynomial, trig, hyperbolic, etc.
-- [x] Numerical parameter analysis - λ, a, b statistics and histograms
-- [x] Solution type classification - Trivial, constant, linear, polynomial, etc.
-- [ ] Kernel complexity analysis - Nested function depth, term count
-- [ ] Solvability assessment - Existence of closed-form solutions
+- [x] Dataset overview tables - Column info, types, sample values ✅
+- [x] Expression length analysis - Min/max/mean/median for u, f, kernel ✅
+- [x] Expression type distribution - Polynomial, trig, hyperbolic, etc. ✅
+- [x] Numerical parameter analysis - λ, a, b statistics and histograms ✅
+- [x] Solution type classification - Trivial, constant, linear, polynomial, etc. ✅
+- [x] Augmented dataset analysis - Original vs augmented balance, edge case distribution ✅ **Section 7: 5 subsections**
+- [x] Edge case type breakdown - 12 edge case types with examples ✅ **Deep dive into no_solution, ill_posed, etc.**
+- [x] Sample equations viewer - Display examples from each category ✅ **Shows originals + 8 edge case types**
+- [x] Dataset summary statistics - Quick overview with validation checks ✅ **Balance, solution types, quality metrics**
+- [ ] Kernel complexity analysis - Nested function depth, term count ❌
+- [ ] Solvability assessment - Existence of closed-form solutions ❌
 
 ## Configuration Presets
 
@@ -98,9 +104,14 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Testing & Documentation
 
-- [x] Unit tests - 59 tests covering core functionality ✅ **All passing (100%)**
-- [x] Formatter tests - 18 tests for all formatters including series formatters ✅ **All passing**
-- [x] Augmentation tests - 6 tests for data augmentation strategies ✅ **All passing**
+- [x] Unit tests - 84 tests covering core functionality ✅ **All passing (100%)**
+- [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
+- [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
+  - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
+  - [x] **Unified 16-field schema** - ALL augmentations output identical keys
+  - [x] 11 edge case strategies organized in 4 solution-type folders
+  - [x] 8 advanced edge case tests (weakly_singular through compact_support)
+  - [x] Schema validation tests - Verify all 16 required fields present
 - [x] Validation tests - 5 tests for data validation and integration ✅ **All passing**
 - [x] Pipeline diagram - Mermaid-based architecture visualization
 - [x] README - Comprehensive project documentation

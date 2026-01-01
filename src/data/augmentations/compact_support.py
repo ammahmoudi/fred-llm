@@ -1,0 +1,210 @@
+"""
+Compact support kernel augmentation strategy.
+
+Generates kernels that are zero over large portions of the domain,
+creating "dead zones" and potentially rank-deficient matrices.
+"""
+
+from typing import Any
+
+import sympy as sp
+
+from src.data.augmentations.base import BaseAugmentation
+from src.utils.logging_utils import get_logger
+
+logger = get_logger(__name__)
+
+
+class CompactSupportAugmentation(BaseAugmentation):
+    """
+    Generate compact support kernel cases.
+
+    Mathematical Background:
+        A kernel K(x,t) has compact support if it is zero outside a bounded region:
+            K(x,t) = 0  for (x,t) ∉ S
+        where S is a compact set.
+
+        Examples:
+        - K(x,t) = { sin(x*t)  if |x-t| < δ     (band-limited)
+                   { 0         otherwise
+
+        - K(x,t) = { x*t       if x,t ∈ [c,d] ⊂ [a,b]  (localized)
+                   { 0         otherwise
+
+    The Problem:
+        1. **Sparse influence**: Many points don't interact
+        2. **Rank deficiency**: Discretized matrix has many zero rows/columns
+        3. **Information loss**: Parts of domain are uncoupled
+        4. **Numerical issues**: May not be invertible or well-conditioned
+
+    The Challenge for LLM:
+        Model must:
+        - Recognize large zero regions in kernel
+        - Identify support set (where K ≠ 0)
+        - Detect potential rank deficiency
+        - Recommend sparse matrix methods
+        - Check if problem is well-posed
+
+    Physical Context:
+        - Local interactions (finite range forces)
+        - Communication networks (limited connectivity)
+        - Image processing (local convolution kernels)
+        - Covariance matrices with spatial decay
+
+    Label:
+        {
+            "has_solution": "depends",  # May have solution but with caveats
+            "solution_type": "numerical",
+            "edge_case": "compact_support",
+            "support_type": "band|diagonal|localized",
+            "zero_fraction": 0.7,  # Fraction of domain where K=0
+            "rank_deficient_risk": "high|moderate|low"
+        }
+    """
+
+    def __init__(self, bandwidth: float = 0.1) -> None:
+        """
+        Initialize compact support augmentation.
+
+        Args:
+            bandwidth: Width of support region (smaller = more sparse)
+        """
+        self.bandwidth = bandwidth
+
+    @property
+    def strategy_name(self) -> str:
+        return "compact_support"
+
+    @property
+    def description(self) -> str:
+        return "Kernels with limited spatial support"
+
+    def augment(self, item: dict[str, Any]) -> list[dict[str, Any]]:
+        """Generate compact support cases."""
+        results = []
+
+        try:
+            # Extract base parameters
+            a = float(sp.sympify(item.get("a", "0")))
+            b = float(sp.sympify(item.get("b", "1")))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
+
+            # Case 1: Band-limited kernel (near-diagonal)
+            # K(x,t) ≠ 0 only if |x-t| < δ
+            # Creates banded matrix structure
+            delta = self.bandwidth
+            zero_fraction1 = 1.0 - (2 * delta / (b - a))
+
+            case1 = {
+                "u": item["u"],  # Solution may exist but needs sparse methods
+                "f": item["f"],
+                "kernel": f"(x*t) if abs(x - t) < {delta} else 0",
+                "kernel_description": f"K(x,t) = x*t if |x-t|<{delta}, else 0 (band-limited)",
+                "lambda": str(lambda_val * 0.5),
+                "lambda_val": str(lambda_val * 0.5),
+                "a": str(a),
+                "b": str(b),
+                "has_solution": True,  # Usually exists but sparse
+                "solution_type": "numerical",
+                "edge_case": "compact_support",
+                "support_type": "band",
+                "support_width": delta,
+                "zero_fraction": zero_fraction1,
+                "matrix_structure": "banded",
+                "bandwidth_parameter": delta,
+                "rank_deficient_risk": "low" if delta > 0.05 else "moderate",
+                "recommended_methods": [
+                    "sparse_matrix_solvers",
+                    "banded_matrix_algorithms",
+                    "iterative_krylov_methods",
+                ],
+                "numerical_challenge": f"{100 * zero_fraction1:.0f}% of kernel is zero → sparse structure",
+                "memory_efficiency": "High (can use sparse storage)",
+                "augmented": True,
+                "augmentation_type": "compact_support",
+                "augmentation_variant": "band_limited",
+            }
+            results.append(case1)
+
+            # Case 2: Localized support - kernel only nonzero in sub-region
+            # K(x,t) ≠ 0 only if both x,t ∈ [c,d] where [c,d] ⊂ [a,b]
+            c = a + 0.3 * (b - a)
+            d = a + 0.6 * (b - a)
+            region_fraction = (d - c) / (b - a)
+            zero_fraction2 = 1.0 - region_fraction**2
+
+            case2 = {
+                "u": item["u"],
+                "f": item["f"],
+                "kernel": f"sin(x)*cos(t) if ({c} <= x <= {d} and {c} <= t <= {d}) else 0",
+                "kernel_description": f"K nonzero only in [{c:.2f},{d:.2f}]×[{c:.2f},{d:.2f}]",
+                "lambda": str(lambda_val * 0.3),
+                "lambda_val": str(lambda_val * 0.3),
+                "a": str(a),
+                "b": str(b),
+                "has_solution": True,
+                "solution_type": "numerical",
+                "edge_case": "compact_support",
+                "support_type": "localized_box",
+                "support_region": f"[{c:.2f}, {d:.2f}] × [{c:.2f}, {d:.2f}]",
+                "zero_fraction": zero_fraction2,
+                "matrix_structure": "block_sparse",
+                "active_fraction": region_fraction**2,
+                "rank_deficient_risk": "moderate",
+                "recommended_methods": [
+                    "domain_decomposition",
+                    "block_sparse_solvers",
+                    "restricted_problem_reduction",
+                ],
+                "numerical_challenge": f"{100 * zero_fraction2:.0f}% zero → only {100 * region_fraction**2:.1f}% of domain interacts",
+                "physical_interpretation": "Localized interaction region in larger domain",
+                "augmented": True,
+                "augmentation_type": "compact_support",
+                "augmentation_variant": "localized_box",
+            }
+            results.append(case2)
+
+            # Case 3: Multiple disconnected support regions
+            # K has support in two separate regions → domain splits into subsystems
+            # This is most likely to cause rank deficiency
+            region1_x = (a, a + 0.2 * (b - a))
+            region2_x = (a + 0.6 * (b - a), a + 0.8 * (b - a))
+
+            case3 = {
+                "u": item["u"],
+                "f": item["f"],
+                "kernel": "Piecewise: nonzero in two disconnected regions",
+                "kernel_description": f"K≠0 in [{region1_x[0]:.2f},{region1_x[1]:.2f}] and [{region2_x[0]:.2f},{region2_x[1]:.2f}], zero elsewhere",
+                "lambda": str(lambda_val * 0.2),
+                "lambda_val": str(lambda_val * 0.2),
+                "a": str(a),
+                "b": str(b),
+                "has_solution": False,  # Likely rank-deficient
+                "solution_type": "none",
+                "edge_case": "compact_support",
+                "support_type": "disconnected_regions",
+                "num_support_regions": 2,
+                "zero_fraction": 0.8,  # 80% is zero
+                "matrix_structure": "block_diagonal",
+                "rank_deficient_risk": "high",
+                "problem_structure": "Decoupled subsystems",
+                "recommended_methods": [
+                    "check_rank_deficiency",
+                    "identify_decoupled_blocks",
+                    "solve_subsystems_separately",
+                ],
+                "numerical_challenge": "Disconnected regions → no information flow between subsystems",
+                "reason": "Kernel support is disconnected → matrix is rank-deficient",
+                "mathematical_issue": "Operator does not have full rank",
+                "augmented": True,
+                "augmentation_type": "compact_support",
+                "augmentation_variant": "disconnected_regions",
+            }
+            results.append(case3)
+
+        except Exception as e:
+            logger.warning(f"Failed to generate compact support case: {e}")
+
+        return results

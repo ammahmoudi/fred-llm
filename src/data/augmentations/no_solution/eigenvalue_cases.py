@@ -57,10 +57,10 @@ class NoSolutionAugmentation(BaseAugmentation):
             eigenvalue = 1.0 / (b - a) if b != a else 1.0
 
             case1 = {
-                "u": "None",  # No solution exists
+                "u": "",  # No solution exists
                 "f": "x",
                 "kernel": "1",
-                "lambda": str(eigenvalue),
+                "lambda_val": str(eigenvalue),
                 "lambda_val": str(eigenvalue),
                 "a": str(a),
                 "b": str(b),
@@ -71,6 +71,11 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "augmented": True,
                 "augmentation_type": "no_solution",
                 "augmentation_variant": "constant_kernel_eigenvalue",
+                "recommended_methods": [
+                    "Check Fredholm Alternative conditions",
+                    "Verify eigenvalue",
+                ],
+                "numerical_challenge": None,
             }
             results.append(case1)
 
@@ -79,10 +84,10 @@ class NoSolutionAugmentation(BaseAugmentation):
             if a >= 0:  # Avoid negative issues
                 eigenvalue2 = 3.0 / (b**3 - a**3) if b**3 != a**3 else 1.0
                 case2 = {
-                    "u": "None",
+                    "u": "",  # No solution exists
                     "f": "x**2",
                     "kernel": "x*t",
-                    "lambda": str(eigenvalue2),
+                    "lambda_val": str(eigenvalue2),
                     "lambda_val": str(eigenvalue2),
                     "a": str(a),
                     "b": str(b),
@@ -93,16 +98,21 @@ class NoSolutionAugmentation(BaseAugmentation):
                     "augmented": True,
                     "augmentation_type": "no_solution",
                     "augmentation_variant": "separable_kernel_eigenvalue",
+                    "recommended_methods": [
+                        "Check Fredholm Alternative conditions",
+                        "Verify eigenvalue",
+                    ],
+                    "numerical_challenge": None,
                 }
                 results.append(case2)
 
             # Case 3: Symmetric kernel K(x,t) = cos(x-t), λ = 1, f(x) = sin(x)
             # For many symmetric kernels, λ = 1 is often an eigenvalue
             case3 = {
-                "u": "None",
+                "u": "",  # No solution exists
                 "f": "sin(x)",
                 "kernel": "cos(x - t)",
-                "lambda": "1",
+                "lambda_val": "1",
                 "lambda_val": "1",
                 "a": str(a),
                 "b": str(b),
@@ -113,6 +123,11 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "augmented": True,
                 "augmentation_type": "no_solution",
                 "augmentation_variant": "symmetric_kernel_eigenvalue",
+                "recommended_methods": [
+                    "Check Fredholm Alternative conditions",
+                    "Verify eigenvalue",
+                ],
+                "numerical_challenge": None,
             }
             results.append(case3)
 

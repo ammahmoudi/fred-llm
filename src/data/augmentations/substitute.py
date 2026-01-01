@@ -58,7 +58,14 @@ class SubstituteAugmentation(BaseAugmentation):
                 new_item["kernel"] = str(sp.simplify(kernel_expr.subs(x, new_var)))
                 new_item["augmented"] = True
                 new_item["augmentation_type"] = "substitute"
-                new_item["augmentation_name"] = aug_name
+                new_item["augmentation_variant"] = aug_name
+                # Required standard fields
+                new_item["has_solution"] = True
+                new_item["solution_type"] = "exact"
+                new_item["edge_case"] = None
+                new_item["reason"] = "Variable substitution transformation"
+                new_item["recommended_methods"] = []
+                new_item["numerical_challenge"] = None
                 results.append(new_item)
         except Exception as e:
             logger.debug(f"Variable substitution failed: {e}")

@@ -114,11 +114,10 @@ class IllPosedAugmentation(BaseAugmentation):
             x_points = np.linspace(a, b, self.num_sample_points)
 
             return {
-                "u": "Requires regularization",  # No simple analytical solution
+                "u": "",  # No analytical solution - requires numerical regularization
                 "f": "x**2",
                 "kernel": "x*t",
-                "lambda": "N/A",  # First kind has no λ parameter
-                "lambda_val": "0",  # Formally λ → ∞ (no identity term)
+                "lambda_val": "0",  # First kind has no λ parameter
                 "a": str(a),
                 "b": str(b),
                 "equation_type": "fredholm_first_kind",
@@ -149,10 +148,9 @@ class IllPosedAugmentation(BaseAugmentation):
         """Create exponential kernel 1st kind: ∫exp(x*t)*u(t)dt = exp(x)."""
         try:
             return {
-                "u": "Requires regularization",
+                "u": "",  # No analytical solution - requires numerical regularization
                 "f": "exp(x)",
                 "kernel": "exp(x*t)",
-                "lambda": "N/A",
                 "lambda_val": "0",
                 "a": str(a),
                 "b": str(b),
@@ -184,10 +182,9 @@ class IllPosedAugmentation(BaseAugmentation):
         """Create oscillatory kernel 1st kind: ∫sin(x-t)*u(t)dt = sin(2x)."""
         try:
             return {
-                "u": "Requires regularization",
+                "u": "",  # No analytical solution - requires numerical regularization
                 "f": "sin(2*x)",
                 "kernel": "sin(x - t)",
-                "lambda": "N/A",
                 "lambda_val": "0",
                 "a": str(a),
                 "b": str(b),

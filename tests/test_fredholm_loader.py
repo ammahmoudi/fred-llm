@@ -46,7 +46,7 @@ class TestFredholmEquation:
         assert eq.metadata["kernel_type"] == ExpressionType.HYPERBOLIC
 
     def test_to_dict(self) -> None:
-        """Test converting equation to dictionary."""
+        """Test converting equation to dictionary with unified schema."""
         eq = FredholmEquation(
             u="x",
             f="x + 1",
@@ -57,12 +57,45 @@ class TestFredholmEquation:
         )
         result = eq.to_dict()
 
+        # Check core required fields are present
+        core_fields = [
+            "u",
+            "f",
+            "kernel",
+            "lambda_val",
+            "a",
+            "b",
+            "augmented",
+            "augmentation_type",
+            "augmentation_variant",
+            "has_solution",
+            "solution_type",
+            "edge_case",
+            "reason",
+            "recommended_methods",
+            "numerical_challenge",
+        ]
+        for field in core_fields:
+            assert field in result, f"Missing required field: {field}"
+
+        # Check core equation fields
         assert result["u"] == "x"
         assert result["f"] == "x + 1"
         assert result["kernel"] == "x*t"
-        assert result["lambda"] == "0.5"
+        assert result["lambda_val"] == "0.5"
         assert result["a"] == "0"
         assert result["b"] == "1"
+
+        # Check schema fields for original dataset
+        assert result["augmented"] is False
+        assert result["augmentation_type"] == "original"
+        assert result["augmentation_variant"] == "fredholm_dataset"
+        assert result["has_solution"] is True
+        assert result["solution_type"] == "exact"
+        assert result["edge_case"] is None
+        assert "Fredholm-LLM dataset" in result["reason"]
+        assert isinstance(result["recommended_methods"], list)
+        assert result["numerical_challenge"] is None
 
     def test_to_equation_string_symbolic(self) -> None:
         """Test symbolic equation string format."""

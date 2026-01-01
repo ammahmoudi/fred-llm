@@ -17,6 +17,116 @@ where:
 - $\lambda$ is a parameter
 - $[a, b]$ is the integration domain
 
+## Quick Start
+
+Get up and running in 5 minutes:
+
+### 1. Setup Environment
+
+```bash
+# Clone and enter the repository
+git clone https://github.com/ammahmoudi/fred-llm.git
+cd fred-llm
+
+# Create virtual environment and install dependencies
+uv venv
+uv pip install -e ".[dev]"
+
+# Activate environment
+# Windows PowerShell:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+```
+
+### 2. Download Dataset
+
+```bash
+# Download sample dataset (5,000 equations) from Zenodo
+python -m src.cli dataset download --variant sample
+
+# Or download full dataset (500,000 equations)
+python -m src.cli dataset download --variant full
+```
+
+### 3. Prepare Training Data with Edge Cases
+
+```bash
+# Recommended: Use only edge case strategies for realistic distribution
+# This generates edge cases organized by solution type
+
+# Windows PowerShell:
+python scripts/prepare_dataset.py `
+  --input data/raw/Fredholm_Dataset_Sample.csv `
+  --output data/processed/training_data `
+  --max-samples 5000 `
+  --augment `
+  --augment-multiplier 1.15 `
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution `
+  --convert `
+  --convert-formats infix latex rpn
+
+# Linux/macOS:
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --output data/processed/training_data \
+  --max-samples 5000 \
+  --augment \
+  --augment-multiplier 1.15 \
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution \
+  --convert \
+  --convert-formats infix latex rpn
+```
+
+**What this does:**
+- Loads 5,000 equations from the sample dataset
+- Applies all 11 edge case strategies (33 variants total)
+- Uses multiplier 1.15 → ~5,750 total equations (87% exact, 13% edge cases)
+- Converts to 3 formats (infix, LaTeX, RPN) for LLM training
+- Output: `data/processed/training_data/`
+
+### 4. Verify Generated Data
+
+```bash
+# Check base dataset
+python -c "import json; data = json.load(open('data/processed/training_data/Fredholm_Dataset_base.json')); print(f'Base: {len(data)} equations')"
+
+# Check augmented dataset
+python -c "import json; data = json.load(open('data/processed/training_data/augmented/Fredholm_Dataset_augmented.json')); print(f'Augmented: {len(data)} equations'); edge_cases = [d for d in data if d.get('edge_case')]; print(f'Edge cases: {len(edge_cases)} ({len(edge_cases)/len(data)*100:.1f}%)')"
+
+# Check formatted datasets
+python -c "import json; print('Formatted:'); [print(f'  {fmt}: {len(json.load(open(f\"data/processed/training_data/formatted/Fredholm_Dataset_{fmt}.json\")))} equations') for fmt in ['infix', 'latex', 'rpn']]"
+```
+
+### Folder-Based Strategy System
+
+Strategies are organized by **solution type**. Specifying a folder name runs ALL strategies in that folder:
+
+| Folder | Strategies | Variants | What it teaches |
+|--------|------------|----------|-----------------|
+| `no_solution` | 3 | 9 | Recognize unsolvable equations (eigenvalue issues, range violations) |
+| `numerical_only` | 6 | 18 | Identify when only numerical methods work (complex kernels, singularities) |
+| `regularization_required` | 1 | 3 | Detect ill-posed problems (Fredholm 1st kind) |
+| `non_unique_solution` | 1 | 3 | Handle resonance cases with solution families |
+| **Total** | **11** | **33** | Comprehensive edge case recognition |
+
+### Alternative: Specific Edge Case Training
+
+```bash
+# Example 1: Train only on numerical edge cases
+python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 1.2 \
+  --augment-strategies numerical_only \
+  --convert --convert-formats infix latex
+
+# Example 2: Focus on no-solution and ill-posed cases
+python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 1.25 \
+  --augment-strategies no_solution regularization_required
+```
+
+---
+
 ## Features
 
 - 🤖 **Multi-provider LLM support**: OpenAI API, local models (HuggingFace, vLLM)
@@ -24,7 +134,7 @@ where:
 - 🔢 **Symbolic & numeric evaluation**: SymPy-based parsing and verification
 - 📊 **8 specialized formatters**: LaTeX, RPN, Infix, Python, Tokenized, Fredholm equations, Series expansions
 - 🎯 **LLM-optimized formatting**: Special tokens for improved model understanding
-- 🔄 **7 augmentation strategies**: Variable substitution, scaling, domain shifting, kernel composition, plus edge cases (no-solution, approximate-only, ill-posed)
+- 🔄 **11 augmentation strategies**: Variable substitution, scaling, domain shifting, kernel composition, plus 11 edge case strategies (no-solution, approximate-only, ill-posed, weakly-singular, boundary-layer, resonance, range-violation, divergent-kernel, mixed-type, oscillatory-solution, compact-support)
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
 - ⚠️ **Realistic edge cases**: Teach LLMs to recognize singular problems, numerical-only solutions, and ill-posed equations
 
@@ -162,59 +272,113 @@ The project includes **7 augmentation strategies** to expand and diversify train
 - **Shift**: Integration domain shifting ([a,b] → [a±1, b±1])
 - **Compose**: Kernel composition (K → K+x, K+t, K×x)
 
-**Edge Cases (FIE-Edge-Cases):**
-- **No-solution**: Singular cases where λ is eigenvalue (violates Fredholm Alternative)
-- **Approximate-only**: No symbolic solution (Gaussian/exponential kernels, requires numerical methods)
-- **Ill-posed**: Fredholm 1st kind equations (require regularization like Tikhonov/TSVD)
+**Edge Cases - 11 Comprehensive Strategies (FIE-Edge-Cases):**
 
-These teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. See [augmentations README](src/data/augmentations/README.md) for details.
+Organized in 4 solution-type folders:
+
+**Folder 1: no_solution/** (solution_type: "none") - 3 strategies × 3 variants = 9 edge cases
+- **eigenvalue_cases**: Singular cases where λ is eigenvalue (violates Fredholm Alternative)
+- **range_violation**: RHS not in operator range
+- **divergent_kernel**: Non-integrable singularities
+
+**Folder 2: numerical_only/** (solution_type: "numerical") - 6 strategies × 3 variants = 18 edge cases
+- **complex_kernels**: No symbolic solution (Gaussian/exponential kernels, requires numerical methods)
+- **weakly_singular**: Integrable singularities (log|x-t|, |x-t|^(-0.5))
+- **boundary_layer**: Sharp gradients near boundaries (ε=0.01)
+- **oscillatory_solution**: Rapid oscillations (Nyquist sampling)
+- **mixed_type**: Volterra + Fredholm hybrid
+- **compact_support**: Sparse kernel structure
+
+**Folder 3: regularization_required/** (solution_type: "regularized") - 1 strategy × 3 variants = 3 edge cases
+- **ill_posed**: Fredholm 1st kind equations (require regularization like Tikhonov/TSVD)
+
+**Folder 4: non_unique_solution/** (solution_type: "family") - 1 strategy × 3 variants = 3 edge cases
+- **resonance**: λ at bifurcation → non-unique solutions
+
+**Usage**: Specify folder names to run all contained strategies:
+```bash
+--augment-strategies no_solution numerical_only  # Runs 9 strategies total
+```
+
+Total: **33 edge case variants** (11 strategies × 3 variants each) teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. See [Edge Cases Documentation](docs/EDGE_CASES.md) for details.
+
+#### Unified Output Schema
+
+**All dataset entries (original and augmented) output identical 18 fields** for consistent ML training:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| **Core Equation** (6 fields) |
+| `u`, `f`, `kernel` | str | Equation components |
+| `lambda_val` | str | Lambda parameter (numeric string) |
+| `a`, `b` | str | Integration bounds |
+| **Expression Types** (3 fields) |
+| `u_type`, `f_type`, `kernel_type` | ExpressionType | Expression type metadata from CSV |
+| **Augmentation Tracking** (3 fields) |
+| `augmented` | bool | `False` for original, `True` for augmented |
+| `augmentation_type` | str | Strategy name (e.g., `"scale"`, `"no_solution"`) |
+| `augmentation_variant` | str | Specific variant (e.g., `"scale_2.0x"`) |
+| **Solution Metadata** (6 fields) |
+| `has_solution` | bool | Solution exists? |
+| `solution_type` | str | `"exact"` \| `"none"` \| `"numerical"` \| `"regularized"` \| `"family"` |
+| `edge_case` | str \| None | Edge case type or `None` for basic |
+| `reason` | str | Explanation of augmentation/case |
+| `recommended_methods` | list[str] | Suggested solution methods |
+| `numerical_challenge` | str \| None | Computational challenge description |
+
+See [Augmentation README](src/data/augmentations/README.md) for complete schema documentation with examples.
 
 ### Dataset Balance Recommendations
 
-For optimal LLM training, maintain **70-80% exact solutions** and **20-30% edge cases**:
+For optimal LLM training, use appropriate multipliers based on strategy count:
 
-**5,000 Sample Dataset (Development/Testing):**
-- Multiplier: **1.25-1.43** (recommended: 1.33 for 75% exact)
-- Total: 6,250-7,150 equations
-- Exact solutions: 5,000 (70-80%)
-- Edge case variants: 1,250-2,150 (20-30%)
+**Using All 4 Folders (11 strategies, 33 variants):**
+- Multiplier: **1.1-1.2** (recommended: **1.15**)
+- Result: 87% exact solutions, 13% edge cases
+- Example: 5,000 original → ~5,750 total
+- Use case: Comprehensive mathematical reasoning training
 
-**500,000 Full Dataset (Production Training):**
-- Multiplier: **1.25-1.43** (recommended: 1.33 for 75% exact)
-- Total: 625,000-715,000 equations
-- Exact solutions: 500,000 (70-80%)
-- Edge case variants: 125,000-215,000 (20-30%)
+**Using Subset (2-3 folders, ~5-8 strategies):**
+- Multiplier: **1.2-1.25**
+- Result: 80-83% exact solutions, 17-20% edge cases
+- Example: 5,000 original → ~6,000-6,250 total
+- Use case: Balanced production training
 
-**Multiplier Guide:**
-- 1.25 → 80% exact, 20% edge cases
-- 1.33 → 75% exact, 25% edge cases (recommended)
-- 1.43 → 70% exact, 30% edge cases
-- 1.50 → 67% exact, 33% edge cases
+**Using 1 Folder (1-3 strategies, 3-9 variants):**
+- Multiplier: **1.3-1.5**
+- Result: 67-77% exact solutions, 23-33% edge cases
+- Example: 5,000 original → ~6,500-7,500 total
+- Use case: Targeted training on specific edge cases
 
 **Rationale:**
 - Most real-world Fredholm equations have exact solutions
 - Primary goal is teaching solution methods, not just edge case detection
-- Equal representation can cause models to be overly cautious
-- Lower edge case ratio prevents false positives in production
+- Lower edge case ratio prevents models from being overly cautious
+- Higher multipliers with fewer strategies maintain similar absolute edge case counts
 
 ```bash
-# Recommended: Sample dataset with balanced edge cases (Windows PowerShell)
+# Recommended: All edge case folders with conservative multiplier
+# Windows PowerShell:
 uv run python scripts/prepare_dataset.py `
   --input data/raw/Fredholm_Dataset_Sample.csv `
-  --augment --augment-multiplier 1.33 `
-  --augment-strategies no_solution approximate_only ill_posed
+  --augment --augment-multiplier 1.15 `
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution
 
-# Recommended: Full dataset for production training (Windows PowerShell)
-uv run python scripts/prepare_dataset.py `
-  --input data/raw/Fredholm_Dataset.csv `
-  --augment --augment-multiplier 1.33 `
-  --augment-strategies no_solution approximate_only ill_posed
-
-# Linux/macOS (use backslash \)
+# Linux/macOS:
 uv run python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment --augment-multiplier 1.33 \
-  --augment-strategies no_solution approximate_only ill_posed
+  --augment --augment-multiplier 1.15 \
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution
+
+# Subset: Focus on no-solution and numerical-only cases
+uv run python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 1.2 \
+  --augment-strategies no_solution numerical_only
+
+# Single folder: Deep dive into numerical edge cases
+uv run python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 1.3 \
+  --augment-strategies numerical_only
 ```
 
 ## Installation
@@ -352,16 +516,16 @@ uv run python scripts/prepare_dataset.py \
   --split \
   --output-format csv
 
-# Include edge cases: no-solution, approximate-only, ill-posed
+# Include edge cases: folder-based strategies run all contained strategies
 # These teach LLMs to recognize equations without symbolic solutions
 uv run python scripts/prepare_dataset.py \
   --augment \
-  --augment-strategies substitute scale no_solution approximate_only ill_posed
+  --augment-strategies substitute scale no_solution numerical_only regularization_required
 
-# All augmentation strategies (4 basic + 3 edge cases)
+# All augmentation strategies (4 basic + 4 edge case folders = 11 strategies total)
 uv run python scripts/prepare_dataset.py \
   --augment \
-  --augment-strategies substitute scale shift compose no_solution approximate_only ill_posed \
+  --augment-strategies substitute scale shift compose no_solution numerical_only regularization_required non_unique_solution \
   --augment-multiplier 5
 
 # Quick test with 100 samples

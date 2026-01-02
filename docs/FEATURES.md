@@ -58,15 +58,15 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Prompt Engineering
 
-- [x] Basic/direct prompts - Simple equation-to-solution prompts ✅ **Implemented in prompt_templates.py**
-- [x] Chain-of-thought prompts - Step-by-step reasoning ✅ **Implemented in prompt_templates.py**
-- [x] Few-shot prompts - Include worked examples ✅ **Implemented in prompt_templates.py**
-- [x] Tool-assisted prompts - Enable tool use for computation ✅ **Template defined in prompt_templates.py**
+- [x] Basic/direct prompts - Simple equation-to-solution prompts ✅ **Implemented via src/prompts/styles/basic.py**
+- [x] Chain-of-thought prompts - Step-by-step reasoning ✅ **Implemented via src/prompts/styles/chain_of_thought.py**
+- [x] Few-shot prompts - Include worked examples ✅ **Implemented via src/prompts/styles/few_shot.py**
+- [x] Tool-assisted prompts - Enable tool use for computation ✅ **Template defined in src/prompts/styles/tool_assisted.py**
 - [x] **Prompt generation system** ✅ **Complete modular architecture (January 1, 2026)**
   - [x] PromptStyle ABC - Base class with 4 implementations (basic, CoT, few-shot, tool-assisted) ✅
   - [x] BatchPromptProcessor - Batch processing with progress tracking ✅
   - [x] CSV to JSONL pipeline - Load equations, generate prompts, save metadata ✅
-  - [x] CLI commands - `prompt generate` and `prompt batch` with rich output ✅
+  - [x] CLI commands - `prompt generate` and `prompt batch` with rich output; script helper `scripts/run_prompt_generation.py` ✅
   - [x] Format support - Works with infix, latex, rpn formats ✅
   - [x] Ground truth inclusion - Optional solution embedding for evaluation ✅
   - [x] Metadata preservation - Includes equation_id, style, format, domain ✅

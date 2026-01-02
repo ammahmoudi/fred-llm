@@ -85,18 +85,42 @@ python scripts/prepare_dataset.py \
 - Converts to 3 formats (infix, LaTeX, RPN) for LLM training
 - Output: `data/processed/training_data/`
 
-### 4. Verify Generated Data
+### 4. Generate Prompts for LLM Training
 
 ```bash
-# Check base dataset
-python -c "import json; data = json.load(open('data/processed/training_data/Fredholm_Dataset_base.json')); print(f'Base: {len(data)} equations')"
+# Generate prompts with all styles for the formatted datasets
+# Windows PowerShell:
+python scripts/run_prompt_generation.py `
+  --input data/processed/training_data/formatted/ `
+  --output data/prompts `
+  --styles all `
+  --pattern "*_infix.csv"
 
-# Check augmented dataset
-python -c "import json; data = json.load(open('data/processed/training_data/augmented/Fredholm_Dataset_augmented.json')); print(f'Augmented: {len(data)} equations'); edge_cases = [d for d in data if d.get('edge_case')]; print(f'Edge cases: {len(edge_cases)} ({len(edge_cases)/len(data)*100:.1f}%)')"
+# Linux/macOS:
+python scripts/run_prompt_generation.py \
+  --input data/processed/training_data/formatted/ \
+  --output data/prompts \
+  --styles all \
+  --pattern "*_infix.csv"
 
-# Check formatted datasets
-python -c "import json; print('Formatted:'); [print(f'  {fmt}: {len(json.load(open(f\"data/processed/training_data/formatted/Fredholm_Dataset_{fmt}.json\")))} equations') for fmt in ['infix', 'latex', 'rpn']]"
+# Or generate specific styles only:
+python scripts/run_prompt_generation.py \
+  --input data/processed/training_data/formatted/ \
+  --styles basic,chain-of-thought,few-shot \
+  --output data/prompts
 ```
+
+**What this does:**
+- Processes all `*_infix.csv` files in formatted directory
+- Generates prompts in 4 styles: basic, chain-of-thought, few-shot, tool-assisted
+- Includes ground truth solutions for training
+- Outputs JSONL files to `data/prompts/{style}/` organized by style
+- Each prompt includes metadata (kernel, lambda, domain, edge case info)
+
+**Edge case handling modes:**
+- `--edge-case-mode none` - Pure inference (default for test sets)
+- `--edge-case-mode guardrails` - Include edge case instructions
+- `--edge-case-mode hints` - Include has_solution and solution_type in prompts (for training)
 
 ### Folder-Based Strategy System
 

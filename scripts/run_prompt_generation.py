@@ -83,6 +83,13 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Force specific format (default: auto-detect from filename)",
     )
+    parser.add_argument(
+        "--edge-case-mode",
+        type=str,
+        choices=["none", "guardrails", "hints"],
+        default="none",
+        help="Edge case handling: none, guardrails, hints (default: none)",
+    )
 
     return parser.parse_args()
 
@@ -125,6 +132,7 @@ def display_config(
     table.add_row(
         "Examples", "❌ No" if args.no_examples else f"✅ Yes ({args.num_examples})"
     )
+    table.add_row("Edge Case Mode", args.edge_case_mode)
 
     console.print(table)
     console.print()
@@ -173,6 +181,7 @@ def main() -> None:
                 include_ground_truth=not args.no_ground_truth,
                 include_examples=not args.no_examples,
                 num_examples=args.num_examples,
+                edge_case_mode=args.edge_case_mode,
             )
 
             for csv_file in csv_files:

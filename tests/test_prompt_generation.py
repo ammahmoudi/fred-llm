@@ -9,8 +9,13 @@ import pytest
 from src.prompts import (
     BasicPromptStyle,
     BatchPromptProcessor,
-    BasicPromptStyle,
-    BatchPromptProcessor,
+    ChainOfThoughtPromptStyle,
+    EdgeCaseMode,
+    EquationData,
+    FewShotPromptStyle,
+    GeneratedPrompt,
+    ToolAssistedPromptStyle,
+    create_edge_case_mode,
     create_processor,
     create_prompt_style,
 )
@@ -366,3 +371,120 @@ class TestFactoryFunctions:
         assert isinstance(style, FewShotPromptStyle)
         assert style.include_examples is True
         assert style.num_examples == 3
+
+
+class TestEdgeCaseMode:
+    """Test edge case mode functionality."""
+
+    def test_edge_case_mode_none(self) -> None:
+        """Test mode='none' adds no guardrails."""
+        mode = EdgeCaseMode(mode="none")
+        assert mode.mode == "none"
+        assert mode.hint_fields is None
+
+    def test_edge_case_mode_guardrails(self) -> None:
+        """Test mode='guardrails' is valid."""
+        mode = EdgeCaseMode(mode="guardrails")
+        assert mode.mode == "guardrails"
+
+    def test_edge_case_mode_hints_default_fields(self) -> None:
+        """Test mode='hints' with default fields."""
+        mode = EdgeCaseMode(mode="hints")
+        assert mode.mode == "hints"
+        # Should have all available fields (only 2 now)
+        assert "has_solution" in mode.hint_fields
+        assert "solution_type" in mode.hint_fields
+        assert len(mode.hint_fields) == 2
+
+    def test_edge_case_mode_hints_custom_fields(self) -> None:
+        """Test mode='hints' with custom fields."""
+        mode = EdgeCaseMode(mode="hints", hint_fields=["has_solution"])
+        assert mode.hint_fields == ["has_solution"]
+
+    def test_edge_case_mode_invalid_mode(self) -> None:
+        """Test invalid mode raises error."""
+        with pytest.raises(ValueError, match="Invalid mode"):
+            EdgeCaseMode(mode="invalid")
+
+    def test_edge_case_mode_invalid_fields(self) -> None:
+        """Test invalid hint fields raise error."""
+        with pytest.raises(ValueError, match="Invalid hint fields"):
+            EdgeCaseMode(mode="hints", hint_fields=["invalid_field"])
+
+    def test_create_edge_case_mode_factory(self) -> None:
+        """Test create_edge_case_mode factory function."""
+        mode = create_edge_case_mode(mode="guardrails")
+        assert isinstance(mode, EdgeCaseMode)
+        assert mode.mode == "guardrails"
+
+    def test_prompt_style_with_edge_case_mode(self) -> None:
+        """Test creating prompt style with edge case mode."""
+        style = create_prompt_style("basic", edge_case_mode="guardrails")
+        assert style.edge_case_mode.mode == "guardrails"
+
+    def test_generate_prompt_with_guardrails(self) -> None:
+        """Test prompt generation includes guardrails text."""
+        style = create_prompt_style("basic", edge_case_mode="guardrails")
+        eq = EquationData(
+            u="x",
+            f="x",
+            kernel="x*t",
+            lambda_val=1.0,
+            a=0.0,
+            b=1.0,
+        )
+        prompt = style.generate(eq)
+        assert "no closed-form solution" in prompt.prompt.lower() or "no solution" in prompt.prompt.lower()
+
+    def test_equation_data_with_edge_case_fields(self) -> None:
+        """Test EquationData with edge case fields."""
+        eq = EquationData(
+            u="x",
+            f="x",
+            kernel="x*t",
+            lambda_val=1.0,
+            a=0.0,
+            b=1.0,
+            has_solution=False,
+            solution_type="none",
+        )
+        assert eq.has_solution is False
+        assert eq.solution_type == "none"
+
+    def test_generate_prompt_with_hints(self) -> None:
+        """Test prompt generation includes hints from equation data."""
+        style = create_prompt_style(
+            "basic",
+            edge_case_mode="hints",
+            hint_fields=["has_solution", "solution_type"],
+        )
+        eq = EquationData(
+            u="x",
+            f="x",
+            kernel="x*t",
+            lambda_val=1.0,
+            a=0.0,
+            b=1.0,
+            has_solution=False,
+            solution_type="none",
+        )
+        prompt = style.generate(eq)
+        assert "Has solution: No" in prompt.prompt
+        assert "none" in prompt.prompt
+
+    def test_metadata_includes_edge_case_info(self) -> None:
+        """Test metadata includes edge case information."""
+        style = create_prompt_style("basic")
+        eq = EquationData(
+            u="x",
+            f="x",
+            kernel="x*t",
+            lambda_val=1.0,
+            a=0.0,
+            b=1.0,
+            has_solution=False,
+            solution_type="numerical",
+        )
+        prompt = style.generate(eq)
+        assert prompt.metadata["has_solution"] is False
+        assert prompt.metadata["solution_type"] == "numerical"

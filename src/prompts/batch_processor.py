@@ -49,6 +49,7 @@ class BatchPromptProcessor:
 
         Args:
             csv_path: Path to CSV file with columns: u, f, kernel, lambda_val, a, b.
+                     Optional edge case columns: has_solution, solution_type.
 
         Returns:
             List of EquationData objects.
@@ -64,18 +65,33 @@ class BatchPromptProcessor:
         if missing:
             raise ValueError(f"CSV missing required columns: {missing}")
 
+        # Optional edge case columns (only essential ones)
+        edge_case_cols = ["has_solution", "solution_type"]
+
         # Convert to EquationData objects
         equations = []
         for idx, row in df.iterrows():
-            eq = EquationData(
-                u=str(row["u"]),
-                f=str(row["f"]),
-                kernel=str(row["kernel"]),
-                lambda_val=float(row["lambda_val"]),
-                a=float(row["a"]),
-                b=float(row["b"]),
-                equation_id=f"eq_{idx}",
-            )
+            # Build base equation data
+            eq_kwargs = {
+                "u": str(row["u"]),
+                "f": str(row["f"]),
+                "kernel": str(row["kernel"]),
+                "lambda_val": float(row["lambda_val"]),
+                "a": float(row["a"]),
+                "b": float(row["b"]),
+                "equation_id": f"eq_{idx}",
+            }
+
+            # Add optional edge case fields if present
+            for col in edge_case_cols:
+                if col in df.columns and pd.notna(row[col]):
+                    value = row[col]
+                    if col == "has_solution":
+                        eq_kwargs[col] = bool(value) if isinstance(value, (bool, int)) else str(value).lower() == "true"
+                    else:
+                        eq_kwargs[col] = str(value)
+
+            eq = EquationData(**eq_kwargs)
             equations.append(eq)
 
         logger.info(f"Loaded {len(equations)} equations")
@@ -232,6 +248,7 @@ def create_processor(
     include_ground_truth: bool = True,
     include_examples: bool = True,
     num_examples: int = 2,
+    edge_case_mode: str = "none",
 ) -> BatchPromptProcessor:
     """
     Factory function to create a batch prompt processor.
@@ -242,6 +259,7 @@ def create_processor(
         include_ground_truth: Whether to include solutions.
         include_examples: Whether to include few-shot examples.
         num_examples: Number of few-shot examples.
+        edge_case_mode: Edge case handling mode (none, guardrails, hints).
 
     Returns:
         Configured BatchPromptProcessor instance.
@@ -250,6 +268,7 @@ def create_processor(
         style=style,
         include_examples=include_examples,
         num_examples=num_examples,
+        edge_case_mode=edge_case_mode,
     )
 
     return BatchPromptProcessor(

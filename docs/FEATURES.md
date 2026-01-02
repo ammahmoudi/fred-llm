@@ -63,14 +63,18 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Few-shot prompts - Include worked examples ✅ **Implemented in prompt_templates.py**
 - [x] Tool-assisted prompts - Enable tool use for computation ✅ **Template defined in prompt_templates.py**
 - [x] **Prompt generation system** ✅ **Complete modular architecture (January 1, 2026)**
-  - [x] PromptGenerator - Core logic for all 4 styles (basic, CoT, few-shot, tool-assisted) ✅
+  - [x] PromptStyle ABC - Base class with 4 implementations (basic, CoT, few-shot, tool-assisted) ✅
   - [x] BatchPromptProcessor - Batch processing with progress tracking ✅
   - [x] CSV to JSONL pipeline - Load equations, generate prompts, save metadata ✅
   - [x] CLI commands - `prompt generate` and `prompt batch` with rich output ✅
   - [x] Format support - Works with infix, latex, rpn formats ✅
   - [x] Ground truth inclusion - Optional solution embedding for evaluation ✅
   - [x] Metadata preservation - Includes equation_id, style, format, domain ✅
-  - [x] Test coverage - 16 tests covering all components ✅ **All passing**
+  - [x] **Edge case modes** - 3 modes for handling edge cases ✅ **(January 2, 2026)**
+    - `none`: Pure inference, no edge case instructions
+    - `guardrails`: Brief instruction to state if no solution exists
+    - `hints`: Include `has_solution` and `solution_type` in prompt
+  - [x] Test coverage - 30 tests covering all components ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**
 - [ ] Error correction prompts - Self-correction mechanisms ❌ **Not started**
@@ -119,7 +123,7 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Testing & Documentation
 
-- [x] Unit tests - 103 tests covering core functionality ✅ **All passing (100%)**
+- [x] Unit tests - 104 tests covering core functionality ✅ **All passing (100%)**
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
@@ -162,11 +166,11 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ---
 
-## Testing Results (December 24, 2025)
+## Testing Results (January 2, 2026)
 
 ### 🧪 Unit Tests - ALL PASSING ✅
 
-Ran complete test suite: **103/103 tests passed (100%)**
+Ran complete test suite: **134/134 tests passed (100%)**
 
 **Test Coverage:**
 - `test_fredholm_loader.py` - 13 tests: FredholmEquation class, type inference, CSV parsing
@@ -177,6 +181,7 @@ Ran complete test suite: **103/103 tests passed (100%)**
 - `test_augmentation.py` - 21 tests: Basic and edge case augmentation strategies
 - `test_validation.py` - 5 tests: Data validation and integration
 - `test_splitting.py` - 19 tests: Stratified splitting with sklearn/pandas
+- `test_prompt_generation.py` - 30 tests: Prompt styles, edge case modes, batch processing
 
 All core components validated at unit level.
 

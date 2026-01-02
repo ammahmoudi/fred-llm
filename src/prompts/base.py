@@ -25,6 +25,10 @@ class EquationData:
     b: float  # Upper bound
     equation_id: str | None = None  # Optional ID for tracking
 
+    # Edge case fields (optional)
+    has_solution: bool | None = None  # Whether a solution exists
+    solution_type: str | None = None  # exact, numerical, none, regularized, family
+
 
 @dataclass
 class GeneratedPrompt:
@@ -38,6 +42,39 @@ class GeneratedPrompt:
     metadata: dict[str, Any] | None = None
 
 
+# Available edge case hint fields that can be included in prompts
+EDGE_CASE_HINT_FIELDS = {
+    "has_solution",
+    "solution_type",
+}
+
+
+@dataclass
+class EdgeCaseMode:
+    """
+    Configuration for edge case handling in prompts.
+
+    Modes:
+    - "none": No hints (pure inference mode)
+    - "guardrails": Add instructions to handle edge cases without hints
+    - "hints": Include selected hint fields in prompt
+    """
+
+    mode: str = "none"  # "none", "guardrails", "hints"
+    hint_fields: list[str] | None = None  # Which fields to include when mode="hints"
+
+    def __post_init__(self):
+        if self.mode not in {"none", "guardrails", "hints"}:
+            raise ValueError(f"Invalid mode: {self.mode}. Use 'none', 'guardrails', or 'hints'")
+        if self.mode == "hints" and not self.hint_fields:
+            # Default to all available fields
+            self.hint_fields = list(EDGE_CASE_HINT_FIELDS)
+        if self.hint_fields:
+            invalid = set(self.hint_fields) - EDGE_CASE_HINT_FIELDS
+            if invalid:
+                raise ValueError(f"Invalid hint fields: {invalid}. Valid: {EDGE_CASE_HINT_FIELDS}")
+
+
 class PromptStyle(ABC):
     """Abstract base class for prompt generation styles."""
 
@@ -46,6 +83,7 @@ class PromptStyle(ABC):
         style_name: str,
         include_examples: bool = True,
         num_examples: int = 2,
+        edge_case_mode: EdgeCaseMode | None = None,
     ):
         """
         Initialize prompt style.
@@ -54,10 +92,12 @@ class PromptStyle(ABC):
             style_name: Name of the prompt style
             include_examples: Whether to include examples (for few-shot)
             num_examples: Number of examples to include
+            edge_case_mode: Configuration for edge case handling
         """
         self.style_name = style_name
         self.include_examples = include_examples
         self.num_examples = num_examples
+        self.edge_case_mode = edge_case_mode or EdgeCaseMode(mode="none")
 
     @abstractmethod
     def get_system_prompt(self) -> str:
@@ -82,6 +122,29 @@ class PromptStyle(ABC):
         """
         pass
 
+    def _get_guardrails_text(self) -> str:
+        """Get guardrails text for edge case handling."""
+        return """
+Note: If no closed-form solution exists, state so. If only numerical approximation is possible, indicate that."""
+
+    def _get_hints_text(self, equation: EquationData) -> str:
+        """Get hints text based on edge case fields."""
+        if not self.edge_case_mode.hint_fields:
+            return ""
+
+        hints = []
+        for field in self.edge_case_mode.hint_fields:
+            value = getattr(equation, field, None)
+            if value is not None:
+                if field == "has_solution":
+                    hints.append(f"Has solution: {'Yes' if value else 'No'}")
+                elif field == "solution_type":
+                    hints.append(f"Type: {value}")
+
+        if hints:
+            return "\n[" + ", ".join(hints) + "]"
+        return ""
+
     def generate(
         self,
         equation: EquationData,
@@ -102,7 +165,18 @@ class PromptStyle(ABC):
         system_prompt = self.get_system_prompt()
         user_prompt = self.get_user_prompt(equation, format_type)
 
-        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+        # Build full prompt with optional edge case handling
+        full_prompt = system_prompt
+
+        if self.edge_case_mode.mode == "guardrails":
+            full_prompt += self._get_guardrails_text()
+        elif self.edge_case_mode.mode == "hints":
+            full_prompt += self._get_guardrails_text()
+
+        full_prompt += f"\n\n{user_prompt}"
+
+        if self.edge_case_mode.mode == "hints":
+            full_prompt += self._get_hints_text(equation)
 
         metadata = {
             "kernel": equation.kernel,
@@ -110,6 +184,12 @@ class PromptStyle(ABC):
             "lambda_val": equation.lambda_val,
             "domain": [equation.a, equation.b],
         }
+
+        # Add edge case info to metadata if present
+        if equation.has_solution is not None:
+            metadata["has_solution"] = equation.has_solution
+        if equation.solution_type:
+            metadata["solution_type"] = equation.solution_type
 
         return GeneratedPrompt(
             prompt=full_prompt,

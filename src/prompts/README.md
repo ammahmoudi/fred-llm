@@ -30,8 +30,14 @@ Each style extends `PromptStyle` base class:
 create_prompt_style(
     style: str,
     include_examples: bool = True,
-    num_examples: int = 2
+    num_examples: int = 2,
+    edge_case_mode: str | EdgeCaseMode = "none"
 ) -> PromptStyle
+
+create_edge_case_mode(
+    mode: str = "none",  # "none", "guardrails", "hints"
+    hint_fields: list[str] | None = None  # ["has_solution", "solution_type"]
+) -> EdgeCaseMode
 ```
 
 ### Batch Processing (`src/prompts/batch_processor.py`)
@@ -84,13 +90,63 @@ output_file = processor.process_dataset(
 )
 ```
 
+### Edge Case Modes
+
+Handle edge cases with 3 modes:
+
+```python
+from src.prompts import create_prompt_style, EquationData
+
+# MODE 1: "none" - Pure inference, no edge case instructions
+style = create_prompt_style("basic", edge_case_mode="none")
+
+# MODE 2: "guardrails" - Add brief instruction for edge cases
+style = create_prompt_style("basic", edge_case_mode="guardrails")
+# Adds: "Note: If no closed-form solution exists, state so."
+
+# MODE 3: "hints" - Include edge case field values in prompt
+style = create_prompt_style("basic", edge_case_mode="hints")
+
+# Equation with edge case data
+eq = EquationData(
+    u="No solution",
+    f="x**2",
+    kernel="0",
+    lambda_val=1.0,
+    a=0.0,
+    b=1.0,
+    # Edge case fields (optional)
+    has_solution=False,
+    solution_type="none",
+)
+
+prompt = style.generate(eq)
+# With hints mode, prompt ends with:
+# [Has solution: No, Type: none]
+```
+
+**Edge case fields**:
+- `has_solution`: `True`/`False` - whether a solution exists
+- `solution_type`: one of:
+  - `exact` - closed-form symbolic solution
+  - `numerical` - only numerical approximation possible
+  - `none` - no solution exists
+  - `regularized` - ill-posed, needs regularization
+  - `family` - solution family (multiple solutions)
+
 ### CLI Commands
 
 ```bash
 # Generate prompts for dataset
 uv run python -m src.cli prompt generate train.csv \
     --style chain-of-thought \
-    --output data/prompts
+    --output data/prompts \
+    --edge-case-mode hints
+
+# Generate with guardrails (no hints, but edge case instructions)
+uv run python -m src.cli prompt generate train.csv \
+    --style few-shot \
+    --edge-case-mode guardrails
 
 # Batch process multiple files
 uv run python -m src.cli prompt batch data/processed/ \
@@ -103,8 +159,8 @@ uv run python -m src.cli prompt batch data/processed/ \
 ```
 src/prompts/
 ├── __init__.py          # Public exports
-├── base.py              # Base classes (PromptStyle, EquationData, GeneratedPrompt)
-├── factory.py           # Factory function (create_prompt_style)
+├── base.py              # Base classes (PromptStyle, EquationData, EdgeCaseMode)
+├── factory.py           # Factory functions (create_prompt_style, create_edge_case_mode)
 ├── batch_processor.py   # BatchPromptProcessor class
 ├── templates.py         # Shared templates and examples
 └── styles/
@@ -151,9 +207,10 @@ def create_prompt_style(style: str, ...) -> PromptStyle:
 
 ## Tests
 
-All 18 tests passing:
+All 30 tests passing:
 - EquationData creation
 - All 4 prompt styles
+- Edge case modes
 - Batch processing
 - JSONL export
 - Factory functions
@@ -162,5 +219,3 @@ Run tests:
 ```bash
 uv run pytest tests/test_prompt_generation.py -v
 ```
-
-**Backward Compatibility**: None - this is a breaking refactor

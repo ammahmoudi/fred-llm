@@ -226,6 +226,12 @@ def prompt_generate(
         "-n",
         help="Number of few-shot examples to include",
     ),
+    edge_case_mode: str = typer.Option(
+        "none",
+        "--edge-case-mode",
+        "-e",
+        help="Edge case mode: none, guardrails, hints",
+    ),
 ) -> None:
     """Generate prompts from a dataset (CSV file)."""
     from src.prompts import create_processor
@@ -233,6 +239,7 @@ def prompt_generate(
     console.print("\n" + "=" * 60)
     console.print(f"[bold blue]🎯 Generating {style} prompts[/bold blue]")
     console.print(f"[cyan]Input:[/cyan] {input_file}")
+    console.print(f"[cyan]Edge case mode:[/cyan] {edge_case_mode}")
     console.print("=" * 60 + "\n")
 
     # Create processor
@@ -242,6 +249,7 @@ def prompt_generate(
         include_ground_truth=include_ground_truth,
         include_examples=include_examples,
         num_examples=num_examples,
+        edge_case_mode=edge_case_mode,
     )
 
     # Auto-detect format if not specified
@@ -306,7 +314,7 @@ def prompt_batch(
     ),
 ) -> None:
     """Generate prompts for multiple datasets in batch."""
-    from src.llm.batch_prompt_processor import create_processor
+    from src.prompts import create_processor
 
     # Parse styles
     if styles is None or styles == "all":

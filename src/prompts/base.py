@@ -65,14 +65,18 @@ class EdgeCaseMode:
 
     def __post_init__(self):
         if self.mode not in {"none", "guardrails", "hints"}:
-            raise ValueError(f"Invalid mode: {self.mode}. Use 'none', 'guardrails', or 'hints'")
+            raise ValueError(
+                f"Invalid mode: {self.mode}. Use 'none', 'guardrails', or 'hints'"
+            )
         if self.mode == "hints" and not self.hint_fields:
             # Default to all available fields
             self.hint_fields = list(EDGE_CASE_HINT_FIELDS)
         if self.hint_fields:
             invalid = set(self.hint_fields) - EDGE_CASE_HINT_FIELDS
             if invalid:
-                raise ValueError(f"Invalid hint fields: {invalid}. Valid: {EDGE_CASE_HINT_FIELDS}")
+                raise ValueError(
+                    f"Invalid hint fields: {invalid}. Valid: {EDGE_CASE_HINT_FIELDS}"
+                )
 
 
 class PromptStyle(ABC):

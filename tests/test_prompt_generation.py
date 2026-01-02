@@ -434,7 +434,10 @@ class TestEdgeCaseMode:
             b=1.0,
         )
         prompt = style.generate(eq)
-        assert "no closed-form solution" in prompt.prompt.lower() or "no solution" in prompt.prompt.lower()
+        assert (
+            "no closed-form solution" in prompt.prompt.lower()
+            or "no solution" in prompt.prompt.lower()
+        )
 
     def test_equation_data_with_edge_case_fields(self) -> None:
         """Test EquationData with edge case fields."""

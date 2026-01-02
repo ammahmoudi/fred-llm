@@ -69,7 +69,9 @@ def create_prompt_style(
 
     # Handle edge_case_mode
     if isinstance(edge_case_mode, str):
-        edge_case_mode = create_edge_case_mode(mode=edge_case_mode, hint_fields=hint_fields)
+        edge_case_mode = create_edge_case_mode(
+            mode=edge_case_mode, hint_fields=hint_fields
+        )
     elif edge_case_mode is None:
         edge_case_mode = EdgeCaseMode(mode="none")
 

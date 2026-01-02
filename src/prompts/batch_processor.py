@@ -87,7 +87,11 @@ class BatchPromptProcessor:
                 if col in df.columns and pd.notna(row[col]):
                     value = row[col]
                     if col == "has_solution":
-                        eq_kwargs[col] = bool(value) if isinstance(value, (bool, int)) else str(value).lower() == "true"
+                        eq_kwargs[col] = (
+                            bool(value)
+                            if isinstance(value, (bool, int))
+                            else str(value).lower() == "true"
+                        )
                     else:
                         eq_kwargs[col] = str(value)
 

@@ -63,6 +63,8 @@ python scripts/prepare_dataset.py `
   --augment `
   --augment-multiplier 1.15 `
   --augment-strategies approx_coef discrete_points series family regularized none_solution `
+  --validate `
+  --split `
   --convert `
   --convert-formats infix latex rpn
 
@@ -74,6 +76,8 @@ python scripts/prepare_dataset.py \
   --augment \
   --augment-multiplier 1.15 \
   --augment-strategies approx_coef discrete_points series family regularized none_solution \
+  --validate \
+  --split \
   --convert \
   --convert-formats infix latex rpn
 ```
@@ -82,8 +86,10 @@ python scripts/prepare_dataset.py \
 - Loads 5,000 equations from the sample dataset
 - Applies all 14 edge case strategies (42 variants total)
 - Uses multiplier 1.15 → ~5,750 total equations (87% exact, 13% edge cases)
+- Validates data quality (checks 100 random samples)
+- Splits into train (80%) and test (20%) sets with stratification
 - Converts to 3 formats (infix, LaTeX, RPN) for LLM training
-- Output: `data/processed/training_data/`
+- Output: `data/processed/training_data/` (with train/test splits)
 
 ### 4. Generate Prompts for LLM Training
 

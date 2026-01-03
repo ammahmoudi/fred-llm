@@ -34,7 +34,7 @@ class NearResonanceAugmentation(BaseAugmentation):
 
     Example:
         u(x) - 2.1∫[0,1] sin(πx)sin(πt) u(t) dt = sin(πx)
-        
+
         Critical value: λ_c = 2.0
         Actual value: λ = 2.1 (distance = 0.1)
         Condition number: ~1/0.1 = 10 (ill-conditioned)
@@ -123,7 +123,7 @@ class NearResonanceAugmentation(BaseAugmentation):
             # Critical: λ_c = 1.0, Near: λ = 1.05
             lambda_critical_2 = 1.0
             lambda_near_2 = lambda_critical_2 + self.distance / 2
-            
+
             case2 = {
                 "u": "",  # Large amplitude
                 "f": "1",  # Constant forcing
@@ -155,7 +155,7 @@ class NearResonanceAugmentation(BaseAugmentation):
             # Case 3: Very close to resonance (more extreme)
             lambda_critical_3 = 2.0
             lambda_near_3 = lambda_critical_3 + self.distance / 10  # 10x closer
-            
+
             case3 = {
                 "u": "",
                 "f": "sin(pi*x) + 0.1*sin(2*pi*x)",  # Mixed frequencies

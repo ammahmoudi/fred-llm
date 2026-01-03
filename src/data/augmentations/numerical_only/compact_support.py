@@ -27,7 +27,7 @@ class CompactSupportAugmentation(BaseAugmentation):
         Examples:
         - K(x,t) = { sin(x*t)  if |x-t| < δ     (band-limited)
                    { 0         otherwise
-        
+
         - K(x,t) = { x*t       if x,t ∈ [c,d] ⊂ [a,b]  (localized)
                    { 0         otherwise
 
@@ -87,7 +87,9 @@ class CompactSupportAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
 
             # Case 1: Band-limited kernel (near-diagonal)
             # K(x,t) ≠ 0 only if |x-t| < δ
@@ -116,9 +118,9 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "sparse_matrix_solvers",
                     "banded_matrix_algorithms",
-                    "iterative_krylov_methods"
+                    "iterative_krylov_methods",
                 ],
-                "numerical_challenge": f"{100*zero_fraction1:.0f}% of kernel is zero → sparse structure",
+                "numerical_challenge": f"{100 * zero_fraction1:.0f}% of kernel is zero → sparse structure",
                 "memory_efficiency": "High (can use sparse storage)",
                 "augmented": True,
                 "augmentation_type": "compact_support",
@@ -154,9 +156,9 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "domain_decomposition",
                     "block_sparse_solvers",
-                    "restricted_problem_reduction"
+                    "restricted_problem_reduction",
                 ],
-                "numerical_challenge": f"{100*zero_fraction2:.0f}% zero → only {100*region_fraction**2:.1f}% of domain interacts",
+                "numerical_challenge": f"{100 * zero_fraction2:.0f}% zero → only {100 * region_fraction**2:.1f}% of domain interacts",
                 "physical_interpretation": "Localized interaction region in larger domain",
                 "augmented": True,
                 "augmentation_type": "compact_support",

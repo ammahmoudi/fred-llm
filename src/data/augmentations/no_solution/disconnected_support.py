@@ -26,11 +26,11 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
 
     Example:
         K(x,t) ≠ 0 only in [a, a+0.2] × [a, a+0.2] and [b-0.2, b] × [b-0.2, b]
-        
+
         The equation splits into two independent sub-problems:
         - ∫[a, a+0.2] K₁(x,t) u(t) dt = f(x) for x ∈ [a, a+0.2]
         - ∫[b-0.2, b] K₂(x,t) u(t) dt = f(x) for x ∈ [b-0.2, b]
-        
+
         But there's no constraint on f(x) for x in the gap region!
         → Generic f(x) cannot be satisfied → no solution
 
@@ -67,12 +67,14 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
 
             # Case 1: Two disconnected regions
             region1_x = (a, a + 0.2 * (b - a))
             region2_x = (a + 0.6 * (b - a), a + 0.8 * (b - a))
-            
+
             case1 = {
                 "u": "",  # No solution - rank deficient
                 "f": item.get("f", "x"),
@@ -93,7 +95,7 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "check_rank_deficiency",
                     "identify_decoupled_blocks",
-                    "analyze_subsystems_separately"
+                    "analyze_subsystems_separately",
                 ],
                 "numerical_challenge": "Disconnected regions → no information flow between subsystems",
                 "reason": "Kernel support is disconnected → matrix is rank-deficient",
@@ -108,7 +110,7 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
             region1 = (a, a + 0.15 * (b - a))
             region2 = (a + 0.4 * (b - a), a + 0.55 * (b - a))
             region3 = (a + 0.8 * (b - a), b)
-            
+
             case2 = {
                 "u": "",
                 "f": item.get("f", "sin(x)"),
@@ -129,7 +131,7 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "rank_analysis",
                     "block_structure_detection",
-                    "compatibility_check"
+                    "compatibility_check",
                 ],
                 "numerical_challenge": "Multiple gaps → severe rank deficiency",
                 "reason": "Three disconnected support regions → highly rank-deficient operator",

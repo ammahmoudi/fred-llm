@@ -3,8 +3,11 @@
 # Get your API key at: https://openrouter.ai/keys
 
 dataset:
-  path: data/processed/equations.json
-  format: json
+  # Pre-split dataset paths
+  train_path: data/processed/training_data/train_infix.csv
+  val_path: data/processed/training_data/val_infix.csv
+  test_path: data/processed/training_data/test_infix.csv
+  format: infix  # infix, latex, or rpn
   max_samples: null
 
 model:
@@ -31,10 +34,9 @@ model:
     site_url: https://github.com/ammahmoudi/fred-llm
 
 prompting:
+  # Pre-generated prompts directory
+  prompts_dir: data/prompts/chain-of-thought
   style: chain-of-thought
-  include_examples: true
-  num_examples: 3
-  output_format: symbolic
 
 evaluation:
   mode: both

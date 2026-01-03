@@ -1,0 +1,62 @@
+# Preparation Only Configuration
+# Stage: Data preparation only (no prompts, no inference)
+# Use case: Prepare dataset for later use
+
+dataset:
+  raw:
+    # Input
+    path: data/raw/Fredholm_Dataset_Sample.csv
+    max_samples: null  # Process all samples
+    
+    # Output
+    output_dir: data/processed/training_data_prepared
+    
+    # Augmentation (create realistic edge cases)
+    augment: true
+    augment_multiplier: 1.15  # 15% more data
+    augment_strategies:
+      # Solution type folders (14 strategies, 42 variants total)
+      - approx_coef        # 5 strategies: weakly_singular, boundary_layer, oscillatory, mixed_type, compact_support
+      - discrete_points    # 2 strategies: complex_kernels, near_resonance
+      - series             # 1 strategy: neumann_series
+      - family             # 1 strategy: resonance
+      - regularized        # 1 strategy: ill_posed
+      - none_solution      # 4 strategies: eigenvalue, range_violation, divergent_kernel, disconnected_support
+    include_edge_metadata: true  # Include detailed metadata for analysis
+    
+    # Validation
+    validate_data: true
+    
+    # Splitting
+    split: true
+    split_ratios: [0.7, 0.15, 0.15]  # train/val/test
+    seed: 42
+    
+    # Format conversion
+    convert_formats:
+      - infix
+      - latex
+      - rpn
+      - tokenized
+      - python
+    convert_limit: null  # Convert all equations
+
+# Model section (not used, but required by schema)
+model:
+  provider: openai
+  name: gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2000
+
+# Output
+output:
+  dir: outputs/preparation_only
+  format: jsonl
+  save_prompts: true
+  save_predictions: true
+
+# Evaluation (not used in this mode)
+evaluation:
+  mode: both
+  tolerance: 1e-6
+  num_test_points: 100

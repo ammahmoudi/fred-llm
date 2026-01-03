@@ -351,4 +351,4 @@ if __name__ == "__main__":
 
     variant = sys.argv[1] if len(sys.argv) > 1 else "sample"
     path = download_fredholm_dataset(variant=variant)
-    console.print(f"[bold green]✓ Dataset downloaded to:[/bold green] {path}")
+    console.print(f"[bold green]OK - Dataset downloaded to:[/bold green] {path}")

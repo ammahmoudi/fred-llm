@@ -2,6 +2,7 @@
 Validator for Fredholm integral equation data.
 
 Validates equation structure, mathematical correctness, and data integrity.
+Includes augmented data validation for edge cases and solution types.
 """
 
 from typing import Any
@@ -241,3 +242,90 @@ class DataValidator:
     def validate_all(self, data: list[dict[str, Any]]) -> dict[str, Any]:
         """Validate all equations in dataset."""
         return validate_dataset(data, strict=self.strict)
+
+
+def validate_augmented_data(
+    data: list[dict[str, Any]],
+    check_solution_patterns: bool = True,
+) -> dict[str, Any]:
+    """
+    Validate augmented dataset with edge case checks.
+
+    Args:
+        data: List of equation dictionaries (augmented).
+        check_solution_patterns: Check solution type consistency.
+
+    Returns:
+        Validation report with edge case statistics.
+    """
+    summary = {
+        "total": len(data),
+        "valid": 0,
+        "invalid": 0,
+        "edge_cases": {},
+        "solution_types": {},
+        "errors": [],
+    }
+
+    for i, equation in enumerate(data):
+        # Basic validation
+        result = validate_equation(equation, strict=False)
+        if result["valid"]:
+            summary["valid"] += 1
+        else:
+            summary["invalid"] += 1
+            summary["errors"].append({"index": i, "errors": result["errors"]})
+
+        # Edge case tracking
+        if "edge_case" in equation:
+            edge_case = equation["edge_case"]
+            summary["edge_cases"][edge_case] = (
+                summary["edge_cases"].get(edge_case, 0) + 1
+            )
+
+        # Solution type tracking
+        if "solution_type" in equation:
+            sol_type = equation["solution_type"]
+            summary["solution_types"][sol_type] = (
+                summary["solution_types"].get(sol_type, 0) + 1
+            )
+
+        # Check solution pattern consistency
+        if check_solution_patterns and "solution_type" in equation and "u" in equation:
+            sol_type = equation["solution_type"]
+            u = equation["u"]
+
+            # Validate solution type matches u pattern
+            if sol_type == "none_solution" and u != "":
+                summary["errors"].append(
+                    {
+                        "index": i,
+                        "errors": [
+                            f"solution_type=none_solution but u='{u}' (should be empty)"
+                        ],
+                    }
+                )
+            elif sol_type in ["exact_symbolic", "family"] and u == "":
+                summary["errors"].append(
+                    {
+                        "index": i,
+                        "errors": [
+                            f"solution_type={sol_type} but u is empty (should have formula)"
+                        ],
+                    }
+                )
+
+    # Calculate percentages
+    summary["edge_case_percentage"] = (
+        len([eq for eq in data if eq.get("edge_case") != "none"]) / len(data) * 100
+        if data
+        else 0
+    )
+
+    logger.info(
+        f"Augmented validation: {summary['valid']}/{summary['total']} valid, "
+        f"{len(summary['edge_cases'])} edge case types, "
+        f"{len(summary['solution_types'])} solution types"
+    )
+
+    return summary

@@ -1,0 +1,30 @@
+# Inference Configuration
+# Runs LLM inference on pre-generated prompts
+
+dataset:
+  # Use pre-generated prompts
+  prompts:
+    prompts_dir: data/prompts/few-shot
+    style: few-shot
+
+# Model configuration
+model:
+  provider: openai
+  name: gpt-4o-mini
+  api_key_env: OPENAI_API_KEY
+  temperature: 0.1
+  max_tokens: 2048
+
+# Evaluation
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+
+# Output
+output:
+  dir: outputs/inference
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

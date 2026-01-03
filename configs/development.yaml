@@ -2,8 +2,11 @@
 # Smaller dataset, faster inference for local testing
 
 dataset:
-  path: data/samples/test_equations.json
-  format: json
+  # Pre-split dataset paths - use small test set for dev
+  train_path: data/processed/training_data/train_infix.csv
+  val_path: data/processed/training_data/val_infix.csv
+  test_path: data/processed/training_data/test_infix.csv
+  format: infix  # infix, latex, or rpn
   max_samples: 10  # Small subset for quick testing
 
 model:
@@ -14,10 +17,9 @@ model:
   timeout: 30
 
 prompting:
+  # Pre-generated prompts directory
+  prompts_dir: data/prompts/basic
   style: basic  # Simple prompts for fast iteration
-  include_examples: false
-  num_examples: 0
-  output_format: symbolic
 
 evaluation:
   mode: symbolic  # Skip numeric for speed

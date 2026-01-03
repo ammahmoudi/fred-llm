@@ -1,0 +1,80 @@
+# Inference Only Configuration
+# Stage: LLM inference only (use pre-generated prompts)
+# Use case: Run LLM on prepared prompts for evaluation/benchmarking
+
+dataset:
+  # Use pre-generated prompts
+  prompts:
+    prompts_dir: data/prompts_generated/few-shot
+    style: few-shot  # Must match the style used to generate prompts
+
+# Model configuration
+model:
+  provider: openai
+  name: gpt-4o-mini
+  
+  # Generation parameters
+  temperature: 0.1
+  max_tokens: 2000
+  top_p: 1.0
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  
+  # API settings
+  api_key_env: OPENAI_API_KEY
+  timeout: 60
+  max_retries: 3
+  
+  # Batch settings
+  batch_size: 10
+  rate_limit_delay: 0.1  # seconds between requests
+
+# Output configuration
+output:
+  dir: outputs/inference_only
+  format: jsonl
+  save_prompts: true   # Save copy of prompts used
+  save_predictions: true
+  save_raw_responses: true  # Save raw LLM responses
+  
+  # Results organization
+  timestamp: true  # Add timestamp to output files
+  experiment_name: null  # Optional experiment identifier
+
+# Evaluation configuration
+evaluation:
+  mode: both  # 'symbolic', 'numeric', or 'both'
+  
+  # Symbolic evaluation
+  symbolic:
+    method: sympy
+    simplify: true
+    timeout: 5.0  # seconds per equation
+  
+  # Numeric evaluation
+  numeric:
+    tolerance: 1e-6
+    num_test_points: 100
+    test_domain: [0, 1]  # [a, b] for testing
+    method: trapezoidal
+    
+  # Edge case evaluation
+  edge_cases:
+    check_recognition: true  # Check if model recognizes edge cases
+    check_handling: true     # Check if model handles them correctly
+  
+  # Metrics to compute
+  metrics:
+    - accuracy
+    - symbolic_match
+    - numeric_error
+    - edge_case_precision
+    - edge_case_recall
+    - solution_type_accuracy
+  
+  # Export results
+  export:
+    save_detailed: true
+    save_summary: true
+    save_failures: true
+    save_confusion_matrix: true

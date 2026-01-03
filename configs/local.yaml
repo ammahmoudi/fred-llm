@@ -2,8 +2,11 @@
 # For running with local/self-hosted models (vLLM, Ollama, HuggingFace)
 
 dataset:
-  path: data/processed/equations.json
-  format: json
+  # Pre-split dataset paths
+  train_path: data/processed/training_data/train_infix.csv
+  val_path: data/processed/training_data/val_infix.csv
+  test_path: data/processed/training_data/test_infix.csv
+  format: infix  # infix, latex, or rpn
   max_samples: 100  # Moderate size for local testing
 
 model:
@@ -15,10 +18,9 @@ model:
   timeout: 180  # Longer timeout for local models
 
 prompting:
+  # Pre-generated prompts directory
+  prompts_dir: data/prompts/basic
   style: basic  # Simpler prompts work better with smaller models
-  include_examples: true
-  num_examples: 2
-  output_format: symbolic
 
 evaluation:
   mode: both

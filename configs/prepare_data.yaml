@@ -1,0 +1,47 @@
+# Data Preparation Configuration
+# Prepares dataset: augment → validate → split → convert formats → generate prompts
+# Stops before LLM inference (no model section)
+
+dataset:
+  raw:
+    path: data/raw/Fredholm_Dataset_Sample.csv
+    
+    # Augmentation with all edge cases
+    augment: true
+    augment_multiplier: 1.15  # 15% augmented data
+    augment_strategies:
+      - approx_coef
+      - discrete_points
+      - series
+      - family
+      - regularized
+      - none_solution
+    include_edge_metadata: false
+    
+    # Validation
+    validate_data: true
+    
+    # Splitting (train, val, test)
+    split: true
+    split_ratios: [0.7, 0.00, 0.20]
+    
+    # Convert to LaTeX format
+    convert_formats:
+      - latex
+    
+    output_dir: data/processed/training_data
+  
+  # Generate prompts
+  prompting:
+    style: basic
+    num_examples: 3
+    edge_case_mode: none
+    include_ground_truth: true
+    output_dir: data/prompts/basic
+
+# Output
+output:
+  dir: data/outputs
+  log_level: INFO
+
+# No model section = stops after data prep + prompts

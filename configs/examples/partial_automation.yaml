@@ -1,0 +1,45 @@
+# Partial Automation Configuration
+# User provides pre-split data - pipeline generates prompts and runs inference
+
+# Dataset configuration - provide prepared data
+dataset:
+  # Pre-prepared dataset (already split and formatted)
+  prepared:
+    train_path: data/processed/training_data/train_infix.csv
+    val_path: data/processed/training_data/val_infix.csv
+    test_path: data/processed/training_data/test_infix.csv
+    format: null  # Auto-detected
+    max_samples: null  # Use all
+  
+  # Prompt generation (will be generated on-the-fly and saved)
+  prompting:
+    # output_dir: null  # Omitted = data/prompts/<style>
+    # input_dir: null   # Omitted = uses prepared data location
+    style: few-shot
+    edge_case_mode: guardrails
+    num_examples: 3
+    include_ground_truth: true
+    include_examples: true
+    format: null  # auto-detect
+
+# Model configuration
+model:
+  provider: openai
+  name: gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 60
+
+# Evaluation configuration
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+
+# Output configuration
+output:
+  dir: outputs/partial_automation
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

@@ -2,13 +2,12 @@
 # Settings for fine-tuning experiments
 
 dataset:
-  path: data/processed/train.json
-  format: json
+  # Pre-split dataset paths for fine-tuning
+  train_path: data/processed/training_data/train_infix.csv
+  val_path: data/processed/training_data/val_infix.csv
+  test_path: data/processed/training_data/test_infix.csv
+  format: infix  # infix, latex, or rpn
   max_samples: null
-  split_ratio:
-    train: 0.9
-    val: 0.1
-    test: 0.0  # Use separate test set
 
 model:
   provider: huggingface
@@ -31,10 +30,9 @@ fine_tuning:
   gradient_accumulation_steps: 4
 
 prompting:
+  # Pre-generated prompts directory for fine-tuning data
+  prompts_dir: data/prompts/basic
   style: basic
-  include_examples: false
-  num_examples: 0
-  output_format: symbolic
 
 evaluation:
   mode: both

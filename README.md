@@ -39,21 +39,15 @@ git clone https://github.com/ammahmoudi/fred-llm.git && cd fred-llm
 uv venv && uv pip install -e ".[dev]"
 
 # 2. Download dataset (5K sample)
-python -m src.cli dataset download --variant sample
+uv run python -m src.cli dataset download --variant sample
 
-# 3. Prepare data with edge cases (specify strategies explicitly)
-python scripts/prepare_dataset.py \
-  --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment --augment-multiplier 1.15 \
-  --augment-strategies approx_coef discrete_points series family regularized none_solution \
-  --validate --split --convert
-# This applies all 6 edge case folders (14 strategies, 42 variants total)
+# 3. Run pipeline (main CLI, automatic workflow)
+# Data preparation:
+uv run python -m src.cli run --config configs/prepare_data.yaml
 
-# 4. Generate prompts (output format matches input format)
-python scripts/run_prompt_generation.py \
-  --input data/processed/training_data/formatted/ \
-  --output data/prompts --styles all \
-  --pattern "*_infix.csv"  # or *_latex.csv, *_rpn.csv
+# Or run inference:
+export OPENAI_API_KEY=your_key_here
+uv run python -m src.cli run --config configs/run_inference.yaml
 ```
 
 → **Detailed instructions**: [Quick Start Guide](docs/QUICKSTART.md)
@@ -63,11 +57,51 @@ python scripts/run_prompt_generation.py \
 | Document | Description |
 |----------|-------------|
 | [Quick Start](docs/QUICKSTART.md) | 5-minute setup guide |
+| [Pipeline Configuration](docs/ADAPTIVE_PIPELINE.md) | Flexible workflow system |
 | [Augmentation Guide](docs/AUGMENTATION.md) | Edge case strategies and solution types |
 | [Development Guide](docs/DEVELOPMENT.md) | Contributing and development workflow |
 | [Pipeline Diagram](docs/pipeline-diagram.md) | System architecture overview |
 | [Features Tracking](docs/FEATURES.md) | Implementation status (60% complete) |
 | [Edge Cases](docs/EDGE_CASES.md) | Detailed edge case documentation |
+
+## Pipeline Workflows 🚀
+
+The pipeline system adapts to your workflow with flexible configuration:
+
+**Available Workflows:**
+
+1. **Data Preparation** - Raw CSV → Augment → Validate → Split → Convert → Prompts (stops before inference)
+2. **Run Inference** - Pre-generated prompts → LLM → Evaluate
+
+**Use the main CLI:**
+```bash
+# Prepare data
+uv run python -m src.cli run --config configs/prepare_data.yaml
+
+# Run inference  
+uv run python -m src.cli run --config configs/run_inference.yaml
+
+# Preview execution (dry run)
+uv run python -m src.cli run --config config.yaml --dry-run
+```
+
+**Advanced: Direct script usage** for custom workflows:
+```bash
+# Data preparation script
+python scripts/prepare_dataset.py --input data/raw/data.csv --augment --validate
+
+# Prompt generation script
+python scripts/run_prompt_generation.py --input data/processed --output data/prompts
+```
+
+**Features:**
+- 🔍 Auto-detects data format (infix/latex/rpn)
+- ⚡ Skips unnecessary processing steps
+- 📝 Flexible prompting (pre-generated or on-the-fly)
+- ✅ Smart validation with Pydantic
+- 🚀 Integrates all tested runner scripts
+
+→ **Full guide**: [Adaptive Pipeline Documentation](docs/ADAPTIVE_PIPELINE.md)
 
 ## Solution Types (8 Categories)
 

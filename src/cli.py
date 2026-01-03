@@ -38,25 +38,26 @@ def run(
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
-        help="Run without making API calls",
+        help="Show execution plan without running",
     ),
 ) -> None:
-    """Run the LLM-based Fredholm equation solver pipeline."""
-    from src.config import load_config
-    from src.main import FredLLMPipeline
+    """Run the adaptive LLM pipeline for Fredholm equations."""
+    from src.adaptive_config import AdaptivePipelineConfig
+    from src.adaptive_pipeline import AdaptivePipeline
 
     console.print(f"[bold blue]Fred-LLM[/bold blue] - Loading config from {config}")
 
-    cfg = load_config(config)
-    pipeline = FredLLMPipeline(cfg)
+    # Load adaptive config
+    adaptive_config = AdaptivePipelineConfig.from_yaml(config)
 
-    if dry_run:
-        console.print("[yellow]Dry run mode - no API calls will be made[/yellow]")
+    # Create and run adaptive pipeline
+    pipeline = AdaptivePipeline(adaptive_config)
+    results = pipeline.run(dry_run=dry_run)
 
-    # TODO: Implement full pipeline execution
-    pipeline.run(dry_run=dry_run)
-
-    console.print("[bold green]Pipeline completed successfully![/bold green]")
+    if not dry_run:
+        console.print("[bold green]✓ Pipeline completed successfully![/bold green]")
+        if results.get("metrics"):
+            console.print(f"[cyan]Metrics: {results['metrics']}[/cyan]")
 
 
 @app.command()

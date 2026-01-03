@@ -2,6 +2,71 @@
 
 Get up and running with Fred-LLM in 5 minutes.
 
+## Using the Main Pipeline (Recommended)
+
+The main CLI automatically orchestrates all steps based on your config:
+
+```bash
+# Prepare dataset with augmentation and prompts
+uv run python -m src.cli run --config configs/prepare_data.yaml
+
+# Run LLM inference on prepared prompts
+export OPENAI_API_KEY=your_key_here
+uv run python -m src.cli run --config configs/run_inference.yaml
+
+# Preview execution plan (dry run)
+uv run python -m src.cli run --config config.yaml --dry-run
+```
+
+**What the configs do:**
+- `prepare_data.yaml` - Loads raw data, augments, validates, splits, converts formats, generates prompts
+- `run_inference.yaml` - Loads prompts, runs LLM, evaluates results
+
+→ See [Pipeline Documentation](ADAPTIVE_PIPELINE.md) for detailed config options
+
+**Advanced: Using Scripts Directly**
+
+For custom workflows, use the internal scripts:
+
+```bash
+# Data preparation
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --output data/processed/my_data \
+  --augment --validate --split --convert
+
+# Prompt generation
+python scripts/run_prompt_generation.py \
+  --input data/processed/my_data \
+  --output data/prompts/my_prompts \
+  --styles few-shot
+```
+
+**Note:** Scripts are for advanced users. The main CLI is recommended for most workflows.
+
+```bash
+# Data preparation: raw → augment → split → convert → prompts
+uv run python -m src.cli run --config configs/prepare_data.yaml
+
+# Run inference: prompts → LLM → evaluate
+uv run python -m src.cli run --config configs/run_inference.yaml
+
+# Preview without running (dry run)
+uv run python -m src.cli run --config config.yaml --dry-run
+```
+
+The pipeline automatically:
+- 🔍 Detects data format (infix/latex/rpn)
+- ⚡ Skips unnecessary steps
+- 📁 Chains outputs from one step to inputs of the next
+- ✅ Validates all configuration conflicts
+
+→ See [Adaptive Pipeline Documentation](ADAPTIVE_PIPELINE.md) for detailed config options
+
+## Individual Script Workflows (Advanced)
+
+For custom workflows, use the scripts in `scripts/` folder directly:
+
 ## 1. Setup Environment
 
 ```bash
@@ -24,10 +89,10 @@ source .venv/bin/activate
 
 ```bash
 # Download sample dataset (5,000 equations) from Zenodo
-python -m src.cli dataset download --variant sample
+uv run python -m src.cli dataset download --variant sample
 
 # Or download full dataset (500,000 equations)
-python -m src.cli dataset download --variant full
+uv run python -m src.cli dataset download --variant full
 ```
 
 ## 3. Prepare Training Data with Edge Cases
@@ -37,7 +102,7 @@ python -m src.cli dataset download --variant full
 # This generates edge cases organized by solution type
 
 # Windows PowerShell:
-python scripts/prepare_dataset.py `
+# Use main CLI: uv run python -m src.cli run `
   --input data/raw/Fredholm_Dataset_Sample.csv `
   --output data/processed/training_data `
   --max-samples 5000 `
@@ -50,7 +115,7 @@ python scripts/prepare_dataset.py `
   --convert-formats infix latex rpn
 
 # Linux/macOS:
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --output data/processed/training_data \
   --max-samples 5000 \
@@ -85,7 +150,7 @@ python scripts/prepare_dataset.py \
 
 **Default behavior (no `--augment-strategies`):**
 ```bash
-python scripts/prepare_dataset.py --augment
+# Use main CLI: uv run python -m src.cli run --augment
 # Applies ONLY 3 basic transformations: substitute, scale, shift
 ```
 
@@ -116,30 +181,30 @@ python scripts/prepare_dataset.py --augment
 ```bash
 # Generate prompts with all styles for the formatted datasets
 # Windows PowerShell:
-python scripts/run_prompt_generation.py `
+# Use main CLI for prompts `
   --input data/processed/training_data/formatted/ `
   --output data/prompts `
   --styles all `
   --pattern "*_infix.csv"
 
 # Linux/macOS:
-python scripts/run_prompt_generation.py \
+# Use main CLI for prompts \
   --input data/processed/training_data/formatted/ \
   --output data/prompts \
   --styles all \
   --pattern "*_infix.csv"
 
 # Or generate for specific format (LaTeX, RPN, etc.):
-python scripts/run_prompt_generation.py \
+# Use main CLI for prompts \
   --input data/processed/training_data/formatted/ \
   --pattern "*_latex.csv"  # LLM will output in LaTeX format
 
-python scripts/run_prompt_generation.py \
+# Use main CLI for prompts \
   --input data/processed/training_data/formatted/ \
   --pattern "*_rpn.csv"  # LLM will output in RPN format
 
 # Or generate specific styles only:
-python scripts/run_prompt_generation.py \
+# Use main CLI for prompts \
   --input data/processed/training_data/formatted/ \
   --styles basic,chain-of-thought,few-shot \
   --output data/prompts
@@ -201,3 +266,4 @@ This enables automated evaluation of solution correctness and edge case recognit
 - [Pipeline Architecture](pipeline-diagram.md) - System design overview
 - [Features Tracking](FEATURES.md) - Implementation status
 - [Configuration Guide](../configs/README.md) - Detailed configuration options
+

@@ -198,7 +198,7 @@ All augmentation strategies produce the same 18 core fields:
 ### All Edge Cases (Recommended)
 
 ```bash
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --output data/processed/training_data \
   --augment \
@@ -210,17 +210,17 @@ python scripts/prepare_dataset.py \
 
 ```bash
 # Only approximate coefficient cases
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --augment --augment-multiplier 1.2 \
   --augment-strategies approx_coef
 
 # Only no-solution cases
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --augment --augment-multiplier 1.3 \
   --augment-strategies none_solution
 
 # Combination: numerical-only + no-solution
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --augment --augment-multiplier 1.25 \
   --augment-strategies approx_coef discrete_points none_solution
 ```
@@ -229,12 +229,12 @@ python scripts/prepare_dataset.py \
 
 ```bash
 # Only weakly singular kernels
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --augment --augment-multiplier 1.1 \
   --augment-strategies weakly_singular
 
 # Only boundary layer problems
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --augment --augment-multiplier 1.15 \
   --augment-strategies boundary_layer
 ```
@@ -244,7 +244,7 @@ python scripts/prepare_dataset.py \
 Validate augmented data quality:
 
 ```bash
-python scripts/validate_augmented_data.py \
+# Validation integrated in pipeline \
   data/processed/training_data/augmented/Fredholm_Dataset_augmented.csv \
   --strategies all \
   --check-schema \
@@ -266,3 +266,4 @@ python scripts/validate_augmented_data.py \
 - [Quick Start](QUICKSTART.md) - Getting started guide
 - [Features](FEATURES.md) - Implementation status
 - Augmentation code: `src/data/augmentations/`
+

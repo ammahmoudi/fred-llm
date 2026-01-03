@@ -368,7 +368,7 @@ Modify equations to exhibit sensitivity to perturbations:
 **Purpose**: Kernels with disconnected support regions → rank-deficient operators → no solution.
 
 - **Variant 1**: Two 3 edge case strategies (conservative multiplier recommended)
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --augment \
   --augment-multiplier 1.15 \
@@ -399,7 +399,7 @@ This distinction teaches models to recognize structural causes of non-existence 
 
 ```bash
 # Generate with ALL 11 edge case strategies (conservative multiplier recommended)
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --augment \3 Strategies (39 variants total)
 
@@ -418,7 +418,7 @@ python scripts/prepare_dataset.py \
   --no-convert
 
 # Generate advanced edge cases only
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run --config <yaml> \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --augment \
   --augment-multiplier 1.25 \
@@ -469,7 +469,7 @@ For a **balanced dataset** suitable for training robust models:
 - `disconnected_support` - Rank-deficient operators ✅
 
 **Validation Script**:
-- `scripts/validate_augmented_data.py` - Comprehensive validation with u pattern analysis ✅
+- Integrated validation - Comprehensive checks with u pattern analysis ✅
 - Characteristics of each edge case category
 - Sample equations from each type
 
@@ -515,7 +515,7 @@ pytest tests/test_augmentation.py::TestAdvancedEdgeCases -v
   - **non_unique_solution/**: `resonance.py`
 - **Integration**: `src/data/augmentation.py` (main augmentation loop)
 - **Tests**: `tests/test_augmentation.py` (21 edge case tests)
-- **Validation**: `scripts/validate_augmented_data.py` (comprehensive check
+- **Validation**: Integrated into pipeline (comprehensive check
 
 ## Implementation Details
 
@@ -578,3 +578,4 @@ Edge case equations include additional fields:
 - [Augmentation Strategies README](../src/data/augmentations/README.md) - Detailed augmentation documentation
 - [Pipeline Documentation](pipeline-diagram.md) - Full data processing pipeline
 - [Features Document](FEATURES.md) - Complete feature list
+

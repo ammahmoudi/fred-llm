@@ -8,7 +8,20 @@ This document tracks all features - implemented and planned. Check off items as 
 
 - [x] Project scaffolding - Complete Python project structure with uv/hatchling ✅ **Working with uv**
 - [x] CLI interface - Typer-based CLI with rich output formatting ✅ **Tested: dataset, run, evaluate commands**
-- [x] Configuration system - YAML-based config with Pydantic validation ✅ **6 presets available**
+- [x] Configuration system - YAML-based config with Pydantic validation ✅ **3 example configs + complete template**
+- [x] **Pipeline System** ✅ **January 3, 2026 - Production ready**
+  - [x] Data preparation workflow - Raw → augment → split → convert → prompts ✅ **Tested: 5750 equations, 5 formats**
+  - [x] Inference workflow - Prompts → LLM → evaluate ✅ **Ready for production**
+  - [x] Config-first design - Main CLI with YAML configs ✅ **Simplified from 7 to 3 configs**
+  - [x] Format auto-detection - From filenames and content analysis ✅ **Tested: 6/6 passing**
+  - [x] Flexible prompting - Pre-generated or on-the-fly generation ✅
+  - [x] Dry run mode - Preview execution plan ✅ **Tested on all workflows**
+  - [x] Pydantic validation - Smart config validation with helpful errors ✅
+  - [x] Optional model/evaluation - Can run without LLM (data-only workflows) ✅ **January 3, 2026**
+  - [x] Script cleanup - Removed 7 obsolete scripts, kept 2 internal runners ✅ **January 3, 2026**
+  - [x] Windows compatibility - Fixed Unicode console encoding ✅ **January 3, 2026**
+  - [ ] Caching intermediate results - Save prepared data and prompts for reuse 🚧 **Outputs saved but no checkpointing**
+  - [ ] Resume capability - Continue from last successful stage ❌
 - [x] Logging utilities - Structured logging with file output support ✅ **Working in all modules**
 - [ ] Experiment tracking - MLflow or Weights & Biases integration ❌ **Not started**
 - [ ] Caching layer - Cache LLM responses for reproducibility ❌ **Not started**
@@ -42,14 +55,14 @@ This document tracks all features - implemented and planned. Check off items as 
     - [x] Keep `family`, `regularized`, `none` unchanged
     - [x] New strategy: **neumann_series** (4-term Neumann expansions) → `series` type
     - [x] Rationale: Clear pedagogical signals, different evaluation methods, mathematical rigor
-    - [x] Updated: All 18 augmentation files, splitter.py, augmentation.py, validation script
+    - [x] Updated: All 18 augmentation files, splitter.py, augmentation.py, validator.py
     - [x] **Folder reorganization** ✅ **January 3, 2026**
       - [x] Renamed folders to match solution type taxonomy
       - [x] OLD: no_solution/, numerical_only/, regularization_required/, non_unique_solution/
       - [x] NEW: exact_symbolic/, approx_coef/, discrete_points/, series/, family/, regularized/, none_solution/
       - [x] Updated: All __init__.py files, augmentation.py strategy groups, README.md
       - [x] Distribution: 18 strategies across 7 folders (4+5+2+1+1+1+4)
-  - [x] Validation script - Comprehensive checks for all 14 strategies and 8 solution types ✅ **scripts/validate_augmented_data.py**
+  - [x] Validation - Comprehensive checks for all 14 strategies and 8 solution types ✅ **Integrated in pipeline**
   - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: all augmentation files**
   - [x] **Edge case metadata management** ✅ **January 3, 2026**
     - [x] Default: Essential fields only (u, f, kernel, augmentation_type, solution_type, edge_case, reason, recommended_methods)
@@ -88,7 +101,7 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] PromptStyle ABC - Base class with 4 implementations (basic, CoT, few-shot, tool-assisted) ✅
   - [x] BatchPromptProcessor - Batch processing with progress tracking ✅
   - [x] CSV to JSONL pipeline - Load equations, generate prompts, save metadata ✅
-  - [x] CLI commands - `prompt generate` and `prompt batch` with rich output; script helper `scripts/run_prompt_generation.py` ✅
+  - [x] CLI commands - Integrated in main pipeline with rich output ✅
   - [x] Format support - Works with infix, latex, rpn formats ✅
   - [x] Ground truth inclusion - Optional solution embedding for evaluation ✅
   - [x] Metadata preservation - Includes equation_id, style, format, domain ✅
@@ -174,7 +187,10 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] 8 advanced edge case tests (weakly_singular through compact_support)
   - [x] Schema validation tests - Verify all 18 required fields present
   - [x] Strategy separation - resonance (family) vs near_resonance (numerical) ✅ **January 2, 2026**
-  - [x] Validation tooling - validate_augmented_data.py with u pattern analysis ✅ **January 2, 2026**
+  - [x] Validation tooling - validator.py with augmented data validation ✅ **January 3, 2026**
+    - Basic equation validation (kernel, f, lambda, domain, solution)
+    - Augmented data validation (edge cases, solution types, pattern consistency)
+    - Custom validation rules support
 - [x] Validation tests - 5 tests for data validation and integration ✅ **All passing**
 - [x] Splitting tests - 19 tests for stratified splitting with sklearn ✅ **All passing**
   - [x] Standard ratio tests - 80/0/20, 80/10/10, custom ratios

@@ -29,7 +29,7 @@ fred-llm/
 │       ├── math_utils.py
 │       ├── logging_utils.py
 │       └── visualization.py
-├── scripts/                 # Utility scripts
+├── scripts/                 # Internal pipeline scripts (called by CLI)
 │   ├── prepare_dataset.py
 │   ├── run_prompt_generation.py
 │   └── validate_augmented_data.py
@@ -364,7 +364,7 @@ Before submitting a PR:
 
 ```bash
 # Full rebuild with all edge cases
-python scripts/prepare_dataset.py \
+# Use main CLI: uv run python -m src.cli run \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --output data/processed/training_data \
   --augment --validate --split --convert
@@ -373,7 +373,7 @@ python scripts/prepare_dataset.py \
 ### Regenerate Prompts
 
 ```bash
-python scripts/run_prompt_generation.py \
+# Use main CLI \
   --input data/processed/training_data/formatted/ \
   --output data/prompts \
   --styles all
@@ -382,7 +382,7 @@ python scripts/run_prompt_generation.py \
 ### Validate Data Quality
 
 ```bash
-python scripts/validate_augmented_data.py \
+# Validation integrated \
   data/processed/training_data/augmented/*.csv \
   --strategies all --verbose
 ```
@@ -420,3 +420,4 @@ python -m src.cli run --config config.yaml
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+

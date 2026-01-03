@@ -1,0 +1,75 @@
+# Complete Configuration Template
+# This file shows ALL available options with documentation
+# Use this as reference when creating your own configs
+
+dataset:
+  # Option 1: Raw dataset (for data preparation)
+  raw:
+    path: data/raw/Fredholm_Dataset_Sample.csv
+    output_dir: null  # Optional: defaults to data/processed/run_<timestamp>
+    max_samples: null  # Optional: limit samples (null = all)
+    
+    # Augmentation
+    augment: false
+    augment_multiplier: 1.15
+    augment_strategies: null  # null = default (substitute, scale, shift)
+    # Available: [approx_coef, discrete_points, series, family, regularized, none_solution]
+    include_edge_metadata: false
+    
+    # Validation
+    validate_data: true
+    
+    # Splitting
+    split: true
+    split_ratios: [0.7, 0.15, 0.15]
+    
+    # Format conversion
+    convert_formats: [infix]  # Available: [infix, latex, rpn, tokenized, python]
+    output_format: both  # both | json | csv
+  
+  # Option 2: Prepared dataset (pre-split data)
+  prepared:
+    train_path: null
+    val_path: null
+    test_path: null
+    format: null  # null = auto-detect, or specify: infix|latex|rpn|tokenized|python
+    max_samples: null
+  
+  # Prompt generation (on-the-fly)
+  prompting:
+    style: basic  # basic|chain-of-thought|few-shot|tool-assisted
+    output_dir: null  # Optional: defaults to data/prompts/<style>
+    input_dir: null  # Optional: auto-chained from preparation output
+    edge_case_mode: none  # none|guardrails|hints
+    num_examples: 3
+    include_ground_truth: true
+    format: null  # null = auto-detect from input
+  
+  # Option 3: Pre-generated prompts
+  prompts:
+    prompts_dir: null
+    style: null
+
+# Model configuration (optional - omit to skip inference)
+model:
+  provider: openai  # openai|openrouter|local
+  name: gpt-4o-mini
+  api_key_env: OPENAI_API_KEY
+  base_url: null
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 60
+
+# Evaluation configuration (optional)
+evaluation:
+  mode: both  # symbolic|numeric|both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+
+# Output configuration
+output:
+  dir: outputs
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO  # DEBUG|INFO|WARNING|ERROR

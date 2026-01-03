@@ -2,8 +2,11 @@
 # Full dataset, best model, comprehensive evaluation
 
 dataset:
-  path: data/processed/equations.json
-  format: json
+  # Pre-split dataset paths - full dataset for production
+  train_path: data/processed/training_data/train_infix.csv
+  val_path: data/processed/training_data/val_infix.csv
+  test_path: data/processed/training_data/test_infix.csv
+  format: infix  # infix, latex, or rpn
   max_samples: null  # Use all samples
 
 model:
@@ -14,10 +17,9 @@ model:
   timeout: 120
 
 prompting:
-  style: chain-of-thought
-  include_examples: true
-  num_examples: 5
-  output_format: symbolic
+  # Pre-generated prompts directory - use few-shot for best results
+  prompts_dir: data/prompts/few-shot
+  style: few-shot
 
 evaluation:
   mode: both

@@ -1,0 +1,31 @@
+# Manual Control Configuration
+# User provides pre-generated prompts - pipeline just runs inference
+
+# Dataset configuration - provide pre-generated prompts
+dataset:
+  # Pre-generated prompts (everything already prepared)
+  prompts:
+    prompts_dir: data/prompts/chain-of-thought
+    style: chain-of-thought
+
+# Model configuration
+model:
+  provider: openai
+  name: gpt-4
+  temperature: 0.0  # Deterministic for benchmarking
+  max_tokens: 4096
+  timeout: 120
+
+# Evaluation configuration
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-12
+  numeric_tolerance: 1e-8
+  num_test_points: 200
+
+# Output configuration
+output:
+  dir: outputs/manual_control
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

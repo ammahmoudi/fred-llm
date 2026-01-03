@@ -1,0 +1,42 @@
+# Prompts Generation Only Configuration
+# Stage: Generate prompts from prepared data (no data prep, no inference)
+# Use case: Create prompts from already-prepared dataset
+
+dataset:
+  # Use pre-prepared data
+  prepared:
+    train_path: data/processed/training_data_prepared/train_infix.csv
+    val_path: data/processed/training_data_prepared/val_infix.csv
+    test_path: data/processed/training_data_prepared/test_infix.csv
+    format: null  # auto-detect (should be infix from filename)
+    max_samples: null  # Use all samples
+  
+  # Generate prompts on-the-fly and save them
+  prompting:
+    output_dir: data/prompts_generated
+    style: few-shot
+    edge_case_mode: guardrails  # Add guardrails for edge case recognition
+    num_examples: 3
+    include_ground_truth: true
+    include_examples: true
+    format: null  # auto-detect from data
+
+# Model section (not used, but required by schema)
+model:
+  provider: openai
+  name: gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2000
+
+# Output
+output:
+  dir: outputs/prompts_only
+  format: jsonl
+  save_prompts: true
+  save_predictions: false
+
+# Evaluation (not used in this mode)
+evaluation:
+  mode: both
+  tolerance: 1e-6
+  num_test_points: 100

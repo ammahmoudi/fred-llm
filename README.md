@@ -52,7 +52,7 @@ python -m src.cli dataset download --variant full
 ### 3. Prepare Training Data with Edge Cases
 
 ```bash
-# Recommended: Use only edge case strategies for realistic distribution
+# Recommended: Use edge case folders for realistic distribution
 # This generates edge cases organized by solution type
 
 # Windows PowerShell:
@@ -62,7 +62,7 @@ python scripts/prepare_dataset.py `
   --max-samples 5000 `
   --augment `
   --augment-multiplier 1.15 `
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution `
+  --augment-strategies approx_coef discrete_points series family regularized none_solution `
   --convert `
   --convert-formats infix latex rpn
 
@@ -73,14 +73,14 @@ python scripts/prepare_dataset.py \
   --max-samples 5000 \
   --augment \
   --augment-multiplier 1.15 \
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution \
+  --augment-strategies approx_coef discrete_points series family regularized none_solution \
   --convert \
   --convert-formats infix latex rpn
 ```
 
 **What this does:**
 - Loads 5,000 equations from the sample dataset
-- Applies all 11 edge case strategies (33 variants total)
+- Applies all 14 edge case strategies (42 variants total)
 - Uses multiplier 1.15 → ~5,750 total equations (87% exact, 13% edge cases)
 - Converts to 3 formats (infix, LaTeX, RPN) for LLM training
 - Output: `data/processed/training_data/`
@@ -128,25 +128,32 @@ Strategies are organized by **solution type**. Specifying a folder name runs ALL
 
 | Folder | Strategies | Variants | What it teaches |
 |--------|------------|----------|-----------------|
-| `no_solution` | 4 | 12 | Recognize unsolvable equations (eigenvalue issues, range violations, rank-deficient) |
-| `numerical_only` | 7 | 21 | Identify when only numerical methods work (complex kernels, singularities, near-resonance) |
-| `regularization_required` | 1 | 3 | Detect ill-posed problems (Fredholm 1st kind) |
-| `non_unique_solution` | 1 | 3 | Handle exact resonance cases with solution families |
-| **Total** | **13** | **39** | Comprehensive edge case recognition |
+| `approx_coef` | 5 | 15 | Functional forms with numerical params (boundary layers, oscillations, weak singularities) |
+| `discrete_points` | 2 | 6 | Pure point samples, no formula (complex kernels, near-resonance) |
+| `series` | 1 | 3 | Truncated series expansions (Neumann series, N=4 terms) |
+| `family` | 1 | 3 | Non-unique solution families (exact resonance) |
+| `regularized` | 1 | 3 | Ill-posed problems requiring regularization (Fredholm 1st kind) |
+| `none_solution` | 4 | 12 | No solution exists (eigenvalue issues, range violations, divergent kernels) |
+| **Total** | **14** | **42** | Comprehensive edge case recognition |
 
 ### Alternative: Specific Edge Case Training
 
 ```bash
-# Example 1: Train only on numerical edge cases
+# Example 1: Train on approximate coefficient cases (boundary layers, oscillations)
 python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.2 \
-  --augment-strategies numerical_only \
+  --augment-strategies approx_coef \
   --convert --convert-formats infix latex
 
-# Example 2: Focus on no-solution and ill-posed cases
+# Example 2: Focus on discrete points and series expansions
 python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.25 \
-  --augment-strategies no_solution regularization_required
+  --augment-strategies discrete_points series
+
+# Example 3: No-solution and regularized cases only
+python scripts/prepare_dataset.py \
+  --augment --augment-multiplier 1.3 \
+  --augment-strategies none_solution regularized
 ```
 
 ---
@@ -158,7 +165,7 @@ python scripts/prepare_dataset.py \
 - 🔢 **Symbolic & numeric evaluation**: SymPy-based parsing and verification
 - 📊 **8 specialized formatters**: LaTeX, RPN, Infix, Python, Tokenized, Fredholm equations, Series expansions
 - 🎯 **LLM-optimized formatting**: Special tokens for improved model understanding
-- 🔄 **11 augmentation strategies**: Variable substitution, scaling, domain shifting, kernel composition, plus 11 edge case strategies (no-solution, approximate-only, ill-posed, weakly-singular, boundary-layer, resonance, range-violation, divergent-kernel, mixed-type, oscillatory-solution, compact-support)
+- 🔄 **18 augmentation strategies**: 4 basic transformations (substitute, scale, shift, compose) + 14 edge case strategies organized by solution type (approx_coef, discrete_points, series, family, regularized, none) - total 42 variants
 - 📈 **Comprehensive metrics**: Symbolic equivalence, numeric accuracy, solution verification
 - ⚠️ **Realistic edge cases**: Teach LLMs to recognize singular problems, numerical-only solutions, and ill-posed equations
 - 🎲 **Stratified dataset splitting**: Maintains dataset balance using scikit-learn, preserves original/augmented ratios and solution types
@@ -282,52 +289,86 @@ flowchart LR
 
 | Module | Purpose | Key Components |
 |--------|---------|----------------|
-| **Dataset Preparation** | Prepare and augment training data | 7 augmentation strategies (basic + edge cases), 8 formatters (LaTeX/RPN/Python/etc.), CSV/JSON export |
+| **Dataset Preparation** | Prepare and augment training data | 18 augmentation strategies (4 basic + 14 edge cases in 6 solution-type folders), 8 formatters (LaTeX/RPN/Python/etc.), CSV/JSON export, **8 solution types** |
 | **Prompt Engineering** | Design effective prompts for LLMs | Direct, CoT, approximation prompts; symbolic/series/code output |
 | **LLM Methods** | Model training and inference | Fine-tuning (Phi/T5), few-shot learning, tool use |
 | **Evaluation** | Assess solution quality | Symbolic matching, BLEU, MAE/MSE, robustness testing |
 
 ### Data Augmentation Strategies
 
-The project includes **7 augmentation strategies** to expand and diversify training data:
+The project includes **4 basic + 14 edge case = 18 total augmentation strategies** organized by solution type to expand and diversify training data:
 
-**Basic Transformations:**
+**Basic Transformations:** (solution_type: `exact_symbolic`)
 - **Substitute**: Variable transformations (x → x², 2x, x+1)
 - **Scale**: Lambda coefficient scaling (×0.5, ×2.0, ×0.1, ×10.0)
 - **Shift**: Integration domain shifting ([a,b] → [a±1, b±1])
 - **Compose**: Kernel composition (K → K+x, K+t, K×x)
 
-**Edge Cases - 13 Comprehensive Strategies (FIE-Edge-Cases):**
+**Edge Cases - 14 Comprehensive Strategies:**
 
-Organized in 4 solution-type folders:
+Organized in 6 solution-type folders matching the solution taxonomy:
 
-**Folder 1: no_solution/** (solution_type: "none") - 4 strategies × 3 variants = 12 edge cases
-- **eigenvalue_cases**: Singular cases where λ is eigenvalue (violates Fredholm Alternative)
-- **range_violation**: RHS not in operator range
-- **divergent_kernel**: Non-integrable singularities
-- **disconnected_support**: Rank-deficient operators (kernels with disconnected support regions)
+**exact_symbolic/** - 4 strategies (basic transformations above)
+- Produce exact closed-form analytical solutions
+- Strategies: substitute, scale, shift, compose
 
-**Folder 2: numerical_only/** (solution_type: "numerical") - 7 strategies × 3 variants = 21 edge cases
-- **complex_kernels**: No symbolic solution (Gaussian/exponential kernels, requires numerical methods)
-- **weakly_singular**: Integrable singularities (log|x-t|, |x-t|^(-0.5))
-- **boundary_layer**: Sharp gradients near boundaries (ε=0.01)
-- **oscillatory_solution**: Rapid oscillations (Nyquist sampling)
-- **mixed_type**: Volterra + Fredholm hybrid
-- **compact_support**: Sparse kernel structure (band-limited, localized support)
-- **near_resonance**: Ill-conditioned equations near eigenvalue (λ ≈ λ_critical, large amplitude solutions)
+**approx_coef/** (solution_type: `approx_coef`) - 5 strategies × 3 variants = 15 edge cases
+- Functional forms with numerical parameters (e.g., exp(-x/0.01), sin(100πx))
+- **boundary_layer**: Sharp gradients near boundaries (ε=0.01, ε=0.001, ε=0.0001)
+- **oscillatory_solution**: Rapid oscillations requiring Nyquist sampling (ω=50, ω=100, ω=200)
+- **weakly_singular**: Integrable singularities [log|x-t|, |x-t|^(-0.5), |x-t|^(-0.3)]
+- **mixed_type**: Volterra + Fredholm hybrid (α=0.3, α=0.5, α=0.7)
+- **compact_support**: Sparse kernel structure - band-limited, localized Gaussian, piecewise constant
 
-**Folder 3: regularization_required/** (solution_type: "regularized") - 1 strategy × 3 variants = 3 edge cases
-- **ill_posed**: Fredholm 1st kind equations (require regularization like Tikhonov/TSVD)
+**discrete_points/** (solution_type: `discrete_points`) - 2 strategies × 3 variants = 6 edge cases
+- Pure point samples, no functional form (empty u field, uses sample_points arrays)
+- **complex_kernels**: No symbolic solution (Gaussian, exponential decay, sinc kernels)
+- **near_resonance**: Ill-conditioned near eigenvalue (δ=0.01, δ=0.001, δ=0.0001)
 
-**Folder 4: non_unique_solution/** (solution_type: "family") - 1 strategy × 3 variants = 3 edge cases
-- **resonance**: Exact resonance at eigenvalue (λ = λ_critical) → infinite solution family u = C*φ
+**series/** (solution_type: `series`) - 1 strategy × 3 variants = 3 edge cases
+- Truncated Neumann series expansions (N=4 terms)
+- **neumann_series**: f + λ∫Kf + λ²∫K²f + λ³∫K³f (λ=0.5, λ=0.3, λ=0.1)
+
+**family/** (solution_type: `family`) - 1 strategy × 3 variants = 3 edge cases
+- Non-unique solution families
+- **resonance**: Exact eigenvalue resonance → u = C*φ + u_p (constant, linear, quadratic kernels)
+
+**regularized/** (solution_type: `regularized`) - 1 strategy × 3 variants = 3 edge cases
+- Ill-posed Fredholm 1st kind equations
+- **ill_posed**: Requires Tikhonov/TSVD regularization (α=0.01, α=0.001, α=0.0001)
+
+**none_solution/** (solution_type: `none`) - 4 strategies × 3 variants = 12 edge cases
+- No solution exists
+- **eigenvalue_cases**: λ is eigenvalue violating Fredholm Alternative (constant, linear, exponential kernels)
+- **range_violation**: f(x) not in operator range (orthogonal to kernel range)
+- **divergent_kernel**: Non-integrable singularities [|x-t|^(-1), |x-t|^(-1.5), log(|x-t|)^(-1)]
+- **disconnected_support**: Rank-deficient - kernels with disconnected support regions
+
+**Total: 18 strategies × various variants = 42 augmented types**
+
+#### Solution Type Taxonomy (8 types)
+
+| Solution Type | Description | u Field | Example Strategies |
+|---------------|-------------|---------|-------------------|
+| `exact_symbolic` | Closed-form expressions | Formula | substitute, scale, shift, compose |
+| `exact_coef` | Finite basis, exact weights | Coefficients (future) | TBD |
+| `approx_coef` | Functional form, numerical params | Formula | boundary_layer, oscillatory, weakly_singular |
+| `discrete_points` | Pure point samples | Empty `""` | complex_kernels, near_resonance |
+| `series` | Neumann/Taylor expansion | Series formula | neumann_series |
+| `family` | Non-unique solutions | General form | resonance |
+| `regularized` | Ill-posed, needs regularization | Empty `""` | ill_posed |
+| `none` | No solution exists | Empty `""` | eigenvalue_cases, range_violation |
 
 **Usage**: Specify folder names to run all contained strategies:
 ```bash
---augment-strategies no_solution numerical_only  # Runs 11 strategies total
+--augment-strategies approx_coef discrete_points  # Runs 7 strategies (21 variants)
+--augment-strategies none_solution regularized     # Runs 5 strategies (15 variants)
+--augment-strategies approx_coef                   # Runs 5 strategies (15 variants)
 ```
 
-Total: **39 edge case variants** (13 strategies × 3 variants each) teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. The split between exact resonance (infinite solutions) and near-resonance (ill-conditioned but unique) helps models distinguish between these mathematically distinct cases. See [Edge Cases Documentation](docs/EDGE_CASES.md) for details.
+Total: **42 edge case variants** (14 strategies × 3 variants each) teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. The 8 solution types provide clear pedagogical signals: from exact symbolic solutions to discrete point samples, series expansions, and cases with no solution. 
+
+**Folder structure matches solution taxonomy** for clarity and consistency. See [Edge Cases Documentation](docs/EDGE_CASES.md) and [Augmentation Strategies README](src/data/augmentations/README.md) for complete details.
 
 #### Unified Output Schema
 
@@ -359,19 +400,19 @@ See [Augmentation README](src/data/augmentations/README.md) for complete schema 
 
 For optimal LLM training, use appropriate multipliers based on strategy count:
 
-**Using All 4 Folders (13 strategies, 39 variants):**
-- Multiplier: **1.1-1.2** (recommended: **1.15**)
+**Using All 6 Edge Case Folders (14 strategies, 42 variants):**
+- Multiplier: **1.1-1.15** (recommended: **1.15**)
 - Result: 87% exact solutions, 13% edge cases
 - Example: 5,000 original → ~5,750 total
 - Use case: Comprehensive mathematical reasoning training
 
-**Using Subset (2-3 folders, ~5-8 strategies):**
+**Using Subset (2-3 folders, ~7-10 strategies, 21-30 variants):**
 - Multiplier: **1.2-1.25**
 - Result: 80-83% exact solutions, 17-20% edge cases
 - Example: 5,000 original → ~6,000-6,250 total
 - Use case: Balanced production training
 
-**Using 1 Folder (1-3 strategies, 3-9 variants):**
+**Using 1 Folder (1-5 strategies, 3-15 variants):**
 - Multiplier: **1.3-1.5**
 - Result: 67-77% exact solutions, 23-33% edge cases
 - Example: 5,000 original → ~6,500-7,500 total
@@ -384,29 +425,64 @@ For optimal LLM training, use appropriate multipliers based on strategy count:
 - Higher multipliers with fewer strategies maintain similar absolute edge case counts
 
 ```bash
-# Recommended: All edge case folders with conservative multiplier
+# Recommended: All 6 edge case folders with conservative multiplier
 # Windows PowerShell:
 uv run python scripts/prepare_dataset.py `
   --input data/raw/Fredholm_Dataset_Sample.csv `
   --augment --augment-multiplier 1.15 `
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution
+  --augment-strategies approx_coef discrete_points series family regularized none_solution
 
 # Linux/macOS:
 uv run python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --augment --augment-multiplier 1.15 \
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution
+  --augment-strategies approx_coef discrete_points series family regularized none_solution
 
-# Subset: Focus on no-solution and numerical-only cases
+# Subset: Focus on approximate coefficients and discrete points
 uv run python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.2 \
-  --augment-strategies no_solution numerical_only
+  --augment-strategies approx_coef discrete_points
 
-# Single folder: Deep dive into numerical edge cases
+# Single folder: Deep dive into approximate coefficient edge cases
 uv run python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.3 \
-  --augment-strategies numerical_only
+  --augment-strategies approx_coef
 ```
+
+---
+
+## Data Validation
+
+The project includes comprehensive validation to ensure data quality and consistency throughout the pipeline.
+
+### Features
+
+- **Schema validation**: Verifies all required fields (u, f, kernel, lambda, domain)
+- **Type checking**: Ensures correct data types and value ranges
+- **Edge case validation**: Checks consistency of has_solution and solution_type fields
+- **Strategy validation**: Verifies all 14 edge case strategies generate data correctly
+- **Distribution analysis**: Reports balance across solution types and strategies
+- **Sample validation**: Tests random subset (default 100 samples) to catch issues quickly
+
+### Usage
+
+```bash
+# Validate during data preparation (recommended)
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --augment --augment-multiplier 1.15 \
+  --validate
+
+# Standalone validation of augmented data
+python scripts/validate_augmented_data.py \
+  --input data/processed/training_data/augmented/
+```
+
+**Output**: Validation report showing:
+- Total equations by solution type
+- Strategy coverage (all 14 strategies validated)
+- Edge case distribution
+- Any errors or inconsistencies found
 
 ---
 
@@ -418,9 +494,9 @@ The project includes production-ready stratified splitting to maintain dataset b
 
 - **Industry-standard libraries**: Uses scikit-learn's `train_test_split` with pandas DataFrames
 - **Stratified splitting**: Maintains balance across:
-  - Original vs augmented equations (typically 86.7% / 13.3%)
-  - Solution types (exact, numerical, none, regularized, family)
-  - Edge case types (12 different categories)
+  - Original vs augmented equations (typically 87% / 13%)
+  - Solution types: exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none
+  - Source strategies (basic transformations and 14 edge case strategies)
 - **Flexible split ratios**: Default 80/0/20 (train/val/test), customizable
 - **Robust edge case handling**:
   - Auto-adjusts invalid ratios
@@ -594,12 +670,12 @@ uv run python scripts/prepare_dataset.py \
 # These teach LLMs to recognize equations without symbolic solutions
 uv run python scripts/prepare_dataset.py \
   --augment \
-  --augment-strategies substitute scale no_solution numerical_only regularization_required
+  --augment-strategies substitute scale none_solution approx_coef regularized
 
-# All augmentation strategies (4 basic + 4 edge case folders = 11 strategies total)
+# All augmentation strategies (4 basic + 6 edge case folders = 18 strategies, 42 variants)
 uv run python scripts/prepare_dataset.py \
   --augment \
-  --augment-strategies substitute scale shift compose no_solution numerical_only regularization_required non_unique_solution \
+  --augment-strategies substitute scale shift compose approx_coef discrete_points series family regularized none_solution \
   --augment-multiplier 5
 
 # Quick test with 100 samples

@@ -23,15 +23,15 @@ class MixedTypeAugmentation(BaseAugmentation):
         **Fredholm equation**: u(x) - λ∫ₐᵇ K(x,t) u(t) dt = f(x)
             - Upper limit b is constant (fixed)
             - Integral operator is compact
-
+        
         **Volterra equation**: u(x) - λ∫ₐˣ K(x,t) u(t) dt = f(x)
             - Upper limit is x (variable)
             - Causal structure (only depends on past)
-
+        
         **Mixed type**: Kernel behaves differently in different regions:
             K(x,t) = { K₁(x,t)  if t ≤ x  (Volterra part)
                      { K₂(x,t)  if t > x   (Fredholm part)
-
+        
         Or split integral:
             u(x) - λ∫ₐˣ K₁(x,t)u(t)dt - λ∫ₓᵇ K₂(x,t)u(t)dt = f(x)
 
@@ -55,7 +55,7 @@ class MixedTypeAugmentation(BaseAugmentation):
     Label:
         {
             "has_solution": true,
-            "solution_type": "numerical",
+            "solution_type": "approx_coef",
             "edge_case": "mixed_type",
             "equation_type": "volterra_fredholm_mixed",
             "causal_structure": "partial",
@@ -79,9 +79,7 @@ class MixedTypeAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(
-                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
-            )
+            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
 
             # Case 1: Piecewise kernel - different behavior for t < x and t > x
             # K(x,t) = { t      if t ≤ x  (Volterra - causal)
@@ -91,12 +89,12 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "f": item["f"],
                 "kernel": "t if t <= x else x",  # Piecewise definition
                 "kernel_description": "K(x,t) = t for t≤x (Volterra part), x for t>x (Fredholm part)",
-                "lambda": str(lambda_val * 0.5),
+                "lambda_val": str(lambda_val * 0.5),
                 "lambda_val": str(lambda_val * 0.5),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "mixed_type",
                 "equation_type": "volterra_fredholm_mixed",
                 "split_point": "x",
@@ -107,7 +105,7 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "hybrid_method",
                     "marching_plus_boundary",
-                    "domain_decomposition",
+                    "domain_decomposition"
                 ],
                 "numerical_challenge": "Combine causal (Volterra) and acausal (Fredholm) parts",
                 "augmented": True,
@@ -125,12 +123,12 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "f": item["f"],
                 "kernel": f"tanh((x - t) / {epsilon})",  # Smooth transition
                 "kernel_description": f"K(x,t) = tanh((x-t)/{epsilon}) smoothly transitions at x=t",
-                "lambda": str(lambda_val * 0.3),
+                "lambda_val": str(lambda_val * 0.3),
                 "lambda_val": str(lambda_val * 0.3),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "mixed_type",
                 "equation_type": "volterra_fredholm_smooth_mixed",
                 "transition_width": epsilon,
@@ -139,7 +137,7 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_quadrature",
                     "implicit_marching",
-                    "collocation",
+                    "collocation"
                 ],
                 "numerical_challenge": "Handle smooth but steep transition region",
                 "augmented": True,
@@ -156,12 +154,12 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "f": item["f"],
                 "kernel": "x*t",  # Simple separable kernel
                 "kernel_split": "Implicit split: ∫ₐˣ x*t*u(t)dt + ∫ₓᵇ x*t*u(t)dt",
-                "lambda": str(lambda_val * 0.4),
+                "lambda_val": str(lambda_val * 0.4),
                 "lambda_val": str(lambda_val * 0.4),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "mixed_type",
                 "equation_type": "volterra_fredholm_explicit_split",
                 "split_point": "x",
@@ -171,7 +169,7 @@ class MixedTypeAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "sequential_marching",
                     "block_iteration",
-                    "shooting_method",
+                    "shooting_method"
                 ],
                 "numerical_challenge": "Efficiently couple Volterra marching with Fredholm iteration",
                 "solution_strategy": "1. March from a to x (Volterra), 2. Iterate on [x,b] (Fredholm)",

@@ -18,6 +18,7 @@ from src.data.augmentations import (
     IllPosedAugmentation,
     MixedTypeAugmentation,
     NearResonanceAugmentation,
+    NeumannSeriesAugmentation,
     NoSolutionAugmentation,
     OscillatorySolutionAugmentation,
     RangeViolationAugmentation,
@@ -64,7 +65,7 @@ def augment_dataset(
         if "has_solution" not in original_item:
             original_item["has_solution"] = True
         if "solution_type" not in original_item:
-            original_item["solution_type"] = "exact"
+            original_item["solution_type"] = "exact_symbolic"
         augmented.append(original_item)
 
     # Generate augmented variants up to target size
@@ -105,8 +106,8 @@ def _apply_augmentation(
         return augmenter.augment(item)
 
     # Solution-type based strategies (run all in folder)
-    elif strategy == "no_solution":
-        # Run all no-solution strategies
+    elif strategy == "none_solution":
+        # Run all none-solution strategies
         results = []
         results.extend(NoSolutionAugmentation().augment(item))
         results.extend(RangeViolationAugmentation().augment(item))
@@ -114,10 +115,9 @@ def _apply_augmentation(
         results.extend(DisconnectedSupportAugmentation().augment(item))
         return results
 
-    elif strategy == "numerical_only":
-        # Run all numerical-only strategies
+    elif strategy == "approx_coef":
+        # Run all approx_coef strategies (functional form with numerical params)
         results = []
-        results.extend(ApproximateOnlyAugmentation(num_sample_points=10).augment(item))
         results.extend(WeaklySingularAugmentation(num_sample_points=15).augment(item))
         results.extend(
             BoundaryLayerAugmentation(epsilon=0.01, num_sample_points=20).augment(item)
@@ -129,18 +129,29 @@ def _apply_augmentation(
         )
         results.extend(MixedTypeAugmentation().augment(item))
         results.extend(CompactSupportAugmentation(bandwidth=0.1).augment(item))
+        return results
+
+    elif strategy == "discrete_points":
+        # Run all discrete_points strategies (pure sample arrays, no functional form)
+        results = []
+        results.extend(ApproximateOnlyAugmentation(num_sample_points=10).augment(item))
         results.extend(NearResonanceAugmentation(distance=0.1).augment(item))
         return results
 
-    elif strategy == "regularization_required":
-        # Run all regularization-required strategies
+    elif strategy == "series":
+        # Run all series strategies (truncated series expansions)
+        augmenter = NeumannSeriesAugmentation(num_terms=4, lambda_scale=0.3)
+        return augmenter.augment(item)
+
+    elif strategy == "regularized":
+        # Run all regularized strategies (ill-posed equations)
         augmenter = IllPosedAugmentation(
             num_sample_points=10, regularization_param=0.01
         )
         return augmenter.augment(item)
 
-    elif strategy == "non_unique_solution":
-        # Run all non-unique solution strategies
+    elif strategy == "family":
+        # Run all family strategies (non-unique solutions)
         augmenter = ResonanceAugmentation(perturbation=0.001)
         return augmenter.augment(item)
 
@@ -160,17 +171,23 @@ class DataAugmenter:
         Initialize the augmenter.
 
         Args:
-            strategies: Augmentation strategies to use (folder-based):
+            strategies: Augmentation strategies to use:
 
-                Basic transformations (untested):
-                - substitute, scale, shift, compose
+                Basic transformations (exact_symbolic):
+                - substitute, scale, shift, compose (4 strategies)
 
-                Solution-type folders (each runs all strategies in that folder):
-                - no_solution: Runs eigenvalue_cases + range_violation + divergent_kernel (9 variants)
-                - numerical_only: Runs complex_kernels + weakly_singular + boundary_layer +
-                                 oscillatory_solution + mixed_type + compact_support (18 variants)
-                - regularization_required: Runs ill_posed (3 variants)
-                - non_unique_solution: Runs resonance (3 variants)
+                Solution-type groups (each runs all strategies with that solution type):
+                - none_solution: No solution (eigenvalue_cases, range_violation, divergent_kernel,
+                        disconnected_support) - 12 variants
+                - approx_coef: Functional form with numerical params (weakly_singular,
+                              boundary_layer, oscillatory_solution, mixed_type,
+                              compact_support) - 15 variants
+                - discrete_points: Pure sample arrays (complex_kernels, near_resonance) - 6 variants
+                - series: Truncated series (neumann_series) - 3 variants
+                - regularized: Ill-posed equations (ill_posed) - 3 variants
+                - family: Non-unique solutions (resonance) - 3 variants
+
+                Total: 18 strategies, 42 variants
 
             seed: Random seed for reproducibility.
         """

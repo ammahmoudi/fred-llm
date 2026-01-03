@@ -10,15 +10,40 @@ Edge cases are augmented variants of Fredholm integral equations that represent 
 - Handle equations requiring numerical approximation
 - Identify ill-posed problems needing regularization
 - Detect non-unique solutions and solution families
+- Distinguish between different solution representations
 
-**NEW: Folder-Based Organization** - Strategies are organized by solution type. When you use a folder name (e.g., `no_solution`), ALL strategies in that folder are executed:
+**Folder-Based Organization** - Strategies are organized by solution type (folder names match solution_type values). When you use a folder name, ALL strategies in that folder are executed:
 
-- `no_solution/` → 4 strategies → 12 variants per equation
-- `numerical_only/` → 7 strategies → 21 variants per equation
-- `regularization_required/` → 1 strategy → 3 variants per equation
-- `non_unique_solution/` → 1 strategy → 3 variants per equation
+- `none_solution/` → 4 strategies → 12 variants per equation
+- `approx_coef/` → 5 strategies → 15 variants per equation
+- `discrete_points/` → 2 strategies → 6 variants per equation
+- `series/` → 1 strategy → 3 variants per equation
+- `family/` → 1 strategy → 3 variants per equation
+- `regularized/` → 1 strategy → 3 variants per equation
 
-**Total: 13 strategies × 3 variants each = 39 edge case types**
+**Total: 18 strategies (4 basic + 14 edge) × various variants = 42 edge case types**
+
+## Solution Type Taxonomy (8 Types)
+
+**Updated:** January 3, 2026 - Refined from 5 to 8 solution types for clearer pedagogical signals.
+
+| Solution Type | Description | u Field Content | Has Solution | Example Strategies |
+|---------------|-------------|-----------------|--------------|-------------------|
+| `exact_symbolic` | Closed-form analytical expressions | Formula: `2*x + sin(x)` | ✅ True | substitute, scale, shift |
+| `exact_coef` | Finite basis expansion with exact rational weights | Coefficients array (future) | ✅ True | TBD (future feature) |
+| `approx_coef` | Functional form with numerical parameters | Formula: `exp(-x/0.01)` | ✅ True | boundary_layer, oscillatory |
+| `discrete_points` | Pure point samples, no closed form | Empty `""` + sample arrays | ✅ True | complex_kernels, near_resonance |
+| `series` | Truncated Neumann/Taylor series | Series formula: `f + λ∫K + λ²∫K²` | ✅ True | neumann_series |
+| `family` | Non-unique solutions (infinite family) | General form: `C*φ(x) + u_p` | ✅ True | resonance |
+| `regularized` | Ill-posed, requires Tikhonov/TSVD | Empty `""` | ✅ True | ill_posed |
+| `none` | No solution exists | Empty `""` | ❌ False | eigenvalue_cases, range_violation |
+
+### Evaluation Guidelines by Solution Type
+
+- **With u formula** (`exact_symbolic`, `approx_coef`, `series`, `family`): Compare symbolic/numerical match
+- **Empty u** (`discrete_points`, `regularized`, `none`): Check correct `has_solution` and `solution_type` classification
+
+See [FEATURES.md](FEATURES.md) for complete implementation history and the [Augmentation Strategies README](../src/data/augmentations/README.md) for usage details.
 
 ## Why Edge Cases Matter
 
@@ -51,20 +76,25 @@ All augmented equations maintain **consistent key-value pairs** for reliable tra
 
 ## Edge Case Types
 
-**Directory Structure**: Organized by **solution type** (what LLM should output)
+**Directory Structure**: Organized by **solution type** (folder names = solution_type values)
 
 ```
 src/data/augmentations/
-├── no_solution/          # → "No solution exists"
-├── numerical_only/       # → Point-by-point approximation  
-├── regularization_required/  # → "Needs regularization"
-└── non_unique_solution/  # → Solution family: u = u₀ + C*φ
+├── exact_symbolic/      # → Exact closed-form solutions
+├── approx_coef/        # → Functional form with numerical params
+├── discrete_points/    # → Pure point samples (empty u)
+├── series/             # → Truncated series expansions
+├── family/             # → Solution family: u = u₀ + C*φ
+├── regularized/        # → "Needs regularization" (empty u)
+└── none_solution/      # → "No solution exists" (empty u)
 ```
 
 | Solution Type | Strategies | What LLM Outputs |
 |---------------|-----------|------------------|
-| **No Solution** | eigenvalue_cases, range_violation, divergent_kernel, disconnected_support | "No solution exists because..." |
-| **Numerical Only** | complex_kernels, weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support, near_resonance | Point values: u(x₁)≈v₁, u(x₂)≈v₂... |
+| **None** | eigenvalue_cases, range_violation, divergent_kernel, disconnected_support | "No solution exists because..." |
+| **Approx Coef** | boundary_layer, oscillatory_solution, weakly_singular, mixed_type, compact_support | Functional form: exp(-x/ε), sin(ωx) |
+| **Discrete Points** | complex_kernels, near_resonance | Point values: u(x₁)≈v₁, u(x₂)≈v₂... |
+| **Series** | neumann_series | Truncated series: f + λ∫K + λ²∫K² + ... |
 | **Regularization Required** | ill_posed | "Ill-posed, needs Tikhonov/TSVD..." |
 | **Non-Unique** | resonance | "Solution family: u = C*φ(x) + u_p" |
 
@@ -74,9 +104,9 @@ src/data/augmentations/
 
 ## Group 1: Original Edge Cases (Production-Tested)
 
-### 1. No Solution Cases (`no_solution`)
+### 1. Eigenvalue Cases (`eigenvalue_cases`)
 
-**Purpose**: Teach models to recognize unsolvable equations.
+**Purpose**: Teach models to recognize unsolvable equations where λ is an eigenvalue.
 
 **Creation Strategy**:
 For each base equation `u(x) - λ∫K(x,t)u(t)dt = f(x)`, three variants are created:
@@ -93,7 +123,7 @@ For each base equation `u(x) - λ∫K(x,t)u(t)dt = f(x)`, three variants are cre
 - **Metadata Added**:
   - `has_solution: false`
   - `reason: "contradictory_kernel"`
-  - `edge_case: "no_solution"`
+  - `edge_case: "eigenvalue_cases"`
 
 #### Variant 2: Invalid Domain
 - **Modification**: Set integration bounds where `a > b`
@@ -106,7 +136,7 @@ For each base equation `u(x) - λ∫K(x,t)u(t)dt = f(x)`, three variants are cre
 - **Metadata Added**:
   - `has_solution: false`
   - `reason: "invalid_domain"`
-  - `edge_case: "no_solution"`
+  - `edge_case: "eigenvalue_cases"`
 
 #### Variant 3: Incompatible Lambda
 - **Modification**: Set `λ = 1/eigenvalue` where eigenvalue is of integral operator
@@ -120,11 +150,11 @@ For each base equation `u(x) - λ∫K(x,t)u(t)dt = f(x)`, three variants are cre
 - **Metadata Added**:
   - `has_solution: false`
   - `reason: "incompatible_lambda"`
-  - `edge_case: "no_solution"`
+  - `edge_case: "eigenvalue_cases"`
 
 ---
 
-### 2. Approximate-Only Cases (`approximate_only`)
+### 2. Complex Kernels (`complex_kernels`)
 
 **Purpose**: Represent equations requiring numerical methods.
 
@@ -342,14 +372,16 @@ python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --augment \
   --augment-multiplier 1.15 \
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution \
+  --augment-strategies none approx_coef discrete_points series family regularized \
   --no-convert
 
 # Or use folder names to run all strategies in each folder:
-# no_solution = eigenvalue_cases, range_violation, divergent_kernel, disconnected_support
-# numerical_only = complex_kernels, weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support, near_resonance
-# regularization_required = ill_posed
-# non_unique_solution = resonanceank-deficient operator due to disconnected support"
+# none = eigenvalue_cases, range_violation, divergent_kernel, disconnected_support
+# approx_coef = boundary_layer, oscillatory_solution, weakly_singular, mixed_type, compact_support
+# discrete_points = complex_kernels, near_resonance
+# series = neumann_series
+# family = resonance
+# regularized = ill_posed
 
 **Mathematical Background**: When kernel support is split into disconnected regions, the integral operator loses rank and may not be invertible, leading to equations with no solution.
 

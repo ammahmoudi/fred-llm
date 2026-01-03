@@ -54,7 +54,7 @@ class CompactSupportAugmentation(BaseAugmentation):
     Label:
         {
             "has_solution": "depends",  # May have solution but with caveats
-            "solution_type": "numerical",
+            "solution_type": "approx_coef",
             "edge_case": "compact_support",
             "support_type": "band|diagonal|localized",
             "zero_fraction": 0.7,  # Fraction of domain where K=0
@@ -107,7 +107,7 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,  # Usually exists but sparse
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "compact_support",
                 "support_type": "band",
                 "support_width": delta,
@@ -145,7 +145,7 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "compact_support",
                 "support_type": "localized_box",
                 "support_region": f"[{c:.2f}, {d:.2f}] × [{c:.2f}, {d:.2f}]",

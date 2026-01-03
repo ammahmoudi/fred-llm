@@ -38,39 +38,26 @@ def validate_dataset(csv_path: Path) -> dict:
     # Expected strategy configurations
     # Format: strategy_name: (expected_solution_types, expected_has_solution, allow_empty_u)
     strategy_configs = {
-        # no_solution folder
+        # none_solution folder (solution_type: none, empty u)
         "eigenvalue_cases": (["none"], [False], True),
         "range_violation": (["none"], [False], True),
         "divergent_kernel": (["none"], [False], True),
         "disconnected_support": (["none"], [False], True),
-        # numerical_only folder
-        "complex_kernels": (["numerical"], [True], True),  # No closed-form
-        "boundary_layer": (["numerical"], [True], False),  # Has exact formula
-        "oscillatory_solution": (["numerical"], [True], False),
-        "weakly_singular": (["numerical"], [True], False),
-        "mixed_type": (["numerical"], [True], False),
-        "compact_support": (
-            ["numerical"],
-            [True],
-            False,
-        ),  # Now only numerical variants
-        "near_resonance": (
-            ["numerical"],
-            [True],
-            True,
-        ),  # Near-eigenvalue ill-conditioned
-        # regularization_required folder
-        "ill_posed": (
-            ["regularized"],
-            [True],
-            True,
-        ),  # Has solution, needs regularization
-        # non_unique_solution folder
-        "resonance": (
-            ["family"],
-            [True],
-            True,
-        ),  # Only exact resonance with family solutions
+        # approx_coef folder (functional form with numerical params)
+        "boundary_layer": (["approx_coef"], [True], False),  # exp(-x/ε) form
+        "oscillatory_solution": (["approx_coef"], [True], False),  # sin(ω*x) form
+        "weakly_singular": (["approx_coef"], [True], False),  # Preserves u
+        "mixed_type": (["approx_coef"], [True], False),  # Preserves u
+        "compact_support": (["approx_coef"], [True], False),  # Preserves u
+        # discrete_points folder (empty u, sample arrays)
+        "complex_kernels": (["discrete_points"], [True], True),  # No closed-form
+        "near_resonance": (["discrete_points"], [True], True),  # Ill-conditioned
+        # series folder (Neumann expansion)
+        "neumann_series": (["series"], [True], False),  # Has series in u
+        # regularized folder (ill-posed equations)
+        "ill_posed": (["regularized"], [True], True),  # Empty u, needs regularization
+        # family folder (non-unique solutions)
+        "resonance": (["family"], [True], False),  # u = C or general form
     }
 
     # 1. Check for folder names in augmentation_type
@@ -78,11 +65,13 @@ def validate_dataset(csv_path: Path) -> dict:
         "[bold blue]1. Checking for folder names in augmentation_type...[/bold blue]"
     )
     folder_names = {
-        "no_solution",
-        "numerical_only",
-        "regularization_required",
-        "non_unique_solution",
-        "approximate_only",
+        "none_solution",
+        "approx_coef",
+        "discrete_points",
+        "series",
+        "family",
+        "regularized",
+        "exact_symbolic",
     }
     aug_types = set(df[df["augmented"] == True]["augmentation_type"].unique())
     bad_values = aug_types & folder_names
@@ -206,7 +195,7 @@ def validate_dataset(csv_path: Path) -> dict:
     orig_df = df[df["augmented"] == False]
 
     if len(orig_df) > 0:
-        wrong_sol_type = orig_df[orig_df["solution_type"] != "exact"]
+        wrong_sol_type = orig_df[orig_df["solution_type"] != "exact_symbolic"]
         wrong_has_sol = orig_df[orig_df["has_solution"] != True]
 
         if len(wrong_sol_type) > 0:
@@ -332,7 +321,6 @@ if __name__ == "__main__":
         project_root
         / "data"
         / "processed"
-        / "training_data_v3"
         / "augmented"
         / "Fredholm_Dataset_Sample_augmented.csv"
     )

@@ -57,23 +57,27 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=["substitute", "scale", "shift"],
         choices=[
-            # Basic transformations (untested)
+            # Basic transformations (exact_symbolic)
             "substitute",
             "scale",
             "shift",
             "compose",
             # Solution-type folders (each runs all strategies in folder)
-            "no_solution",  # 3 strategies × 3 variants = 9 edge cases
-            "numerical_only",  # 6 strategies × 3 variants = 18 edge cases
-            "regularization_required",  # 1 strategy × 3 variants = 3 edge cases
-            "non_unique_solution",  # 1 strategy × 3 variants = 3 edge cases
+            "none_solution",  # 4 strategies × 3 variants = 12 edge cases
+            "approx_coef",  # 5 strategies × 3 variants = 15 edge cases
+            "discrete_points",  # 2 strategies × 3 variants = 6 edge cases
+            "series",  # 1 strategy × 3 variants = 3 edge cases
+            "family",  # 1 strategy × 3 variants = 3 edge cases
+            "regularized",  # 1 strategy × 3 variants = 3 edge cases
         ],
         help=(
-            "Folder-based augmentation strategies:\n"
-            "no_solution: eigenvalue + range_violation + divergent_kernel (9 variants)\n"
-            "numerical_only: complex_kernels + weakly_singular + boundary_layer + oscillatory + mixed + compact (18 variants)\n"
-            "regularization_required: ill_posed (3 variants)\n"
-            "non_unique_solution: resonance (3 variants)"
+            "Solution-type-based augmentation strategies:\n"
+            "none_solution: eigenvalue_cases + range_violation + divergent_kernel + disconnected_support (12 variants)\n"
+            "approx_coef: boundary_layer + oscillatory + weakly_singular + mixed_type + compact_support (15 variants)\n"
+            "discrete_points: complex_kernels + near_resonance (6 variants)\n"
+            "series: neumann_series (3 variants)\n"
+            "family: resonance (3 variants)\n"
+            "regularized: ill_posed (3 variants)"
         ),
     )
     parser.add_argument(

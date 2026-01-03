@@ -27,7 +27,7 @@ class EquationData:
 
     # Edge case fields (optional)
     has_solution: bool | None = None  # Whether a solution exists
-    solution_type: str | None = None  # exact, numerical, none, regularized, family
+    solution_type: str | None = None  # exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none
 
 
 @dataclass
@@ -129,7 +129,17 @@ class PromptStyle(ABC):
     def _get_guardrails_text(self) -> str:
         """Get guardrails text for edge case handling."""
         return """
-Note: If no closed-form solution exists, state so. If only numerical approximation is possible, indicate that."""
+Note: Solutions may take different forms:
+- Exact symbolic (e.g., u(x) = sin(x))
+- Exact with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
+- Approximate with coefficients to determine (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+- Discrete points only
+- Infinite series (e.g., u(x) = Σ aₙxⁿ)
+- Family of solutions (multiple valid solutions)
+- Ill-posed requiring regularization
+- No solution exists
+
+State clearly which type applies and provide appropriate representation."""
 
     def _get_hints_text(self, equation: EquationData) -> str:
         """Get hints text based on edge case fields."""

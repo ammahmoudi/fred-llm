@@ -46,7 +46,7 @@ class ScaleAugmentation(BaseAugmentation):
                 new_item["augmentation_variant"] = f"scale_{factor}x"
                 # Required standard fields
                 new_item["has_solution"] = True
-                new_item["solution_type"] = "exact"
+                new_item["solution_type"] = "exact_symbolic"
                 new_item["edge_case"] = None
                 new_item["reason"] = f"Lambda coefficient scaled by factor {factor}"
                 new_item["recommended_methods"] = []

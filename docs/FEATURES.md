@@ -29,14 +29,27 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Expression canonicalization - Simplify parameter ✅ **Available in all formatters**
   - [x] CSV export support - Export formatted equations to CSV ✅ **Matches original dataset format**
 - [x] Data augmentation framework - All 4 strategies implemented ✅ **Tested: substitute, scale, shift, compose (5.3x expansion)**
-- [x] **Edge case augmentations (13 strategies, 39 variants, 15% target ratio)** ✅ **Tested on 5K sample: 750 augmented (15.0%)**
+- [x] **Edge case augmentations (14 strategies, 42 variants, 15% target ratio)** ✅ **Tested on 5K sample: 750 augmented (15.0%)**
   - [x] No-solution cases - 4 strategies: eigenvalue, range_violation, divergent_kernel, disconnected_support ✅ **Tested: 12 variants total**
-  - [x] Numerical-only cases - 7 strategies: complex_kernels, weakly_singular, boundary_layer, oscillatory, mixed_type, compact_support, near_resonance ✅ **Tested: 21 variants total**
+  - [x] Numerical-only cases - 8 strategies: complex_kernels, weakly_singular, boundary_layer, oscillatory, mixed_type, compact_support, near_resonance, neumann_series ✅ **Tested: 24 variants total**
   - [x] Regularization-required cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, ill-posed handling, has_solution=True**
   - [x] Non-unique-solution cases - Exact resonance with solution families ✅ **Tested: 3 variants, symbolic u=C*φ**
-  - [x] Resonance split - **resonance** (exact, family) vs **near_resonance** (ill-conditioned, numerical) ✅ **January 2, 2026**
-  - [x] Compact support split - **compact_support** (numerical) vs **disconnected_support** (no solution) ✅ **January 2, 2026**
-  - [x] Validation script - Comprehensive checks for all strategies ✅ **scripts/validate_augmented_data.py**
+  - [x] Resonance split - **resonance** (exact, family) vs **near_resonance** (ill-conditioned, discrete_points) ✅ **January 2, 2026**
+  - [x] Compact support split - **compact_support** (approx_coef) vs **disconnected_support** (no solution) ✅ **January 2, 2026**
+  - [x] **Solution type refactoring: 5→8 types** ✅ **January 3, 2026**
+    - [x] Split `exact` → `exact_symbolic` (formula) + `exact_coef` (basis weights, future)
+    - [x] Split `numerical` → `approx_coef` (functional form) + `discrete_points` (samples) + `series` (expansions)
+    - [x] Keep `family`, `regularized`, `none` unchanged
+    - [x] New strategy: **neumann_series** (4-term Neumann expansions) → `series` type
+    - [x] Rationale: Clear pedagogical signals, different evaluation methods, mathematical rigor
+    - [x] Updated: All 18 augmentation files, splitter.py, augmentation.py, validation script
+    - [x] **Folder reorganization** ✅ **January 3, 2026**
+      - [x] Renamed folders to match solution type taxonomy
+      - [x] OLD: no_solution/, numerical_only/, regularization_required/, non_unique_solution/
+      - [x] NEW: exact_symbolic/, approx_coef/, discrete_points/, series/, family/, regularized/, none_solution/
+      - [x] Updated: All __init__.py files, augmentation.py strategy groups, README.md
+      - [x] Distribution: 18 strategies across 7 folders (4+5+2+1+1+1+4)
+  - [x] Validation script - Comprehensive checks for all 14 strategies and 8 solution types ✅ **scripts/validate_augmented_data.py**
   - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: all augmentation files**
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
 - [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
@@ -198,8 +211,8 @@ All core components validated at unit level.
 - **Default Split**: 80/0/20 (train/validation/test)
 - **Stratification**: Maintains balance across:
   - Original vs augmented equations (86.7% / 13.3%)
-  - Solution types (exact, numerical, none, regularized, family)
-  - Edge case types (12 different types)
+  - Solution types (exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
+  - Edge case types (14 strategies, 42 variants)
 - **Edge Case Handling**:
   - Invalid ratios → Auto-adjust to valid proportions
   - Single item datasets → Assign to train split

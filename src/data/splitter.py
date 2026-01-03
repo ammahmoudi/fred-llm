@@ -71,7 +71,7 @@ def split_dataset(
     if "augmented" not in df.columns:
         df["augmented"] = False
     if "solution_type" not in df.columns:
-        df["solution_type"] = "exact"
+        df["solution_type"] = "exact_symbolic"
     if "edge_case" not in df.columns:
         df["edge_case"] = ""
 
@@ -248,7 +248,7 @@ def get_split_statistics(
 
         # Count solution types
         solution_types = (
-            df.get("solution_type", pd.Series(["exact"] * len(df)))
+            df.get("solution_type", pd.Series(["exact_symbolic"] * len(df)))
             .value_counts()
             .to_dict()
         )

@@ -184,13 +184,14 @@ class FredholmEquation:
             "augmentation_variant": "fredholm_dataset",
             # Solution metadata fields (6 fields)
             "has_solution": True,
-            "solution_type": "exact",
+            "solution_type": "exact_symbolic",
             "edge_case": None,
-            "reason": "Original Fredholm-LLM dataset equation (DOI: 10.5281/zenodo.16784707) - well-posed second kind with exact symbolic solution",
+            "reason": "Original Fredholm-LLM dataset equation (DOI: 10.5281/zenodo.16784707) - generated with known solution u(x) where f(x) = u(x) - λ∫K(x,t)u(t)dt",
             "recommended_methods": [
-                "symbolic_solution",
-                "Neumann_series",
-                "separable_kernel_method",
+                "Neumann_series",  # u = Σ(λⁿKⁿf) converges when |λ|<1/||K||; dataset has λ∈[-10,10]
+                "separable_kernel",  # K(x,t)=Σaᵢ(x)bᵢ(t) reduces to linear system; effective for polynomial kernels
+                "symbolic_solution",  # Direct verification since u(x) is known by construction (f = u - λ∫Ku dt)
+                "collocation",  # Numerical approximation using discrete points; robust for various kernel types
             ],
             "numerical_challenge": None,
             # Additional metadata from dataset

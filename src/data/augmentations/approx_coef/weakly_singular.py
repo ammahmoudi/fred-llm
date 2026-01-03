@@ -42,7 +42,7 @@ class WeaklySingularAugmentation(BaseAugmentation):
     Label:
         {
             "has_solution": true,
-            "solution_type": "numerical",
+            "solution_type": "approx_coef",
             "edge_case": "weakly_singular",
             "singularity_type": "logarithmic|power_law|algebraic",
             "recommended_methods": ["product_integration", "singularity_subtraction"]
@@ -90,7 +90,7 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "weakly_singular",
                 "singularity_type": "logarithmic",
                 "singularity_order": 0,  # log singularity has order 0
@@ -117,7 +117,7 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "weakly_singular",
                 "singularity_type": "power_law",
                 "singularity_order": 0.5,  # α = 0.5
@@ -144,7 +144,7 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "weakly_singular",
                 "singularity_type": "algebraic_mixed",
                 "singularity_order": 0.5,

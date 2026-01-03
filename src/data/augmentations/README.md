@@ -22,7 +22,7 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 | `f_type` | ExpressionType | ✅ | Expression type for f (from CSV metadata) |
 | `kernel_type` | ExpressionType | ✅ | Expression type for kernel (from CSV metadata) |
 | `augmented` | bool | ✅ | `False` for original, `True` for augmented |
-| `augmentation_type` | str | ✅ | Strategy name (e.g., "scale", "no_solution") |
+| `augmentation_type` | str | ✅ | Strategy name (e.g., "scale", "eigenvalue_cases", "boundary_layer") |
 | `augmentation_variant` | str | ✅ | Specific variant (e.g., "scale_2.0x") |
 | `has_solution` | bool | ✅ | Solution exists? |
 | `solution_type` | str | ✅ | `"exact"` \| `"none"` \| `"numerical"` \| `"regularized"` \| `"family"` |
@@ -40,27 +40,39 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 - `recommended_methods`: `[]`
 - `numerical_challenge`: `null`
 
-**No Solution Cases** (no_solution folder):
+**None Solution Cases** (none_solution folder):
 - `solution_type`: `"none"`
-- `u`: `"None"`
+- `u`: `""` (empty string)
 - `has_solution`: `false`
-- `edge_case`: `"no_solution"` | `"range_violation"` | `"divergent_kernel"`
+- `edge_case`: `"eigenvalue_cases"` | `"range_violation"` | `"divergent_kernel"` | `"disconnected_support"`
 
-**Numerical Only** (numerical_only folder):
-- `solution_type`: `"numerical"`
-- `u`: `"Numerical"`
+**Approx Coef** (approx_coef folder):
+- `solution_type`: `"approx_coef"`
+- `u`: Functional form with numerical params (e.g., `"exp(-x/0.01)"`, `"sin(100*pi*x)"`)
 - `has_solution`: `true`
-- `edge_case`: `"approximate_only"` | `"weakly_singular"` | etc.
+- `edge_case`: `"boundary_layer"` | `"oscillatory_solution"` | `"weakly_singular"` | etc.
 
-**Regularization Required** (regularization_required folder):
+**Discrete Points** (discrete_points folder):
+- `solution_type`: `"discrete_points"`
+- `u`: `""` (empty string, uses sample_points arrays)
+- `has_solution`: `true`
+- `edge_case`: `"complex_kernels"` | `"near_resonance"`
+
+**Series** (series folder):
+- `solution_type`: `"series"`
+- `u`: Series expansion (e.g., `"f(x) + lambda*int(K) + lambda^2*int(K^2) + ..."`)
+- `has_solution`: `true`
+- `edge_case`: `"neumann_series"`
+
+**Regularized** (regularized folder):
 - `solution_type`: `"regularized"`
-- `u`: `"Requires regularization"`
+- `u`: `""` (empty string, requires Tikhonov/TSVD)
 - `has_solution`: `true`
 - `edge_case`: `"ill_posed"`
 
-**Non-Unique Solution** (non_unique_solution folder):
+**Family** (family folder):
 - `solution_type`: `"family"`
-- `u`: Shows solution family (e.g., `"C * sin(pi*x)"`)
+- `u`: Shows solution family (e.g., `"C * sin(pi*x) + u_p"`, `"C"` for simple cases)
 - `has_solution`: `true`
 - `edge_case`: `"resonance"`
 
@@ -117,7 +129,7 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 **No Solution:**
 ```json
 {
-  "u": "None",
+  "u": "",
   "f": "x",
   "kernel": "1",
   "lambda_val": "1.0",
@@ -125,11 +137,11 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
   "a": "0",
   "b": "1",
   "augmented": true,
-  "augmentation_type": "no_solution",
+  "augmentation_type": "eigenvalue_cases",
   "augmentation_variant": "constant_kernel_eigenvalue",
   "has_solution": false,
   "solution_type": "none",
-  "edge_case": "no_solution",
+  "edge_case": "eigenvalue_cases",
   "reason": "Violates Fredholm Alternative - λ is eigenvalue of constant kernel",
   "recommended_methods": ["Check Fredholm Alternative conditions", "Verify eigenvalue"],
   "numerical_challenge": null
@@ -182,30 +194,36 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 
 ## Directory Structure
 
-Organized by **solution type** (what the LLM should output):
+Organized by **solution type** (folder names match solution_type values):
 
 ```
 src/data/augmentations/
-├── no_solution/              # solution_type: "none"
-│   ├── eigenvalue_cases.py   # Eigenvalue violations (was no_solution.py)
-│   ├── range_violation.py    # RHS not in operator range
-│   └── divergent_kernel.py   # Non-integrable singularities
-├── numerical_only/           # solution_type: "numerical"
-│   ├── complex_kernels.py    # No symbolic antiderivative (was approximate_only.py)
+├── exact_symbolic/          # solution_type: "exact_symbolic"
+│   ├── substitute.py         # Variable transformations
+│   ├── scale.py              # Lambda scaling
+│   ├── shift.py              # Domain shifting
+│   └── compose.py            # Kernel composition
+├── approx_coef/             # solution_type: "approx_coef"
+│   ├── boundary_layer.py     # Sharp gradient solutions (exp(-x/ε))
+│   ├── oscillatory_solution.py  # High-frequency oscillations (sin(ωx))
 │   ├── weakly_singular.py    # Integrable singularities
-│   ├── boundary_layer.py     # Sharp gradient solutions
-│   ├── oscillatory_solution.py  # High-frequency oscillations
 │   ├── mixed_type.py         # Volterra + Fredholm mix
 │   └── compact_support.py    # Sparse kernel structure
-├── regularization_required/  # solution_type: "regularized"
+├── discrete_points/         # solution_type: "discrete_points"
+│   ├── complex_kernels.py    # No symbolic antiderivative
+│   └── near_resonance.py     # Ill-conditioned systems
+├── series/                  # solution_type: "series"
+│   └── neumann_series.py     # Neumann expansion (N=4 terms)
+├── family/                  # solution_type: "family"
+│   └── resonance.py          # Eigenvalue resonance (non-unique)
+├── regularized/             # solution_type: "regularized"
 │   └── ill_posed.py          # Ill-conditioned problems
-├── non_unique_solution/      # solution_type: "family"
-│   └── resonance.py          # Eigenvalue resonance cases
-├── base.py                   # Base class for all strategies
-├── substitute.py             # Basic transformations (untested)
-├── scale.py
-├── shift.py
-├── compose.py
+├── none_solution/           # solution_type: "none"
+│   ├── eigenvalue_cases.py   # Eigenvalue violations
+│   ├── range_violation.py    # RHS not in operator range
+│   ├── divergent_kernel.py   # Non-integrable singularities
+│   └── disconnected_support.py # Rank-deficient operators
+├── base.py                  # Base class for all strategies
 └── README.md
 ```
 
@@ -269,19 +287,19 @@ When augmenting datasets with edge cases, maintain proper balance for optimal LL
 ### Practical Examples
 
 ```bash
-# All 4 folder strategies (runs all 11 strategies): Conservative multiplier (1.15x = 87% exact)
+# All 6 edge case folders (runs all 14 strategies): Conservative multiplier (1.15x = 87% exact)
 uv run python scripts/prepare_dataset.py `
   --input data/raw/Fredholm_Dataset_Sample.csv `
   --augment --augment-multiplier 1.15 `
-  --augment-strategies no_solution numerical_only regularization_required non_unique_solution `
+  --augment-strategies none approx_coef discrete_points series family regularized `
   --no-convert
 # Output: ~5,750 total (5,000 exact + ~750 edge cases = 87% exact)
 
-# Original 3 folders only (no_solution + numerical_only/complex_kernels + regularization_required): Higher multiplier (1.33x = 75% exact)
+# Core edge cases only (none + discrete_points + regularized): Higher multiplier (1.33x = 75% exact)
 uv run python scripts/prepare_dataset.py `
   --input data/raw/Fredholm_Dataset_Sample.csv `
   --augment --augment-multiplier 1.33 `
-  --augment-strategies no_solution regularization_required `
+  --augment-strategies none discrete_points regularized `
   --no-convert
 
 # Specific folder only: Target one solution category
@@ -293,28 +311,31 @@ uv run python scripts/prepare_dataset.py `
 
 ## Folder-Based Strategy System
 
-**NEW**: Strategies are now organized into folders by solution type. When you specify a folder name, ALL strategies in that folder are executed:
+**Strategies are organized into folders by solution type.** When you specify a folder name, ALL strategies in that folder are executed:
 
 ```bash
-# Using "no_solution" runs 3 strategies:
---augment-strategies no_solution
+# Using "none" runs 4 strategies:
+--augment-strategies none
 # → eigenvalue_cases.py (3 variants)
 # → range_violation.py (3 variants)  
 # → divergent_kernel.py (3 variants)
-# Total: 9 edge cases per equation
+# → disconnected_support.py (3 variants)
+# Total: 12 edge cases per equation
 
-# Using "numerical_only" runs 6 strategies:
---augment-strategies numerical_only
-# → complex_kernels.py, weakly_singular.py, boundary_layer.py,
-#   oscillatory_solution.py, mixed_type.py, compact_support.py
-# Total: 18 edge cases per equation
+# Using "approx_coef" runs 5 strategies:
+--augment-strategies approx_coef
+# → boundary_layer.py, oscillatory_solution.py, weakly_singular.py,
+#   mixed_type.py, compact_support.py
+# Total: 15 edge cases per equation
 ```
 
-**Available Folder Strategies:**
-- `no_solution` → 3 strategies → 9 variants per equation
-- `numerical_only` → 6 strategies → 18 variants per equation
-- `regularization_required` → 1 strategy → 3 variants per equation
-- `non_unique_solution` → 1 strategy → 3 variants per equation
+**Available Folder Strategies (18 strategies, 42 variants total):**
+- `none` → 4 strategies → 12 variants per equation
+- `approx_coef` → 5 strategies → 15 variants per equation
+- `discrete_points` → 2 strategies → 6 variants per equation
+- `series` → 1 strategy → 3 variants per equation
+- `family` → 1 strategy → 3 variants per equation
+- `regularized` → 1 strategy → 3 variants per equation
 ```
 
 ## Available Strategies
@@ -409,7 +430,7 @@ uv run python scripts/prepare_dataset.py `
 
 These augmentations create realistic problem scenarios where standard symbolic methods fail.
 
-#### 5. No-Solution Cases (`no_solution.py`)
+#### 5. Eigenvalue Cases (`eigenvalue_cases.py`)
 **Category**: The "No Solution" (Singular) Case
 
 **Purpose**: Generate equations where λ is an eigenvalue of the kernel, violating the Fredholm Alternative.
@@ -540,7 +561,7 @@ These augmentations create realistic problem scenarios where standard symbolic m
   "has_solution": false,
   "solution_type": "none",
   "reason": "Violates Fredholm Alternative - λ is eigenvalue",
-  "edge_case": "no_solution"
+  "edge_case": "eigenvalue_cases"
 }
 ```
 
@@ -548,8 +569,8 @@ These augmentations create realistic problem scenarios where standard symbolic m
 
 ---
 
-#### 6. Approximate-Only Cases (`approximate_only.py`)
-**Category**: The "Approximate Only" Case
+#### 6. Complex Kernels (`complex_kernels.py`)
+**Category**: The "Discrete Points Only" Case
 
 **Purpose**: Generate equations with no closed-form symbolic solution, requiring numerical methods.
 
@@ -635,9 +656,9 @@ augmented_data = augmenter.augment(data, multiplier=2)
 augmenter = DataAugmenter(strategies=["substitute", "scale"])
 augmented_data = augmenter.augment(data, multiplier=3)
 
-# Include edge cases
+# Include edge cases (use folder names)
 augmenter = DataAugmenter(
-    strategies=["substitute", "no_solution", "approximate_only", "ill_posed"]
+    strategies=["substitute", "none", "discrete_points", "regularized"]
 )
 augmented_data = augmenter.augment(data, multiplier=2)
 ```
@@ -649,14 +670,19 @@ augmented_data = augmenter.augment(data, multiplier=2)
 uv run python scripts/prepare_dataset.py \
   --augment \
   --augment-multiplier 1.33 \
-  --augment-strategies no_solution approximate_only ill_posed
+  --augment-strategies none discrete_points regularized
 
-# Include advanced edge cases
+# Include all edge case types
 uv run python scripts/prepare_dataset.py \
   --augment \
   --augment-multiplier 1.5 \
   --augment-strategies \
-    no_solution \
+    none \
+    approx_coef \
+    discrete_points \
+    series \
+    family \
+    regularized
     approximate_only \
     ill_posed \
     weakly_singular \
@@ -669,12 +695,11 @@ uv run python scripts/prepare_dataset.py \
   --augment-multiplier 1.1 \
   --augment-strategies weakly_singular
 
-# All strategies (basic + edge cases + advanced)
+# All strategies (basic transformations + all edge case folders)
 uv run python scripts/prepare_dataset.py \
   --augment \
   --augment-strategies substitute scale shift compose \
-    no_solution approximate_only ill_posed \
-    weakly_singular boundary_layer resonance
+    none approx_coef discrete_points series family regularized
 ```
 
 ### Direct Usage

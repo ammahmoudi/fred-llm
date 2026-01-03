@@ -128,11 +128,14 @@ prompt = style.generate(eq)
 **Edge case fields**:
 - `has_solution`: `True`/`False` - whether a solution exists
 - `solution_type`: one of:
-  - `exact` - closed-form symbolic solution
-  - `numerical` - only numerical approximation possible
+  - `exact_symbolic` - closed-form symbolic solution (e.g., u(x) = sin(x))
+  - `exact_coef` - exact solution with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
+  - `approx_coef` - approximate solution with unknown coefficients (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+  - `discrete_points` - solution defined only at discrete points
+  - `series` - solution as infinite series (e.g., u(x) = Σ aₙxⁿ)
+  - `family` - family of solutions (multiple valid solutions)
+  - `regularized` - ill-posed equation requiring regularization
   - `none` - no solution exists
-  - `regularized` - ill-posed, needs regularization
-  - `family` - solution family (multiple solutions)
 
 ### CLI Commands
 

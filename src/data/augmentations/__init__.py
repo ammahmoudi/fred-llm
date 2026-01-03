@@ -1,61 +1,87 @@
 """
 Augmentation strategies for Fredholm integral equations.
 
-Organized by solution type:
-- no_solution: Equations with no solution (eigenvalue, range, divergent)
-- numerical_only: Numerical approximation required (complex, singular, oscillatory)
-- regularization_required: Ill-posed problems needing regularization
-- non_unique_solution: Solution families (resonance)
-- Basic transformations: substitute, scale, shift, compose (untested)
+Strategies are organized by solution type (8 types total):
+
+## Folder Structure (by Solution Type)
+
+- **exact_symbolic/**: Closed-form analytical solutions (substitute, scale, shift, compose)
+- **exact_coef/**: Finite basis with exact coefficients (future)
+- **approx_coef/**: Functional forms with numerical params (boundary_layer, oscillatory, etc.)
+- **discrete_points/**: Pure point samples (complex_kernels, near_resonance)
+- **series/**: Truncated series expansions (neumann_series)
+- **family/**: Non-unique solution families (resonance)
+- **regularized/**: Ill-posed equations (ill_posed)
+- **none_solution/**: No solution exists (eigenvalue_cases, range_violation, etc.)
+
+## Solution Type Mapping
+
+| Solution Type | Folder | Count |
+|---------------|--------|-------|
+| exact_symbolic | exact_symbolic/ | 4 strategies |
+| approx_coef | approx_coef/ | 5 strategies |
+| discrete_points | discrete_points/ | 2 strategies |
+| series | series/ | 1 strategy |
+| family | family/ | 1 strategy |
+| regularized | regularized/ | 1 strategy |
+| none | none_solution/ | 4 strategies |
+
+**Total: 18 strategies (4 basic + 14 edge cases)**
 """
 
+from src.data.augmentations.approx_coef import (
+    BoundaryLayerAugmentation,
+    CompactSupportAugmentation,
+    MixedTypeAugmentation,
+    OscillatorySolutionAugmentation,
+    WeaklySingularAugmentation,
+)
 from src.data.augmentations.base import BaseAugmentation
-from src.data.augmentations.compose import ComposeAugmentation
-
-# Import from solution-type organized folders
-from src.data.augmentations.no_solution import (
+from src.data.augmentations.discrete_points import (
+    ApproximateOnlyAugmentation,
+    NearResonanceAugmentation,
+)
+from src.data.augmentations.exact_symbolic import (
+    ComposeAugmentation,
+    ScaleAugmentation,
+    ShiftAugmentation,
+    SubstituteAugmentation,
+)
+from src.data.augmentations.family import ResonanceAugmentation
+from src.data.augmentations.none_solution import (
     DisconnectedSupportAugmentation,
     DivergentKernelAugmentation,
     NoSolutionAugmentation,
     RangeViolationAugmentation,
 )
-from src.data.augmentations.non_unique_solution import ResonanceAugmentation
-from src.data.augmentations.numerical_only import (
-    ApproximateOnlyAugmentation,
-    BoundaryLayerAugmentation,
-    CompactSupportAugmentation,
-    MixedTypeAugmentation,
-    NearResonanceAugmentation,
-    OscillatorySolutionAugmentation,
-    WeaklySingularAugmentation,
-)
-from src.data.augmentations.regularization_required import IllPosedAugmentation
-from src.data.augmentations.scale import ScaleAugmentation
-from src.data.augmentations.shift import ShiftAugmentation
-from src.data.augmentations.substitute import SubstituteAugmentation
+from src.data.augmentations.regularized import IllPosedAugmentation
+from src.data.augmentations.series import NeumannSeriesAugmentation
 
 __all__ = [
     "BaseAugmentation",
-    # Basic transformations (untested)
+    # Exact symbolic (4)
     "SubstituteAugmentation",
     "ScaleAugmentation",
     "ShiftAugmentation",
     "ComposeAugmentation",
-    # No solution
+    # Approx coef (5)
+    "BoundaryLayerAugmentation",
+    "OscillatorySolutionAugmentation",
+    "WeaklySingularAugmentation",
+    "MixedTypeAugmentation",
+    "CompactSupportAugmentation",
+    # Discrete points (2)
+    "ApproximateOnlyAugmentation",
+    "NearResonanceAugmentation",
+    # Series (1)
+    "NeumannSeriesAugmentation",
+    # Family (1)
+    "ResonanceAugmentation",
+    # Regularized (1)
+    "IllPosedAugmentation",
+    # None (4)
     "NoSolutionAugmentation",
     "RangeViolationAugmentation",
     "DivergentKernelAugmentation",
     "DisconnectedSupportAugmentation",
-    # Numerical only
-    "ApproximateOnlyAugmentation",
-    "WeaklySingularAugmentation",
-    "BoundaryLayerAugmentation",
-    "OscillatorySolutionAugmentation",
-    "MixedTypeAugmentation",
-    "CompactSupportAugmentation",
-    "NearResonanceAugmentation",
-    # Regularization required
-    "IllPosedAugmentation",
-    # Non-unique solution
-    "ResonanceAugmentation",
 ]

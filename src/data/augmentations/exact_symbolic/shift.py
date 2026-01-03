@@ -57,7 +57,7 @@ class ShiftAugmentation(BaseAugmentation):
                 new_item["augmentation_variant"] = shift_name
                 # Required standard fields
                 new_item["has_solution"] = True
-                new_item["solution_type"] = "exact"
+                new_item["solution_type"] = "exact_symbolic"
                 new_item["edge_case"] = None
                 new_item["reason"] = "Integration domain shift transformation"
                 new_item["recommended_methods"] = []

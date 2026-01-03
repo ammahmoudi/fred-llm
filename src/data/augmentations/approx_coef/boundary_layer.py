@@ -51,7 +51,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
     Label:
         {
             "has_solution": true,
-            "solution_type": "numerical",
+            "solution_type": "approx_coef",
             "edge_case": "boundary_layer",
             "layer_location": "left|right|both",
             "layer_width_estimate": epsilon_value,
@@ -59,7 +59,11 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         }
     """
 
-    def __init__(self, epsilon: float = 0.01, num_sample_points: int = 20) -> None:
+    def __init__(
+        self,
+        epsilon: float = 0.01,
+        num_sample_points: int = 20
+    ) -> None:
         """
         Initialize boundary layer augmentation.
 
@@ -86,9 +90,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(
-                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
-            )
+            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
 
             # Reduce lambda to prevent numerical instability
             lambda_scaled = lambda_val * 0.2
@@ -99,12 +101,12 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "u": f"exp(-(x - {a})/{self.epsilon})",  # Boundary layer solution
                 "f": f"exp(-(x - {a})/{self.epsilon})",  # RHS matches layer
                 "kernel": "x * t",  # Simple separable kernel
-                "lambda": str(lambda_scaled),
+                "lambda_val": str(lambda_scaled),
                 "lambda_val": str(lambda_scaled),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "boundary_layer",
                 "layer_location": "left",
                 "layer_width_estimate": self.epsilon,
@@ -112,7 +114,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "exponential_mesh_grading",
-                    "shishkin_mesh",
+                    "shishkin_mesh"
                 ],
                 "numerical_challenge": f"Rapid variation in layer of width {self.epsilon} at x={a}",
                 "minimum_points_in_layer": int(10),  # Need at least 10 points in layer
@@ -128,12 +130,12 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "u": f"exp((x - {b})/{self.epsilon})",
                 "f": f"exp((x - {b})/{self.epsilon})",
                 "kernel": "1 + x + t",  # Slightly more complex kernel
-                "lambda": str(lambda_scaled),
+                "lambda_val": str(lambda_scaled),
                 "lambda_val": str(lambda_scaled),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "boundary_layer",
                 "layer_location": "right",
                 "layer_width_estimate": self.epsilon,
@@ -141,7 +143,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "exponential_mesh_grading",
-                    "shishkin_mesh",
+                    "shishkin_mesh"
                 ],
                 "numerical_challenge": f"Rapid variation in layer of width {self.epsilon} at x={b}",
                 "minimum_points_in_layer": int(10),
@@ -158,12 +160,12 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "u": f"(tanh((x - {a})/{self.epsilon}) + tanh(({b} - x)/{self.epsilon}))/2",
                 "f": f"(tanh((x - {a})/{self.epsilon}) + tanh(({b} - x)/{self.epsilon}))/2",
                 "kernel": "sin(x) * cos(t)",
-                "lambda": str(lambda_scaled * 0.5),  # Reduce further for stability
+                "lambda_val": str(lambda_scaled * 0.5),  # Reduce further for stability
                 "lambda_val": str(lambda_scaled * 0.5),
                 "a": str(a),
                 "b": str(b),
                 "has_solution": True,
-                "solution_type": "numerical",
+                "solution_type": "approx_coef",
                 "edge_case": "boundary_layer",
                 "layer_location": "both",
                 "layer_width_estimate": self.epsilon,
@@ -171,7 +173,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "double_exponential_grading",
-                    "shishkin_mesh_double",
+                    "shishkin_mesh_double"
                 ],
                 "numerical_challenge": f"Two boundary layers of width {self.epsilon} at x={a} and x={b}",
                 "minimum_points_in_layer": int(15),  # More points needed for 2 layers
@@ -209,7 +211,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         # exp(x) overflows around x > 700, so we cap at a reasonable value
         max_exp_arg = 50  # exp(50) ≈ 5e21, sufficient for graded mesh
         exp_arg = min((b - a) / epsilon, max_exp_arg)
-
+        
         if layer_position == a:
             # Graded mesh near x=a
             # Use transformation: x = a + ε*log(1 + α*ξ) where ξ ∈ [0,1]
@@ -226,14 +228,14 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         # Generate sample points
         samples = []
         for xi in x_points:
-            for ti in x_points[: n // 2]:  # Use half for t to limit total points
+            for ti in x_points[:n//2]:  # Use half for t to limit total points
                 samples.append([float(xi), float(ti)])
                 if len(samples) >= self.num_sample_points:
                     break
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[: self.num_sample_points]
+        return samples[:self.num_sample_points]
 
     def _generate_double_layer_mesh(
         self, a: float, b: float, epsilon: float
@@ -251,10 +253,10 @@ class BoundaryLayerAugmentation(BaseAugmentation):
 
         # Left layer [a, a + 3ε]
         left_layer = np.linspace(a, a + 3 * epsilon, n_layer)
-
+        
         # Interior [a + 3ε, b - 3ε]
         interior = np.linspace(a + 3 * epsilon, b - 3 * epsilon, n_interior)
-
+        
         # Right layer [b - 3ε, b]
         right_layer = np.linspace(b - 3 * epsilon, b, n_layer)
 
@@ -270,4 +272,4 @@ class BoundaryLayerAugmentation(BaseAugmentation):
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[: self.num_sample_points]
+        return samples[:self.num_sample_points]

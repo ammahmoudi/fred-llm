@@ -12,7 +12,7 @@ class ChainOfThoughtPromptStyle(PromptStyle):
 
     def get_system_prompt(self, format_type: str = "infix") -> str:
         """Get system prompt for chain-of-thought style.
-        
+
         Args:
             format_type: Output format (infix/latex/rpn)
         """
@@ -20,10 +20,12 @@ class ChainOfThoughtPromptStyle(PromptStyle):
         format_instructions = {
             "infix": "Express your solution in infix notation (e.g., x**2 + sin(x), exp(-x)*cos(x)).",
             "latex": "Express your solution in LaTeX notation (e.g., x^2 + \\sin(x), e^{-x}\\cos(x)).",
-            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *)."
+            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *).",
         }
-        format_instruction = format_instructions.get(format_type, format_instructions["infix"])
-        
+        format_instruction = format_instructions.get(
+            format_type, format_instructions["infix"]
+        )
+
         return f"""You are an expert mathematician specializing in integral equations.
 Your task is to solve Fredholm integral equations.
 

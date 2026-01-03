@@ -17,7 +17,7 @@ class FewShotPromptStyle(PromptStyle):
 
     def get_system_prompt(self, format_type: str = "infix") -> str:
         """Get system prompt with examples for few-shot style.
-        
+
         Args:
             format_type: Output format (infix/latex/rpn)
         """
@@ -25,10 +25,12 @@ class FewShotPromptStyle(PromptStyle):
         format_instructions = {
             "infix": "Express your solution in infix notation (e.g., x**2 + sin(x), exp(-x)*cos(x)).",
             "latex": "Express your solution in LaTeX notation (e.g., x^2 + \\sin(x), e^{-x}\\cos(x)).",
-            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *)."
+            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *).",
         }
-        format_instruction = format_instructions.get(format_type, format_instructions["infix"])
-        
+        format_instruction = format_instructions.get(
+            format_type, format_instructions["infix"]
+        )
+
         base_prompt = f"""You are an expert mathematician specializing in integral equations.
 I will show you examples of solved Fredholm integral equations, then ask you to solve a new one.
 

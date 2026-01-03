@@ -108,7 +108,7 @@ class PromptStyle(ABC):
     @abstractmethod
     def get_system_prompt(self, format_type: str = "infix") -> str:
         """Get the system prompt for this style.
-        
+
         Args:
             format_type: Output format (infix/latex/rpn)
         """

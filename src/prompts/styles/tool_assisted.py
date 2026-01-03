@@ -13,9 +13,13 @@ class ToolAssistedPromptStyle(PromptStyle):
     def get_system_prompt(self) -> str:
         """Get system prompt for tool-assisted style."""
         return """You are an expert mathematician with access to computational tools.
-Your task is to solve Fredholm integral equations of the second kind.
+Your task is to solve Fredholm integral equations.
 
-The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+The equation may be of the second kind:
+  u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+
+Or of the first kind (ill-posed, requires regularization):
+  ∫_a^b K(x, t) u(t) dt = g(x)
 
 You can use the following tools:
 - integrate(expr, var, a, b): Compute definite integral
@@ -23,7 +27,20 @@ You can use the following tools:
 - solve(equation, var): Solve equation for variable
 - series(expr, var, n): Expand in series
 
-Show your work using these tools when helpful."""
+Show your work using these tools when helpful, then provide the final answer in this format:
+SOLUTION: u(x) = [your solution here]
+HAS_SOLUTION: [yes/no]
+SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+
+For SOLUTION_TYPE:
+- exact_symbolic: Closed-form symbolic solution
+- exact_coef: Exact with unknown coefficients
+- approx_coef: Approximate with coefficients
+- discrete_points: Solution only at discrete points
+- series: Infinite series solution
+- family: Family of solutions (non-unique)
+- regularized: Ill-posed, requires regularization
+- none: No solution exists"""
 
     def get_user_prompt(
         self,

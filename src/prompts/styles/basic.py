@@ -13,11 +13,30 @@ class BasicPromptStyle(PromptStyle):
     def get_system_prompt(self) -> str:
         """Get system prompt for basic style."""
         return """You are an expert mathematician specializing in integral equations.
-Given a Fredholm integral equation of the second kind, find the solution u(x).
+Given a Fredholm integral equation, find the solution u(x).
 
-The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+The equation may be of the second kind:
+  u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
 
-Provide your answer as a mathematical expression for u(x)."""
+Or of the first kind (ill-posed, requires regularization):
+  ∫_a^b K(x, t) u(t) dt = g(x)
+
+Provide your answer in the following format:
+SOLUTION: u(x) = [your solution here]
+HAS_SOLUTION: [yes/no]
+SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+
+For SOLUTION_TYPE:
+- exact_symbolic: Closed-form symbolic solution (e.g., u(x) = sin(x))
+- exact_coef: Exact with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
+- approx_coef: Approximate with coefficients (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+- discrete_points: Solution only at discrete points
+- series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
+- family: Family of solutions (non-unique)
+- regularized: Ill-posed, requires regularization
+- none: No solution exists
+
+If no solution exists, write "No solution" for SOLUTION."""
 
     def get_user_prompt(
         self,

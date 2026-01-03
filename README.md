@@ -124,11 +124,21 @@ python scripts/run_prompt_generation.py \
 - Includes ground truth solutions for training
 - Outputs JSONL files to `data/prompts/{style}/` organized by style
 - Each prompt includes metadata (kernel, lambda, domain, edge case info)
+- **All prompts specify structured output format for evaluation**: `SOLUTION:`, `HAS_SOLUTION:`, `SOLUTION_TYPE:`
 
 **Edge case handling modes:**
 - `--edge-case-mode none` - Pure inference (default for test sets)
 - `--edge-case-mode guardrails` - Include edge case instructions
 - `--edge-case-mode hints` - Include has_solution and solution_type in prompts (for training)
+
+**Structured output format:**
+All generated prompts instruct LLMs to respond with:
+```
+SOLUTION: u(x) = [your solution]
+HAS_SOLUTION: yes/no
+SOLUTION_TYPE: exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none
+```
+This enables automated evaluation of solution correctness and edge case recognition accuracy.
 
 ### Folder-Based Strategy System
 

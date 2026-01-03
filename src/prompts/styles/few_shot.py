@@ -20,7 +20,26 @@ class FewShotPromptStyle(PromptStyle):
         base_prompt = """You are an expert mathematician specializing in integral equations.
 I will show you examples of solved Fredholm integral equations, then ask you to solve a new one.
 
-The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)"""
+The equation may be of the second kind:
+  u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+
+Or of the first kind (ill-posed, requires regularization):
+  ∫_a^b K(x, t) u(t) dt = g(x)
+
+Provide your final answer in this format:
+SOLUTION: u(x) = [your solution here]
+HAS_SOLUTION: [yes/no]
+SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+
+For SOLUTION_TYPE:
+- exact_symbolic: Closed-form symbolic solution
+- exact_coef: Exact with unknown coefficients
+- approx_coef: Approximate with coefficients
+- discrete_points: Solution only at discrete points
+- series: Infinite series solution
+- family: Family of solutions (non-unique)
+- regularized: Ill-posed, requires regularization
+- none: No solution exists"""
 
         if not self.include_examples:
             return base_prompt

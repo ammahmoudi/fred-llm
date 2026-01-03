@@ -13,9 +13,13 @@ class ChainOfThoughtPromptStyle(PromptStyle):
     def get_system_prompt(self) -> str:
         """Get system prompt for chain-of-thought style."""
         return """You are an expert mathematician specializing in integral equations.
-Your task is to solve Fredholm integral equations of the second kind.
+Your task is to solve Fredholm integral equations.
 
-The general form is: u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+The equation may be of the second kind:
+  u(x) - λ ∫_a^b K(x, t) u(t) dt = f(x)
+
+Or of the first kind (ill-posed, requires regularization):
+  ∫_a^b K(x, t) u(t) dt = g(x)
 
 Approach each problem systematically:
 1. Identify the kernel K(x, t), the known function f(x), and the parameter λ
@@ -23,9 +27,22 @@ Approach each problem systematically:
 3. Choose an appropriate solution method
 4. Apply the method step by step
 5. Verify the solution satisfies the original equation
-6. Present the final solution u(x)
+6. Present the final solution
 
-Show your reasoning at each step."""
+Show your reasoning at each step, then provide the final answer in this format:
+SOLUTION: u(x) = [your solution here]
+HAS_SOLUTION: [yes/no]
+SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+
+For SOLUTION_TYPE:
+- exact_symbolic: Closed-form symbolic (e.g., sin(x))
+- exact_coef: Exact with unknown coefficients (e.g., c₁sin(x) + c₂cos(x))
+- approx_coef: Approximate with coefficients (e.g., a₀ + a₁x + a₂x²)
+- discrete_points: Only discrete point samples
+- series: Infinite series (e.g., Σ aₙxⁿ)
+- family: Multiple valid solutions
+- regularized: Ill-posed, needs regularization
+- none: No solution exists"""
 
     def get_user_prompt(
         self,

@@ -96,6 +96,11 @@ This document tracks all features - implemented and planned. Check off items as 
     - `none`: Pure inference, no edge case instructions
     - `guardrails`: Brief instruction to state if no solution exists
     - `hints`: Include `has_solution` and `solution_type` in prompt
+  - [x] **Structured output format** - Standardized LLM response format for evaluation ✅ **(January 3, 2026)**
+    - All 4 prompt styles specify SOLUTION:/HAS_SOLUTION:/SOLUTION_TYPE: format
+    - Enables reliable extraction of solution correctness and edge case recognition
+    - Postprocessor with regex patterns for has_solution (yes/no) and solution_type (8 types)
+    - Evaluation metrics: solution correctness, has_solution accuracy, solution_type classification (8-class)
   - [x] Test coverage - 30 tests covering all components ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**
@@ -107,6 +112,14 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Symbolic evaluation - SymPy-based expression comparison ✅ **Implemented in evaluate.py**
 - [x] Numeric evaluation - MAE, MSE, RMSE metrics ✅ **Implemented in evaluate.py**
 - [x] Postprocessing - Extract solutions from LLM responses ✅ **Regex patterns in postprocess.py**
+- [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
+  - _extract_has_solution(): Regex patterns for yes/no classification with validation
+  - _extract_solution_type(): Regex patterns for 8-class solution type recognition
+  - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
+- [ ] **Edge case evaluation metrics** - Measure edge case recognition accuracy ⚠️ **Structured output ready, metrics TODO**
+  - [ ] has_solution accuracy (binary classification: TP/TN/FP/FN)
+  - [ ] solution_type accuracy (8-class: exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none)
+  - [ ] Edge case recognition rate (% of edge cases correctly identified)
 - [ ] BLEU / TeX-BLEU - Token-level similarity metrics ❌ **Not started**
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**
 - [ ] Generalization testing - Performance on unseen function types ❌ **Not started**

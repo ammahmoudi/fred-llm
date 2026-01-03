@@ -31,7 +31,7 @@ def parse_llm_output(
     validate: bool = True,
 ) -> dict[str, Any]:
     """
-    Parse LLM response and extract mathematical solution.
+    Parse LLM response and extract mathematical solution with metadata.
 
     Args:
         response: Raw LLM response text.
@@ -42,12 +42,16 @@ def parse_llm_output(
         Dictionary with parsed components:
         - solution_str: Solution as string
         - solution_sympy: Solution as SymPy expression
+        - has_solution: Whether solution exists (bool or None)
+        - solution_type: Type of solution (str or None)
         - reasoning: Extracted reasoning steps
         - confidence: Estimated confidence score
     """
     result = {
         "solution_str": None,
         "solution_sympy": None,
+        "has_solution": None,
+        "solution_type": None,
         "reasoning": None,
         "confidence": 0.0,
         "raw_response": response,
@@ -56,6 +60,10 @@ def parse_llm_output(
     if not response or not response.strip():
         logger.warning("Empty response received")
         return result
+
+    # Extract structured fields
+    result["has_solution"] = _extract_has_solution(response)
+    result["solution_type"] = _extract_solution_type(response)
 
     # Extract solution from response
     if extract_solution:
@@ -208,6 +216,55 @@ def _extract_reasoning(response: str) -> Optional[str]:
         steps = [m.strip() for m in matches if m.strip()]
 
     return "\n".join(steps) if steps else None
+
+
+def _extract_has_solution(response: str) -> Optional[bool]:
+    """
+    Extract has_solution flag from structured output.
+    
+    Looks for patterns like:
+    - HAS_SOLUTION: yes/no
+    - Has solution: Yes/No
+    """
+    pattern = r"HAS[_\s]SOLUTION\s*[:\s]+\s*(yes|no|true|false)"
+    match = re.search(pattern, response, re.IGNORECASE)
+    
+    if match:
+        value = match.group(1).lower()
+        return value in ("yes", "true")
+    
+    # Fallback: look for natural language indicators
+    if re.search(r"\bno\s+solution\s+exists?\b", response, re.IGNORECASE):
+        return False
+    if re.search(r"\bsolution\s+does\s+not\s+exist\b", response, re.IGNORECASE):
+        return False
+    
+    return None
+
+
+def _extract_solution_type(response: str) -> Optional[str]:
+    """
+    Extract solution_type from structured output.
+    
+    Looks for patterns like:
+    - SOLUTION_TYPE: exact_symbolic
+    - Solution type: approx_coef
+    """
+    pattern = r"SOLUTION[_\s]TYPE\s*[:\s]+\s*(\w+)"
+    match = re.search(pattern, response, re.IGNORECASE)
+    
+    if match:
+        value = match.group(1).lower()
+        # Validate against known types
+        valid_types = {
+            "exact_symbolic", "exact_coef", "approx_coef", 
+            "discrete_points", "series", "family", 
+            "regularized", "none"
+        }
+        if value in valid_types:
+            return value
+    
+    return None
 
 
 def extract_latex(response: str) -> list[str]:

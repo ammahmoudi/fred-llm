@@ -27,7 +27,9 @@ class EquationData:
 
     # Edge case fields (optional)
     has_solution: bool | None = None  # Whether a solution exists
-    solution_type: str | None = None  # exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none
+    solution_type: str | None = (
+        None  # exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none
+    )
 
 
 @dataclass

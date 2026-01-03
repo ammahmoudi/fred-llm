@@ -8,9 +8,7 @@ The solution has a formula but with numerical coefficients.
 All strategies have solution_type='approx_coef'.
 """
 
-from src.data.augmentations.approx_coef.boundary_layer import (
-    BoundaryLayerAugmentation,
-)
+from src.data.augmentations.approx_coef.boundary_layer import BoundaryLayerAugmentation
 from src.data.augmentations.approx_coef.compact_support import (
     CompactSupportAugmentation,
 )

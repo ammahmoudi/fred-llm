@@ -14,9 +14,7 @@ from src.data.augmentations.none_solution.disconnected_support import (
 from src.data.augmentations.none_solution.divergent_kernel import (
     DivergentKernelAugmentation,
 )
-from src.data.augmentations.none_solution.eigenvalue_cases import (
-    NoSolutionAugmentation,
-)
+from src.data.augmentations.none_solution.eigenvalue_cases import NoSolutionAugmentation
 from src.data.augmentations.none_solution.range_violation import (
     RangeViolationAugmentation,
 )

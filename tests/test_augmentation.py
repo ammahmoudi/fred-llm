@@ -281,8 +281,18 @@ class TestEdgeCaseAugmentations:
             assert "Fredholm Alternative" in case["reason"]
             assert case["augmented"] is True
             # augmentation_type and edge_case should be the strategy name
-            assert case["augmentation_type"] in ["eigenvalue_cases", "range_violation", "divergent_kernel", "disconnected_support"]
-            assert case["edge_case"] in ["eigenvalue_cases", "range_violation", "divergent_kernel", "disconnected_support"]
+            assert case["augmentation_type"] in [
+                "eigenvalue_cases",
+                "range_violation",
+                "divergent_kernel",
+                "disconnected_support",
+            ]
+            assert case["edge_case"] in [
+                "eigenvalue_cases",
+                "range_violation",
+                "divergent_kernel",
+                "disconnected_support",
+            ]
             # Solution should be empty for no-solution cases
             assert case["u"] == ""
 
@@ -376,7 +386,12 @@ class TestEdgeCaseAugmentations:
         augmented = augmenter.augment([sample_eq], multiplier=2)
         assert any(
             eq.get("edge_case")
-            in ["eigenvalue_cases", "range_violation", "divergent_kernel", "disconnected_support"]
+            in [
+                "eigenvalue_cases",
+                "range_violation",
+                "divergent_kernel",
+                "disconnected_support",
+            ]
             for eq in augmented
         )
 

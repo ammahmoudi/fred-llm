@@ -221,49 +221,54 @@ def _extract_reasoning(response: str) -> Optional[str]:
 def _extract_has_solution(response: str) -> Optional[bool]:
     """
     Extract has_solution flag from structured output.
-    
+
     Looks for patterns like:
     - HAS_SOLUTION: yes/no
     - Has solution: Yes/No
     """
     pattern = r"HAS[_\s]SOLUTION\s*[:\s]+\s*(yes|no|true|false)"
     match = re.search(pattern, response, re.IGNORECASE)
-    
+
     if match:
         value = match.group(1).lower()
         return value in ("yes", "true")
-    
+
     # Fallback: look for natural language indicators
     if re.search(r"\bno\s+solution\s+exists?\b", response, re.IGNORECASE):
         return False
     if re.search(r"\bsolution\s+does\s+not\s+exist\b", response, re.IGNORECASE):
         return False
-    
+
     return None
 
 
 def _extract_solution_type(response: str) -> Optional[str]:
     """
     Extract solution_type from structured output.
-    
+
     Looks for patterns like:
     - SOLUTION_TYPE: exact_symbolic
     - Solution type: approx_coef
     """
     pattern = r"SOLUTION[_\s]TYPE\s*[:\s]+\s*(\w+)"
     match = re.search(pattern, response, re.IGNORECASE)
-    
+
     if match:
         value = match.group(1).lower()
         # Validate against known types
         valid_types = {
-            "exact_symbolic", "exact_coef", "approx_coef", 
-            "discrete_points", "series", "family", 
-            "regularized", "none"
+            "exact_symbolic",
+            "exact_coef",
+            "approx_coef",
+            "discrete_points",
+            "series",
+            "family",
+            "regularized",
+            "none",
         }
         if value in valid_types:
             return value
-    
+
     return None
 
 

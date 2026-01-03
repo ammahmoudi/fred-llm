@@ -91,7 +91,7 @@ class TestFredholmEquation:
         assert result["augmentation_type"] == "original"
         assert result["augmentation_variant"] == "fredholm_dataset"
         assert result["has_solution"] is True
-        assert result["solution_type"] == "exact"
+        assert result["solution_type"] == "exact_symbolic"
         assert result["edge_case"] is None
         assert "Fredholm-LLM dataset" in result["reason"]
         assert isinstance(result["recommended_methods"], list)

@@ -10,9 +10,21 @@ class BasicPromptStyle(PromptStyle):
     def __init__(self, **kwargs):
         super().__init__(style_name="basic", **kwargs)
 
-    def get_system_prompt(self) -> str:
-        """Get system prompt for basic style."""
-        return """You are an expert mathematician specializing in integral equations.
+    def get_system_prompt(self, format_type: str = "infix") -> str:
+        """Get system prompt for basic style.
+        
+        Args:
+            format_type: Output format (infix/latex/rpn)
+        """
+        # Format-specific instructions
+        format_instructions = {
+            "infix": "Express your solution in infix notation (e.g., x**2 + sin(x), exp(-x)*cos(x)).",
+            "latex": "Express your solution in LaTeX notation (e.g., x^2 + \\sin(x), e^{-x}\\cos(x)).",
+            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *)."
+        }
+        format_instruction = format_instructions.get(format_type, format_instructions["infix"])
+        
+        return f"""You are an expert mathematician specializing in integral equations.
 Given a Fredholm integral equation, find the solution u(x).
 
 The equation may be of the second kind:
@@ -20,6 +32,8 @@ The equation may be of the second kind:
 
 Or of the first kind (ill-posed, requires regularization):
   ∫_a^b K(x, t) u(t) dt = g(x)
+
+**IMPORTANT**: {format_instruction}
 
 Provide your answer in the following format:
 SOLUTION: u(x) = [your solution here]

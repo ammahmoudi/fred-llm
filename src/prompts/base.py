@@ -106,8 +106,12 @@ class PromptStyle(ABC):
         self.edge_case_mode = edge_case_mode or EdgeCaseMode(mode="none")
 
     @abstractmethod
-    def get_system_prompt(self) -> str:
-        """Get the system prompt for this style."""
+    def get_system_prompt(self, format_type: str = "infix") -> str:
+        """Get the system prompt for this style.
+        
+        Args:
+            format_type: Output format (infix/latex/rpn)
+        """
         pass
 
     @abstractmethod
@@ -178,7 +182,7 @@ State clearly which type applies and provide appropriate representation."""
         Returns:
             GeneratedPrompt object
         """
-        system_prompt = self.get_system_prompt()
+        system_prompt = self.get_system_prompt(format_type=format_type)
         user_prompt = self.get_user_prompt(equation, format_type)
 
         # Build full prompt with optional edge case handling

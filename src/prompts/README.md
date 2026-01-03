@@ -239,10 +239,20 @@ src/prompts/
 All prompt styles instruct the LLM to output in a structured format for reliable evaluation:
 
 ```
-SOLUTION: u(x) = [solution expression]
+SOLUTION: u(x) = [solution expression in detected format]
 HAS_SOLUTION: [yes/no]
 SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
 ```
+
+**Format-Specific Generation**: The prompt generation system automatically detects the input format and provides **targeted format instructions**:
+- Processing: `*_infix.csv` → Prompt says: "Express your solution in infix notation (e.g., x**2 + sin(x), exp(-x)*cos(x))."
+- Processing: `*_latex.csv` → Prompt says: "Express your solution in LaTeX notation (e.g., x^2 + \sin(x), e^{-x}\cos(x))."
+- Processing: `*_rpn.csv` → Prompt says: "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *)."
+
+This ensures:
+- **Clearer instructions**: LLM knows exactly what format to use (no ambiguity or conditional logic)
+- **Format-specific prompts**: Each dataset variant gets prompts tailored to its format
+- **Consistent evaluation**: Solutions match ground truth format for direct comparison
 
 **Why structured output?**
 - **Reliable parsing**: `src/llm/postprocess.py` extracts these fields with regex

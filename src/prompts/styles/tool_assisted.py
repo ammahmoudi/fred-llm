@@ -10,9 +10,21 @@ class ToolAssistedPromptStyle(PromptStyle):
     def __init__(self, **kwargs):
         super().__init__(style_name="tool-assisted", **kwargs)
 
-    def get_system_prompt(self) -> str:
-        """Get system prompt for tool-assisted style."""
-        return """You are an expert mathematician with access to computational tools.
+    def get_system_prompt(self, format_type: str = "infix") -> str:
+        """Get system prompt for tool-assisted style.
+        
+        Args:
+            format_type: Output format (infix/latex/rpn)
+        """
+        # Format-specific instructions
+        format_instructions = {
+            "infix": "Express your solution in infix notation (e.g., x**2 + sin(x), exp(-x)*cos(x)).",
+            "latex": "Express your solution in LaTeX notation (e.g., x^2 + \\sin(x), e^{-x}\\cos(x)).",
+            "rpn": "Express your solution in Reverse Polish Notation (e.g., x 2 ^ x sin +, x neg exp x cos *)."
+        }
+        format_instruction = format_instructions.get(format_type, format_instructions["infix"])
+        
+        return f"""You are an expert mathematician with access to computational tools.
 Your task is to solve Fredholm integral equations.
 
 The equation may be of the second kind:
@@ -21,6 +33,7 @@ The equation may be of the second kind:
 Or of the first kind (ill-posed, requires regularization):
   ∫_a^b K(x, t) u(t) dt = g(x)
 
+**IMPORTANT**: {format_instruction}
 You can use the following tools:
 - integrate(expr, var, a, b): Compute definite integral
 - simplify(expr): Simplify mathematical expression

@@ -381,13 +381,13 @@ class TestEdgeCaseAugmentations:
             "b": "1",
         }
 
-        # Test none folder strategy (runs 4 strategies: eigenvalue_cases + range_violation + divergent_kernel + disconnected_support)
-        augmenter = DataAugmenter(strategies=["none"])
+        # Test none_solution folder strategy (runs 4 strategies: eigenvalue_issue + range_violation + divergent_kernel + disconnected_support)
+        augmenter = DataAugmenter(strategies=["none_solution"])
         augmented = augmenter.augment([sample_eq], multiplier=2)
         assert any(
             eq.get("edge_case")
             in [
-                "eigenvalue_cases",
+                "eigenvalue_issue",
                 "range_violation",
                 "divergent_kernel",
                 "disconnected_support",

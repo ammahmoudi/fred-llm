@@ -101,6 +101,13 @@ This document tracks all features - implemented and planned. Check off items as 
     - Enables reliable extraction of solution correctness and edge case recognition
     - Postprocessor with regex patterns for has_solution (yes/no) and solution_type (8 types)
     - Evaluation metrics: solution correctness, has_solution accuracy, solution_type classification (8-class)
+  - [x] **Format-specific prompt generation** - Prompts tailored to dataset format ✅ **(January 3, 2026)**
+    - System detects format from filename (*_infix.csv, *_latex.csv, *_rpn.csv)
+    - Each prompt includes targeted instructions for that specific format only
+    - Infix: "Express solution in infix notation (x**2 + sin(x))"
+    - LaTeX: "Express solution in LaTeX notation (x^2 + \sin(x))"
+    - RPN: "Express solution in RPN notation (x 2 ^ x sin +)"
+    - Benefits: Clearer instructions, no ambiguity, format-specific training
   - [x] Test coverage - 30 tests covering all components ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**

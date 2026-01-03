@@ -91,6 +91,8 @@ python scripts/prepare_dataset.py \
 - Converts to 3 formats (infix, LaTeX, RPN) for LLM training
 - Output: `data/processed/training_data/` (with train/test splits)
 
+**Note**: By default, detailed edge case metadata (~60 fields like `singularity_type`, `layer_location`, etc.) is excluded for cleaner output. Add `--include-edge-metadata` to include all technical details.
+
 ### 4. Generate Prompts for LLM Training
 
 ```bash
@@ -688,6 +690,37 @@ uv run python scripts/prepare_dataset.py \
 uv run python scripts/prepare_dataset.py \
   --max-samples 100 \
   --convert-limit 100
+
+# Include detailed edge case metadata (60+ technical fields)
+uv run python scripts/prepare_dataset.py \
+  --augment \
+  --augment-strategies approx_coef discrete_points \
+  --include-edge-metadata
+```
+
+**Edge Case Metadata Options**:
+
+By default, augmented equations include **essential fields only**:
+- Core: `u`, `f`, `kernel`, `lambda_val`, `a`, `b`
+- Augmentation: `augmented`, `augmentation_type`, `augmentation_variant`
+- Solution: `has_solution`, `solution_type`, `edge_case`, `reason`
+- Methods: `recommended_methods`, `numerical_challenge`
+
+With `--include-edge-metadata`, you get **60+ detailed technical fields**:
+- Singularities: `singularity_type`, `singularity_order`, `singularity_strength`
+- Boundary layers: `layer_location`, `layer_width_estimate`, `gradient_scale`
+- Oscillations: `oscillation_frequency`, `nyquist_samples_required`
+- Discrete points: `sample_points`, `sample_values`
+- Series: `series_terms`, `convergence_estimate`, `truncation_error`
+- Ill-posed: `regularization_param`, `condition_number_estimate`
+- And many more...
+
+```bash
+# Default: Clean output for LLM training
+python scripts/prepare_dataset.py --augment
+
+# Research mode: Full metadata for analysis
+python scripts/prepare_dataset.py --augment --include-edge-metadata
 ```
 
 Convert to RPN:

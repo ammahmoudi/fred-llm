@@ -51,6 +51,12 @@ This document tracks all features - implemented and planned. Check off items as 
       - [x] Distribution: 18 strategies across 7 folders (4+5+2+1+1+1+4)
   - [x] Validation script - Comprehensive checks for all 14 strategies and 8 solution types ✅ **scripts/validate_augmented_data.py**
   - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: all augmentation files**
+  - [x] **Edge case metadata management** ✅ **January 3, 2026**
+    - [x] Default: Essential fields only (u, f, kernel, augmentation_type, solution_type, edge_case, reason, recommended_methods)
+    - [x] Optional: 60+ detailed technical fields (singularity details, boundary layers, oscillations, etc.)
+    - [x] CLI flag: `--include-edge-metadata` to include all technical metadata
+    - [x] Clean output: Null values (None in JSON, "" in CSV) for unset fields, not deleted
+    - [x] Rationale: Cleaner default output for LLM training, full details available for research
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
 - [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
   - [x] Stratified splitting - Maintains balance across original/augmented, solution types, edge cases ✅

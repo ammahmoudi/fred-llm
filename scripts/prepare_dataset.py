@@ -110,6 +110,11 @@ def parse_args() -> argparse.Namespace:
         help="Validate equations",
     )
     parser.add_argument(
+        "--include-edge-metadata",
+        action="store_true",
+        help="Include detailed edge case metadata fields in output (singularity_type, layer_location, etc.)",
+    )
+    parser.add_argument(
         "--split",
         action="store_true",
         help="Split into train/val/test sets",
@@ -134,6 +139,69 @@ def parse_args() -> argparse.Namespace:
         help="Output file format (json, csv, or both; default: both)",
     )
     return parser.parse_args()
+
+
+def _filter_edge_metadata(data: list[dict]) -> list[dict]:
+    """
+    Filter out detailed edge case metadata fields from augmented equations.
+    
+    Keeps essential fields but removes verbose metadata like singularity details,
+    oscillation parameters, numerical method specifics, etc.
+    
+    Core fields kept:
+    - Basic equation: u, f, kernel, lambda_val, a, b
+    - Augmentation: augmented, augmentation_type, augmentation_variant
+    - Solution: has_solution, solution_type, edge_case, reason
+    - Methods: recommended_methods, numerical_challenge
+    
+    Detailed metadata removed (60+ fields):
+    - Singularity: singularity_type, singularity_order, singularity_strength, etc.
+    - Boundary layers: layer_location, layer_width_estimate, gradient_scale, etc.
+    - Oscillations: oscillation_type, oscillation_frequency, angular_frequency, etc.
+    - And many more technical details...
+    """
+    # Define detailed metadata fields to exclude by default
+    DETAILED_METADATA_FIELDS = {
+        # Singularity details
+        "singularity_type", "singularity_order", "singularity_strength",
+        # Boundary layer details
+        "layer_location", "layer_width_estimate", "gradient_scale", "minimum_points_in_layer",
+        # Oscillation details
+        "oscillation_type", "oscillation_frequency", "angular_frequency", "num_cycles_in_domain",
+        "nyquist_samples_required", "sampling_rate_needed", "modulation", "frequencies",
+        "beat_frequency", "spectrum_complexity",
+        # Kernel details
+        "kernel_description", "equation_type", "split_point", "causal_structure",
+        "volterra_region", "fredholm_region", "mathematical_form", "transition_width",
+        "mathematical_explanation", "kernel_split", "integral_form", "solution_strategy",
+        "kernel_structure",
+        # Support details
+        "support_type", "support_width", "zero_fraction", "matrix_structure",
+        "bandwidth_parameter", "rank_deficient_risk", "memory_efficiency",
+        "support_region", "active_fraction", "physical_interpretation", "num_support_regions",
+        # Numerical method details
+        "numerical_method", "sample_points", "sample_values",
+        # Resonance details
+        "is_critical", "near_critical_value", "distance_to_resonance", "condition_number_estimate",
+        # Series details
+        "series_type", "series_terms", "convergence_estimate", "truncation_error",
+        # Family details
+        "eigenvalue_approximate", "eigenfunction", "solution_multiplicity", "general_solution",
+        # Ill-posed details
+        "equation_form", "is_ill_posed", "requires_regularization", "regularization_param",
+        # Additional metadata
+        "notes", "operator_property", "orthogonality_violated", "kernel_rank", "range_basis",
+        "divergence_type", "contrast_with", "physically_invalid", "problem_structure",
+        "mathematical_issue", "warning",
+    }
+    
+    filtered_data = []
+    for eq in data:
+        # Create copy with only essential fields
+        filtered_eq = {k: v for k, v in eq.items() if k not in DETAILED_METADATA_FIELDS}
+        filtered_data.append(filtered_eq)
+    
+    return filtered_data
 
 
 def main() -> None:
@@ -197,6 +265,11 @@ def main() -> None:
         console.print(f"  Strategies: {', '.join(args.augment_strategies)}")
         augmenter = DataAugmenter(strategies=args.augment_strategies)
         augmented_data = augmenter.augment(data, multiplier=args.augment_multiplier)
+        
+        # Filter out detailed edge case metadata unless explicitly requested
+        if not args.include_edge_metadata:
+            augmented_data = _filter_edge_metadata(augmented_data)
+        
         console.print(f"  ✓ Generated {len(augmented_data)} augmented equations\n")
         # Create augmented subdirectory
         augmented_dir = args.output / "augmented"
@@ -399,6 +472,9 @@ def _save_data(
                 item_copy[key] = [
                     str(v) if isinstance(v, (sp.Basic, sp.Expr)) else v for v in value
                 ]
+            # Convert NaN to None for proper JSON null representation
+            elif pd.isna(value):
+                item_copy[key] = None
 
         serializable.append(item_copy)
 

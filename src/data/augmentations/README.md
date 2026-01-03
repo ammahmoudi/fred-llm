@@ -8,7 +8,7 @@ This directory contains augmentation strategies for Fredholm integral equations.
 
 ### Complete Required Schema
 
-Every single dataset entry (original from Fredholm-LLM and all augmented variants) includes these 18 fields:
+Every single dataset entry (original from Fredholm-LLM and all augmented variants) includes these **core fields**:
 
 | Field | Type | Always Present | Description |
 |-------|------|----------------|-------------|
@@ -25,11 +25,29 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 | `augmentation_type` | str | ✅ | Strategy name (e.g., "scale", "eigenvalue_cases", "boundary_layer") |
 | `augmentation_variant` | str | ✅ | Specific variant (e.g., "scale_2.0x") |
 | `has_solution` | bool | ✅ | Solution exists? |
-| `solution_type` | str | ✅ | `"exact"` \| `"none"` \| `"numerical"` \| `"regularized"` \| `"family"` |
+| `solution_type` | str | ✅ | `"exact_symbolic"` \| `"exact_coef"` \| `"approx_coef"` \| `"discrete_points"` \| `"series"` \| `"family"` \| `"regularized"` \| `"none"` |
 | `edge_case` | str \| None | ✅ | Edge case type or `None` for basic |
 | `reason` | str | ✅ | Explanation of augmentation/case |
 | `recommended_methods` | list[str] | ✅ | Suggested methods (empty list `[]` if none) |
 | `numerical_challenge` | str \| None | ✅ | Challenge description or `None` |
+
+### Optional Detailed Metadata (60+ fields)
+
+**By default excluded** for cleaner output. Include with `--include-edge-metadata` flag:
+
+**Singularity details**: `singularity_type`, `singularity_order`, `singularity_strength`  
+**Boundary layers**: `layer_location`, `layer_width_estimate`, `gradient_scale`, `minimum_points_in_layer`  
+**Oscillations**: `oscillation_type`, `oscillation_frequency`, `angular_frequency`, `num_cycles_in_domain`, `nyquist_samples_required`, `sampling_rate_needed`, `modulation`, `frequencies`, `beat_frequency`, `spectrum_complexity`  
+**Kernel details**: `kernel_description`, `equation_type`, `split_point`, `causal_structure`, `volterra_region`, `fredholm_region`, `mathematical_form`, `transition_width`, `mathematical_explanation`, `kernel_split`, `integral_form`, `solution_strategy`, `kernel_structure`  
+**Support details**: `support_type`, `support_width`, `zero_fraction`, `matrix_structure`, `bandwidth_parameter`, `rank_deficient_risk`, `memory_efficiency`, `support_region`, `active_fraction`, `physical_interpretation`, `num_support_regions`  
+**Numerical methods**: `numerical_method`, `sample_points`, `sample_values`  
+**Resonance**: `is_critical`, `near_critical_value`, `distance_to_resonance`, `condition_number_estimate`  
+**Series**: `series_type`, `series_terms`, `convergence_estimate`, `truncation_error`  
+**Family**: `eigenvalue_approximate`, `eigenfunction`, `solution_multiplicity`, `general_solution`  
+**Ill-posed**: `equation_form`, `is_ill_posed`, `requires_regularization`, `regularization_param`  
+**Other**: `notes`, `operator_property`, `orthogonality_violated`, `kernel_rank`, `range_basis`, `divergence_type`, `contrast_with`, `physically_invalid`, `problem_structure`, `mathematical_issue`, `warning`
+
+**Rationale**: Most LLM training only needs essential fields. Researchers analyzing edge cases can opt-in for full technical metadata.
 
 ### Value Patterns by Strategy Type
 

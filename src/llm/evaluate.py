@@ -19,6 +19,9 @@ logger = get_logger(__name__)
 def evaluate_solutions(
     results_path: Path | str,
     mode: str = "both",
+    symbolic_tolerance: float = 1e-10,
+    numeric_tolerance: float = 1e-6,
+    n_test_points: int = 100,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """
@@ -27,22 +30,139 @@ def evaluate_solutions(
     Args:
         results_path: Path to results JSON/JSONL file.
         mode: Evaluation mode (symbolic, numeric, both).
+        symbolic_tolerance: Tolerance for symbolic comparison.
+        numeric_tolerance: Tolerance for numeric comparison.
+        n_test_points: Number of test points for numeric evaluation.
         **kwargs: Additional evaluation parameters.
 
     Returns:
         Dictionary with evaluation metrics.
     """
-    # TODO: Load results and evaluate
+    import json
+    from sympy.parsing.sympy_parser import (
+        implicit_multiplication,
+        parse_expr,
+        standard_transformations,
+    )
+
+    results_path = Path(results_path)
     logger.info(f"Evaluating solutions from {results_path}")
 
-    return {
+    if not results_path.exists():
+        logger.error(f"Results file not found: {results_path}")
+        return {"error": f"File not found: {results_path}"}
+
+    # Load results
+    results: list[dict] = []
+    if results_path.suffix == ".jsonl":
+        with open(results_path) as f:
+            for line in f:
+                if line.strip():
+                    results.append(json.loads(line))
+    elif results_path.suffix == ".json":
+        with open(results_path) as f:
+            data = json.load(f)
+            results = data if isinstance(data, list) else [data]
+    else:
+        logger.error(f"Unsupported file format: {results_path.suffix}")
+        return {"error": f"Unsupported format: {results_path.suffix}"}
+
+    logger.info(f"Loaded {len(results)} results")
+
+    # Initialize evaluator
+    evaluator = SolutionEvaluator(
+        symbolic_tolerance=symbolic_tolerance,
+        numeric_tolerance=numeric_tolerance,
+        n_test_points=n_test_points,
+    )
+
+    # Define symbols for parsing
+    x, t = sp.symbols("x t")
+    local_dict = {"x": x, "t": t, "e": sp.E, "pi": sp.pi}
+    transformations = standard_transformations + (implicit_multiplication,)
+
+    # Track edge case metrics
+    has_solution_correct = 0
+    has_solution_total = 0
+    solution_type_correct = 0
+    solution_type_total = 0
+    evaluated_count = 0
+    errors: list[str] = []
+
+    for i, result in enumerate(results):
+        # Evaluate edge case metrics
+        gt_has_solution = result.get("ground_truth_has_solution")
+        pred_has_solution = result.get("has_solution")
+        if gt_has_solution is not None and pred_has_solution is not None:
+            has_solution_total += 1
+            if gt_has_solution == pred_has_solution:
+                has_solution_correct += 1
+
+        gt_solution_type = result.get("ground_truth_solution_type")
+        pred_solution_type = result.get("solution_type")
+        if gt_solution_type and pred_solution_type:
+            solution_type_total += 1
+            if gt_solution_type == pred_solution_type:
+                solution_type_correct += 1
+
+        # Evaluate solution accuracy
+        ground_truth_str = result.get("ground_truth")
+        solution_str = result.get("solution_str")
+
+        if not ground_truth_str or not solution_str:
+            continue
+
+        try:
+            # Parse ground truth
+            gt_expr = parse_expr(
+                ground_truth_str,
+                local_dict=local_dict,
+                transformations=transformations,
+            )
+
+            # Parse predicted solution
+            pred_expr = parse_expr(
+                solution_str,
+                local_dict=local_dict,
+                transformations=transformations,
+            )
+
+            # Run evaluation based on mode
+            if mode in ("symbolic", "both"):
+                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
+                evaluated_count += 1
+            elif mode == "numeric":
+                # Numeric only
+                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
+                evaluated_count += 1
+
+        except Exception as e:
+            errors.append(f"Result {result.get('equation_id', i)}: {str(e)}")
+            logger.debug(f"Failed to evaluate result {i}: {e}")
+
+    # Get summary
+    summary = evaluator.summary()
+
+    # Build metrics
+    metrics = {
         "mode": mode,
-        "total": 0,
-        "correct": 0,
-        "accuracy": 0.0,
-        "symbolic_accuracy": 0.0,
-        "numeric_accuracy": 0.0,
+        **summary,
+        "evaluated_count": evaluated_count,
+        "total_results": len(results),
+        "parse_errors": len(errors),
     }
+
+    if has_solution_total > 0:
+        metrics["has_solution_accuracy"] = has_solution_correct / has_solution_total
+        metrics["has_solution_total"] = has_solution_total
+
+    if solution_type_total > 0:
+        metrics["solution_type_accuracy"] = solution_type_correct / solution_type_total
+        metrics["solution_type_total"] = solution_type_total
+
+    logger.info(f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}")
+
+    return metrics
 
 
 def symbolic_compare(

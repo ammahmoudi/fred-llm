@@ -5,14 +5,25 @@ Smart pipeline that automatically determines what preparation steps are needed
 based on the configuration and available files.
 """
 
+import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import sympy as sp
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from sympy.parsing.sympy_parser import (
+    implicit_multiplication,
+    parse_expr,
+    standard_transformations,
+)
 
 from src.adaptive_config import AdaptivePipelineConfig
+from src.llm.evaluate import SolutionEvaluator
+from src.llm.model_runner import ModelRunner
+from src.llm.postprocess import parse_llm_output
 from src.utils.logging_utils import get_logger
 
 console = Console()
@@ -426,25 +437,236 @@ class AdaptivePipeline:
 
         return output_dir
 
-    def _run_inference(self) -> list:
-        """Run LLM inference."""
+    def _run_inference(self) -> list[dict[str, Any]]:
+        """
+        Run LLM inference on prompts.
+
+        Returns:
+            List of prediction dictionaries with parsed LLM outputs.
+        """
         console.print(f"[cyan]> Running {self.config.model.name}...[/cyan]")
 
-        # TODO: Implement actual inference
-        console.print("[yellow]⚠️  LLM inference not yet implemented[/yellow]")
+        # Load prompts from JSONL files
+        prompts_dir = self.paths.get("prompts")
+        if not prompts_dir:
+            console.print("[red]✗ No prompts directory found[/red]")
+            return []
 
-        return []
+        # Find all JSONL files in the prompts directory (including subdirectories)
+        jsonl_files = list(Path(prompts_dir).glob("**/*.jsonl"))
+        if not jsonl_files:
+            console.print(f"[red]✗ No JSONL files found in {prompts_dir}[/red]")
+            return []
 
-    def _evaluate(self, predictions: list) -> dict:
-        """Evaluate predictions."""
-        console.print(
-            f"[cyan]→ Evaluating ({self.config.evaluation.mode} mode)...[/cyan]"
+        console.print(f"[cyan]> Found {len(jsonl_files)} prompt files[/cyan]")
+
+        # Load all prompts
+        all_prompts: list[dict[str, Any]] = []
+        for jsonl_file in jsonl_files:
+            console.print(f"[dim]  Loading {jsonl_file.name}...[/dim]")
+            with open(jsonl_file) as f:
+                for line in f:
+                    if line.strip():
+                        prompt_data = json.loads(line)
+                        all_prompts.append(prompt_data)
+
+        console.print(f"[green]OK[/green] Loaded {len(all_prompts)} prompts")
+
+        # Initialize model runner
+        model_config = self.config.model
+        runner_kwargs = {
+            "model_name": model_config.name,
+            "api_key_env": model_config.api_key_env,
+            "temperature": model_config.temperature,
+            "max_tokens": model_config.max_tokens,
+            "timeout": model_config.timeout,
+        }
+        # Only add base_url for OpenAI (not OpenRouter, which uses class constant)
+        if model_config.provider == "openai" and model_config.base_url:
+            runner_kwargs["base_url"] = model_config.base_url
+
+        runner = ModelRunner(provider=model_config.provider, **runner_kwargs)
+
+        # Extract prompt texts
+        prompt_texts = [p.get("prompt", "") for p in all_prompts]
+
+        console.print(f"\n[cyan]> Generating responses for {len(prompt_texts)} prompts...[/cyan]")
+
+        # Run batch generation
+        responses = runner.batch_generate(
+            prompt_texts,
+            rate_limit_delay=0.5 if model_config.provider == "openai" else 1.0,
+            show_progress=True,
         )
 
-        # TODO: Implement actual evaluation
-        console.print("[yellow]⚠️  Evaluation not yet implemented[/yellow]")
+        # Parse responses and structure predictions
+        predictions: list[dict[str, Any]] = []
+        for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
+            parsed = parse_llm_output(response)
 
-        return {}
+            prediction = {
+                "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
+                "prompt": prompt_data.get("prompt", ""),
+                "ground_truth": prompt_data.get("ground_truth"),
+                "ground_truth_has_solution": prompt_data.get("metadata", {}).get("has_solution"),
+                "ground_truth_solution_type": prompt_data.get("metadata", {}).get("solution_type"),
+                "raw_response": response,
+                "solution_str": parsed.get("solution_str"),
+                "solution_sympy": str(parsed.get("solution_sympy")) if parsed.get("solution_sympy") else None,
+                "has_solution": parsed.get("has_solution"),
+                "solution_type": parsed.get("solution_type"),
+                "reasoning": parsed.get("reasoning"),
+                "confidence": parsed.get("confidence", 0.0),
+            }
+            predictions.append(prediction)
+
+        console.print(f"\n[green]OK[/green] Generated {len(predictions)} predictions")
+
+        # Save predictions to file
+        output_dir = Path(self.config.output.dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        predictions_file = output_dir / f"predictions_{timestamp}.jsonl"
+
+        with open(predictions_file, "w") as f:
+            for pred in predictions:
+                f.write(json.dumps(pred) + "\n")
+
+        console.print(f"[cyan]> Saved predictions to {predictions_file}[/cyan]")
+
+        return predictions
+
+    def _evaluate(self, predictions: list[dict[str, Any]]) -> dict[str, Any]:
+        """
+        Evaluate predictions against ground truth.
+
+        Args:
+            predictions: List of prediction dictionaries.
+
+        Returns:
+            Dictionary with evaluation metrics.
+        """
+        eval_config = self.config.evaluation
+        mode = eval_config.mode if eval_config else "both"
+
+        console.print(f"[cyan]> Evaluating ({mode} mode)...[/cyan]")
+
+        if not predictions:
+            console.print("[yellow]⚠️  No predictions to evaluate[/yellow]")
+            return {"total": 0, "error": "No predictions"}
+
+        # Initialize evaluator
+        evaluator = SolutionEvaluator(
+            symbolic_tolerance=eval_config.symbolic_tolerance if eval_config else 1e-10,
+            numeric_tolerance=eval_config.numeric_tolerance if eval_config else 1e-6,
+            n_test_points=eval_config.num_test_points if eval_config else 100,
+        )
+
+        # Track edge case metrics
+        has_solution_correct = 0
+        has_solution_total = 0
+        solution_type_correct = 0
+        solution_type_total = 0
+        evaluated_count = 0
+        errors: list[str] = []
+
+        # Define symbols for parsing
+        x, t = sp.symbols("x t")
+        local_dict = {"x": x, "t": t, "e": sp.E, "pi": sp.pi}
+        transformations = standard_transformations + (implicit_multiplication,)
+
+        for i, pred in enumerate(predictions):
+            # Evaluate edge case metrics
+            gt_has_solution = pred.get("ground_truth_has_solution")
+            pred_has_solution = pred.get("has_solution")
+            if gt_has_solution is not None and pred_has_solution is not None:
+                has_solution_total += 1
+                if gt_has_solution == pred_has_solution:
+                    has_solution_correct += 1
+
+            gt_solution_type = pred.get("ground_truth_solution_type")
+            pred_solution_type = pred.get("solution_type")
+            if gt_solution_type and pred_solution_type:
+                solution_type_total += 1
+                if gt_solution_type == pred_solution_type:
+                    solution_type_correct += 1
+
+            # Evaluate solution accuracy
+            ground_truth_str = pred.get("ground_truth")
+            solution_str = pred.get("solution_str")
+
+            if not ground_truth_str or not solution_str:
+                continue
+
+            try:
+                # Parse ground truth
+                gt_expr = parse_expr(
+                    ground_truth_str,
+                    local_dict=local_dict,
+                    transformations=transformations,
+                )
+
+                # Parse predicted solution
+                pred_expr = parse_expr(
+                    solution_str,
+                    local_dict=local_dict,
+                    transformations=transformations,
+                )
+
+                # Run evaluation
+                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
+                evaluated_count += 1
+
+            except Exception as e:
+                errors.append(f"Equation {pred.get('equation_id', i)}: {str(e)}")
+                logger.debug(f"Failed to evaluate prediction {i}: {e}")
+
+        # Get summary
+        summary = evaluator.summary()
+
+        # Add edge case metrics
+        metrics = {
+            **summary,
+            "evaluated_count": evaluated_count,
+            "total_predictions": len(predictions),
+            "parse_errors": len(errors),
+        }
+
+        if has_solution_total > 0:
+            metrics["has_solution_accuracy"] = has_solution_correct / has_solution_total
+            metrics["has_solution_total"] = has_solution_total
+
+        if solution_type_total > 0:
+            metrics["solution_type_accuracy"] = solution_type_correct / solution_type_total
+            metrics["solution_type_total"] = solution_type_total
+
+        # Display results
+        console.print(f"\n[bold]Evaluation Results:[/bold]")
+        console.print(f"  Total predictions: {len(predictions)}")
+        console.print(f"  Evaluated: {evaluated_count}")
+        if summary.get("total", 0) > 0:
+            console.print(f"  Accuracy: {summary.get('accuracy', 0):.2%}")
+            console.print(f"  Symbolic accuracy: {summary.get('symbolic_accuracy', 0):.2%}")
+            console.print(f"  Numeric accuracy: {summary.get('numeric_accuracy', 0):.2%}")
+        if has_solution_total > 0:
+            console.print(f"  Has solution accuracy: {metrics['has_solution_accuracy']:.2%}")
+        if solution_type_total > 0:
+            console.print(f"  Solution type accuracy: {metrics['solution_type_accuracy']:.2%}")
+        if errors:
+            console.print(f"  [yellow]Parse errors: {len(errors)}[/yellow]")
+
+        # Save metrics to file
+        output_dir = Path(self.config.output.dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        metrics_file = output_dir / f"metrics_{timestamp}.json"
+
+        with open(metrics_file, "w") as f:
+            json.dump(metrics, f, indent=2)
+
+        console.print(f"\n[cyan]> Saved metrics to {metrics_file}[/cyan]")
+
+        return metrics
 
 
 def load_adaptive_config(config_path: Path) -> AdaptivePipelineConfig:

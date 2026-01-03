@@ -11,7 +11,11 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from dotenv import load_dotenv
 from rich.console import Console
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = typer.Typer(
     name="fred-llm",

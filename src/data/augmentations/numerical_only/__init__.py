@@ -20,6 +20,9 @@ from src.data.augmentations.numerical_only.complex_kernels import (
     ApproximateOnlyAugmentation,
 )
 from src.data.augmentations.numerical_only.mixed_type import MixedTypeAugmentation
+from src.data.augmentations.numerical_only.near_resonance import (
+    NearResonanceAugmentation,
+)
 from src.data.augmentations.numerical_only.oscillatory_solution import (
     OscillatorySolutionAugmentation,
 )
@@ -34,4 +37,5 @@ __all__ = [
     "OscillatorySolutionAugmentation",
     "MixedTypeAugmentation",
     "CompactSupportAugmentation",
+    "NearResonanceAugmentation",
 ]

@@ -156,38 +156,6 @@ class ResonanceAugmentation(BaseAugmentation):
             }
             results.append(case2)
 
-            # Case 3: Near-resonance with non-orthogonal forcing
-            # λ slightly off resonance, but f not orthogonal to eigenfunction
-            # This creates a very large (but bounded) solution
-            lambda_near = 2.0 + 0.1  # Near λ_critical = 2, but not exactly
-
-            case3 = {
-                "u": "",  # Large amplitude - no simple closed form
-                "f": eigenfunction_1,  # f = sin(πx) not orthogonal to itself
-                "kernel": "sin(pi*x) * sin(pi*t)",
-                "lambda_val": str(lambda_near),
-                "lambda_val": str(lambda_near),
-                "a": str(a),
-                "b": str(b),
-                "has_solution": True,
-                "solution_type": "numerical",
-                "edge_case": "near_resonance",
-                "is_critical": False,
-                "near_critical_value": 2.0,
-                "distance_to_resonance": abs(lambda_near - 2.0),
-                "recommended_methods": [
-                    "regularization",
-                    "iterative_refinement",
-                    "preconditioned_gmres",
-                ],
-                "numerical_challenge": "Solution exists but has very large amplitude near resonance",
-                "condition_number_estimate": 1.0 / abs(lambda_near - 2.0),  # ~10
-                "augmented": True,
-                "augmentation_type": "resonance",
-                "augmentation_variant": "near_resonance_large_solution",
-            }
-            results.append(case3)
-
         except Exception as e:
             logger.warning(f"Failed to generate resonance case: {e}")
 

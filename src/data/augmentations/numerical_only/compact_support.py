@@ -164,44 +164,6 @@ class CompactSupportAugmentation(BaseAugmentation):
             }
             results.append(case2)
 
-            # Case 3: Multiple disconnected support regions
-            # K has support in two separate regions → domain splits into subsystems
-            # This is most likely to cause rank deficiency
-            region1_x = (a, a + 0.2 * (b - a))
-            region2_x = (a + 0.6 * (b - a), a + 0.8 * (b - a))
-            
-            case3 = {
-                "u": item["u"],
-                "f": item["f"],
-                "kernel": "Piecewise: nonzero in two disconnected regions",
-                "kernel_description": f"K≠0 in [{region1_x[0]:.2f},{region1_x[1]:.2f}] and [{region2_x[0]:.2f},{region2_x[1]:.2f}], zero elsewhere",
-                "lambda_val": str(lambda_val * 0.2),
-                "lambda_val": str(lambda_val * 0.2),
-                "a": str(a),
-                "b": str(b),
-                "has_solution": False,  # Likely rank-deficient
-                "solution_type": "none",
-                "edge_case": "compact_support",
-                "support_type": "disconnected_regions",
-                "num_support_regions": 2,
-                "zero_fraction": 0.8,  # 80% is zero
-                "matrix_structure": "block_diagonal",
-                "rank_deficient_risk": "high",
-                "problem_structure": "Decoupled subsystems",
-                "recommended_methods": [
-                    "check_rank_deficiency",
-                    "identify_decoupled_blocks",
-                    "solve_subsystems_separately"
-                ],
-                "numerical_challenge": "Disconnected regions → no information flow between subsystems",
-                "reason": "Kernel support is disconnected → matrix is rank-deficient",
-                "mathematical_issue": "Operator does not have full rank",
-                "augmented": True,
-                "augmentation_type": "compact_support",
-                "augmentation_variant": "disconnected_regions",
-            }
-            results.append(case3)
-
         except Exception as e:
             logger.warning(f"Failed to generate compact support case: {e}")
 

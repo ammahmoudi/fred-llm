@@ -120,6 +120,7 @@ class IllPosedAugmentation(BaseAugmentation):
                 "lambda_val": "0",  # First kind has no λ parameter
                 "a": str(a),
                 "b": str(b),
+                "has_solution": True,  # Solution exists but unstable without regularization
                 "equation_type": "fredholm_first_kind",
                 "equation_form": "∫K(x,t)u(t)dt = f(x)",
                 "is_ill_posed": True,
@@ -154,6 +155,7 @@ class IllPosedAugmentation(BaseAugmentation):
                 "lambda_val": "0",
                 "a": str(a),
                 "b": str(b),
+                "has_solution": True,  # Solution exists but unstable without regularization
                 "equation_type": "fredholm_first_kind",
                 "equation_form": "∫K(x,t)u(t)dt = f(x)",
                 "is_ill_posed": True,
@@ -188,6 +190,7 @@ class IllPosedAugmentation(BaseAugmentation):
                 "lambda_val": "0",
                 "a": str(a),
                 "b": str(b),
+                "has_solution": True,  # Solution exists but unstable without regularization
                 "equation_type": "fredholm_first_kind",
                 "equation_form": "∫K(x,t)u(t)dt = f(x)",
                 "is_ill_posed": True,

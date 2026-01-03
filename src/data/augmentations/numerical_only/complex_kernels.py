@@ -58,7 +58,7 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
 
     @property
     def strategy_name(self) -> str:
-        return "approximate_only"
+        return "complex_kernels"
 
     @property
     def description(self) -> str:
@@ -130,7 +130,7 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "edge_case": "approximate_only",
                 "reason": "Gaussian kernel has no symbolic antiderivative",
                 "augmented": True,
-                "augmentation_type": "approximate_only",
+                "augmentation_type": self.strategy_name,
                 "augmentation_variant": "gaussian_kernel",
                 "recommended_methods": [
                     "fixed_point_iteration",
@@ -181,7 +181,7 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "edge_case": "approximate_only",
                 "reason": "Exponential decay kernel requires numerical integration",
                 "augmented": True,
-                "augmentation_type": "approximate_only",
+                "augmentation_type": self.strategy_name,
                 "augmentation_variant": "exponential_decay",
                 "recommended_methods": ["quadrature", "collocation", "Nyström"],
                 "numerical_challenge": "Non-smooth absolute value requires careful quadrature",
@@ -233,7 +233,7 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
                 "edge_case": "approximate_only",
                 "reason": "Sinc-like kernel has no closed-form solution",
                 "augmented": True,
-                "augmentation_type": "approximate_only",
+                "augmentation_type": self.strategy_name,
                 "augmentation_variant": "sinc_kernel",
                 "recommended_methods": [
                     "quadrature",

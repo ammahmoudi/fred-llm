@@ -29,12 +29,15 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Expression canonicalization - Simplify parameter ✅ **Available in all formatters**
   - [x] CSV export support - Export formatted equations to CSV ✅ **Matches original dataset format**
 - [x] Data augmentation framework - All 4 strategies implemented ✅ **Tested: substitute, scale, shift, compose (5.3x expansion)**
-- [x] **Edge case augmentations (4 strategies, 15% target ratio)** ✅ **Tested on 5K sample: 767 augmented (15.3%)**
-  - [x] No-solution cases - Equations where λ is eigenvalue (violates Fredholm Alternative) ✅ **Tested: 3 variants, eigenvalue detection**
-  - [x] Numerical-only cases - No symbolic solution (Gaussian, exponential kernels) ✅ **Tested: 3 variants, sample point generation**
-  - [x] Regularization-required cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, ill-posed handling**
-  - [x] Non-unique-solution cases - Multiple solutions (family of solutions) ✅ **Tested: 3 variants, resonance detection**
-  - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: 6 augmentation files, CSV export with na_rep=''**
+- [x] **Edge case augmentations (13 strategies, 39 variants, 15% target ratio)** ✅ **Tested on 5K sample: 750 augmented (15.0%)**
+  - [x] No-solution cases - 4 strategies: eigenvalue, range_violation, divergent_kernel, disconnected_support ✅ **Tested: 12 variants total**
+  - [x] Numerical-only cases - 7 strategies: complex_kernels, weakly_singular, boundary_layer, oscillatory, mixed_type, compact_support, near_resonance ✅ **Tested: 21 variants total**
+  - [x] Regularization-required cases - Fredholm 1st kind requiring regularization ✅ **Tested: 3 variants, ill-posed handling, has_solution=True**
+  - [x] Non-unique-solution cases - Exact resonance with solution families ✅ **Tested: 3 variants, symbolic u=C*φ**
+  - [x] Resonance split - **resonance** (exact, family) vs **near_resonance** (ill-conditioned, numerical) ✅ **January 2, 2026**
+  - [x] Compact support split - **compact_support** (numerical) vs **disconnected_support** (no solution) ✅ **January 2, 2026**
+  - [x] Validation script - Comprehensive checks for all strategies ✅ **scripts/validate_augmented_data.py**
+  - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: all augmentation files**
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
 - [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
   - [x] Stratified splitting - Maintains balance across original/augmented, solution types, edge cases ✅
@@ -127,10 +130,12 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
-  - [x] **Unified 16-field schema** - ALL augmentations output identical keys
-  - [x] 11 edge case strategies organized in 4 solution-type folders
+  - [x] **Unified 18-field schema** - ALL augmentations output identical keys
+  - [x] 13 edge case strategies organized in 4 solution-type folders
   - [x] 8 advanced edge case tests (weakly_singular through compact_support)
-  - [x] Schema validation tests - Verify all 16 required fields present
+  - [x] Schema validation tests - Verify all 18 required fields present
+  - [x] Strategy separation - resonance (family) vs near_resonance (numerical) ✅ **January 2, 2026**
+  - [x] Validation tooling - validate_augmented_data.py with u pattern analysis ✅ **January 2, 2026**
 - [x] Validation tests - 5 tests for data validation and integration ✅ **All passing**
 - [x] Splitting tests - 19 tests for stratified splitting with sklearn ✅ **All passing**
   - [x] Standard ratio tests - 80/0/20, 80/10/10, custom ratios

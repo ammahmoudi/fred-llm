@@ -14,6 +14,7 @@ from src.data.augmentations.compose import ComposeAugmentation
 
 # Import from solution-type organized folders
 from src.data.augmentations.no_solution import (
+    DisconnectedSupportAugmentation,
     DivergentKernelAugmentation,
     NoSolutionAugmentation,
     RangeViolationAugmentation,
@@ -24,6 +25,7 @@ from src.data.augmentations.numerical_only import (
     BoundaryLayerAugmentation,
     CompactSupportAugmentation,
     MixedTypeAugmentation,
+    NearResonanceAugmentation,
     OscillatorySolutionAugmentation,
     WeaklySingularAugmentation,
 )
@@ -43,6 +45,7 @@ __all__ = [
     "NoSolutionAugmentation",
     "RangeViolationAugmentation",
     "DivergentKernelAugmentation",
+    "DisconnectedSupportAugmentation",
     # Numerical only
     "ApproximateOnlyAugmentation",
     "WeaklySingularAugmentation",
@@ -50,6 +53,7 @@ __all__ = [
     "OscillatorySolutionAugmentation",
     "MixedTypeAugmentation",
     "CompactSupportAugmentation",
+    "NearResonanceAugmentation",
     # Regularization required
     "IllPosedAugmentation",
     # Non-unique solution

@@ -13,10 +13,12 @@ Edge cases are augmented variants of Fredholm integral equations that represent 
 
 **NEW: Folder-Based Organization** - Strategies are organized by solution type. When you use a folder name (e.g., `no_solution`), ALL strategies in that folder are executed:
 
-- `no_solution/` → 3 strategies → 9 variants per equation
-- `numerical_only/` → 6 strategies → 18 variants per equation
+- `no_solution/` → 4 strategies → 12 variants per equation
+- `numerical_only/` → 7 strategies → 21 variants per equation
 - `regularization_required/` → 1 strategy → 3 variants per equation
 - `non_unique_solution/` → 1 strategy → 3 variants per equation
+
+**Total: 13 strategies × 3 variants each = 39 edge case types**
 
 ## Why Edge Cases Matter
 
@@ -61,12 +63,12 @@ src/data/augmentations/
 
 | Solution Type | Strategies | What LLM Outputs |
 |---------------|-----------|------------------|
-| **No Solution** | eigenvalue_cases, range_violation, divergent_kernel | "No solution exists because..." |
-| **Numerical Only** | complex_kernels, weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support | Point values: u(x₁)≈v₁, u(x₂)≈v₂... |
+| **No Solution** | eigenvalue_cases, range_violation, divergent_kernel, disconnected_support | "No solution exists because..." |
+| **Numerical Only** | complex_kernels, weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support, near_resonance | Point values: u(x₁)≈v₁, u(x₂)≈v₂... |
 | **Regularization Required** | ill_posed | "Ill-posed, needs Tikhonov/TSVD..." |
 | **Non-Unique** | resonance | "Solution family: u = C*φ(x) + u_p" |
 
-**Total: 11 strategies × 3 variants each = 33 edge case types**
+**Total: 13 strategies × 3 variants each = 39 edge case types**
 
 ---
 
@@ -203,12 +205,14 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Metadata Added**:
 - `has_solution: true` (regularized solution exists)
-- `solution_type: "symbolic"` or `"numerical"`
+- `solution_type: "regularized"`
 - `is_ill_posed: true`
 - `requires_regularization: true`
 - `recommended_methods: ["tikhonov", "truncated_svd", "iterative"]`
 - `condition_estimate: large_number`
 - `edge_case: "ill_posed"`
+
+**Note**: Updated January 2, 2026 - Ill-posed problems DO have solutions (they're just unstable without regularization). The `has_solution` field is now correctly set to `true` for all ill_posed variants.
 
 ---
 
@@ -234,13 +238,41 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Exponentially graded mesh, gradient scale estimation
 
-### 6. Resonance Cases (`resonance`)
+### 6. Resonance Caxact eigenvalue → infinite solution families.
 
-**Purpose**: λ at eigenvalue → non-unique solution families.
+- **Variant 1**: Separable at eigenvalue (λ=2, K=sin(πx)sin(πt))
+- **Variant 2**: Constant kernel at critical value (λ=1, K=1)
 
-- **Variant 1**: Separable at eigenvalue (λ=1, K=sin(πx)sin(πt))
-- **Variant 2**: Constant kernel at critical value
-- **Variant 3**: Near-resonance (λ ≈ eigenvalue + perturbation)
+**Key Features**: Solution multiplicity, general solution representation u = C*φ(x)
+
+**Metadata**: 
+- `solution_type: "family"`
+- `has_solution: true`
+- Symbolic u: "C*sin(pi*x)" where C is arbitrary constant
+
+---
+
+### 8. Near-Resonance Cases (`near_resonance`)
+
+**Purpose**: λ near eigenvalue → ill-conditioned but unique solutions.
+
+- **Variant 1**: Close to separable eigenvalue (λ=2.1, λ_critical=2.0)
+- **Variant 2**: Near constant kernel critical value (λ=1.05, λ_critical=1.0)
+- **Variant 3**: Very close approach (λ=2.01, λ_critical=2.0)
+
+**Key Features**: Large amplitude solutions, high condition numbers, sensitivity to perturbations
+
+**Metadata**:
+- `solution_type: "numerical"`
+- `has_solution: true`
+- `u: ""` (empty - no simple closed form)
+- `near_critical_value`, `distance_to_resonance`, `condition_number_estimate`
+
+**Physical Analogy**: Like forcing a spring near its natural frequency - solution exists but has very large amplitude.
+
+**Mathematical Distinction from Resonance**:
+- **resonance**: λ = λ_critical → infinite solutions (u = C*φ)
+- **near_resonance**: λ ≈ λ_critical → unique solution with large amplitude
 
 **Key Features**: Solution multiplicity, general solution representation
 
@@ -258,7 +290,7 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Operator property analysis, orthogonality checking
 
-### 8. Divergent Kernel (`divergent_kernel`)
+### 9. Divergent Kernel (`divergent_kernel`)
 
 **Purpose**: Non-integrable singularities (integral diverges).
 
@@ -268,7 +300,7 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Contrasts with weakly_singular, singularity order ≥ 1
 
-### 9. Mixed Type (`mixed_type`)
+### 10. Mixed Type (`mixed_type`)
 
 **Purpose**: Part Volterra (causal), part Fredholm (acausal).
 
@@ -278,7 +310,7 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Causal structure analysis, split point identification
 
-### 10. Oscillatory Solution (`oscillatory_solution`)
+### 11. Oscillatory Solution (`oscillatory_solution`)
 
 **Purpose**: Rapidly oscillating u(x) → Nyquist sampling required.
 
@@ -288,15 +320,44 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Fine mesh generation, Nyquist criterion validation
 
-### 11. Compact Support (`compact_support`)
+### 12. Compact Support (`compact_support`)
 
-**Purpose**: Kernel zero in large regions → sparse structure.
+**Purpose**: Kernel zero in large regions → sparse structure, requires specialized numerical methods.
 
 - **Variant 1**: Band-limited `K(x,t) = K₀(x,t) if |x-t|<δ else 0`
 - **Variant 2**: Localized box function
-- **Variant 3**: Disconnected regions
 
-**Key Features**: Zero fraction calculation, rank deficiency risk
+**Key Features**: Sparse matrix exploitation, efficient storage/computation
+
+**Note**: Previously included a "disconnected regions" variant which created rank-deficient operators. This has been separated into its own strategy.
+
+---
+
+### 13. Disconnected Support (`disconnected_support`)
+
+**Purpose**: Kernels with disconnected support regions → rank-deficient operators → no solution.
+
+- **Variant 1**: Two 3 edge case strategies (conservative multiplier recommended)
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --augment \
+  --augment-multiplier 1.15 \
+  --augment-strategies no_solution numerical_only regularization_required non_unique_solution \
+  --no-convert
+
+# Or use folder names to run all strategies in each folder:
+# no_solution = eigenvalue_cases, range_violation, divergent_kernel, disconnected_support
+# numerical_only = complex_kernels, weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support, near_resonance
+# regularization_required = ill_posed
+# non_unique_solution = resonanceank-deficient operator due to disconnected support"
+
+**Mathematical Background**: When kernel support is split into disconnected regions, the integral operator loses rank and may not be invertible, leading to equations with no solution.
+
+**Why Separated from compact_support**: 
+- **compact_support**: Sparse but full-rank → numerical solution exists
+- **disconnected_support**: Rank-deficient → no solution exists
+
+This distinction teaches models to recognize structural causes of non-existence versus computational complexity.
 
 ---
 
@@ -308,18 +369,18 @@ Modify equations to exhibit sensitivity to perturbations:
 # Generate with ALL 11 edge case strategies (conservative multiplier recommended)
 python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment \
-  --augment-multiplier 1.2 \
-  --augment-strategies no_solution approximate_only ill_posed \
-    weakly_singular boundary_layer resonance \
-    range_violation divergent_kernel mixed_type \
-    oscillatory_solution compact_support \
-  --no-convert
+  --augment \3 Strategies (39 variants total)
 
-# Generate original 3 edge case types only (higher multiplier acceptable)
-python scripts/prepare_dataset.py \
-  --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment \
+| Multiplier | Original (Exact) | Edge Cases | Use Case |
+|-----------|------------------|------------|----------|
+| **1.1-1.2** | **83-91%** | **9-17%** | **Recommended for 13 strategies** |
+| 1.3 | 77% | 23% | More aggressive (use selectively) |
+| 1.5 | 67% | 33% | Maximum diversity |
+
+**Example for 5,000 equation dataset with multiplier 1.15 (13 strategies)**:
+- Original equations (exact solutions): 5,000 (87%)
+- Edge case variants: 750 (13%, ~58 per strategy)
+- **Total**: 5,75
   --augment-multiplier 1.33 \
   --augment-strategies no_solution approximate_only ill_posed \
   --no-convert
@@ -353,23 +414,30 @@ For a **balanced dataset** suitable for training robust models:
 #### Using Original 3 Strategies Only (9 variants)
 
 | Multiplier | Original (Exact) | Edge Cases | Use Case |
-|-----------|------------------|------------|----------|
-| **1.33** | **75%** | **25%** | **Recommended balance** |
-| 1.43 | 70% | 30% | Aggressive augmentation |
-| 1.5 | 67% | 33% | Maximum edge case exposure |
+|-----------|-----------------3 edge case strategies are fully tested (21/21 tests passing):
 
-**Example for 5,000 equation dataset with multiplier 1.33 (3 strategies)**:
-- Original equations (exact solutions): 5,000 (75%)
-- Edge case variants: 1,667 (25%, ~556 per strategy)
-- **Total**: 6,667 equations
+**Original Edge Cases (7 tests)**:
+- `test_no_solution_augmentation` - Verifies no-solution cases
+- `test_approximate_only_augmentation` - Confirms numerical methods  
+- `test_ill_posed_augmentation` - Validates regularization (has_solution=True)
+- Plus 4 integration tests for edge case strategies
 
-**Note**: Each original equation generates **3 edge case variants** per selected strategy.
+**Advanced Edge Cases (8 tests)**:
+- `test_weakly_singular_augmentation` - Singularity handling
+- `test_boundary_layer_augmentation` - Sharp gradient detection
+- `test_resonance_augmentation` - Critical point recognition (family solutions)
+- `test_range_violation_augmentation` - Range space analysis
+- `test_divergent_kernel_augmentation` - Non-integrable singularities
+- `test_mixed_type_augmentation` - Hybrid equation types
+- `test_oscillatory_solution_augmentation` - Nyquist sampling
+- `test_compact_support_augmentation` - Sparse structure handling
 
-### Exploring Edge Cases in Notebooks
+**New Strategies (January 2, 2026)**:
+- `near_resonance` - Ill-conditioned near-eigenvalue equations ✅
+- `disconnected_support` - Rank-deficient operators ✅
 
-Use the `explore_data.ipynb` notebook Section 7 to analyze:
-- Distribution of edge case types
-- Solution existence statistics
+**Validation Script**:
+- `scripts/validate_augmented_data.py` - Comprehensive validation with u pattern analysis ✅
 - Characteristics of each edge case category
 - Sample equations from each type
 
@@ -408,12 +476,14 @@ pytest tests/test_augmentation.py -v
 # Run only edge case tests
 pytest tests/test_augmentation.py::TestEdgeCaseAugmentations -v
 pytest tests/test_augmentation.py::TestAdvancedEdgeCases -v
-
-# Run full test suite (84 tests)
-pytest tests/ -v
-```
-
----
+3 edge case strategies):
+  - **no_solution/**: `eigenvalue_cases.py`, `range_violation.py`, `divergent_kernel.py`, `disconnected_support.py`
+  - **numerical_only/**: `complex_kernels.py`, `weakly_singular.py`, `boundary_layer.py`, `oscillatory_solution.py`, `mixed_type.py`, `compact_support.py`, `near_resonance.py`
+  - **regularization_required/**: `ill_posed.py`
+  - **non_unique_solution/**: `resonance.py`
+- **Integration**: `src/data/augmentation.py` (main augmentation loop)
+- **Tests**: `tests/test_augmentation.py` (21 edge case tests)
+- **Validation**: `scripts/validate_augmented_data.py` (comprehensive check
 
 ## Implementation Details
 

@@ -38,7 +38,7 @@ class NoSolutionAugmentation(BaseAugmentation):
 
     @property
     def strategy_name(self) -> str:
-        return "no_solution"
+        return "eigenvalue_cases"
 
     @property
     def description(self) -> str:
@@ -69,7 +69,7 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "reason": "Violates Fredholm Alternative - λ is eigenvalue of constant kernel",
                 "edge_case": "no_solution",
                 "augmented": True,
-                "augmentation_type": "no_solution",
+                "augmentation_type": self.strategy_name,
                 "augmentation_variant": "constant_kernel_eigenvalue",
                 "recommended_methods": [
                     "Check Fredholm Alternative conditions",
@@ -96,7 +96,7 @@ class NoSolutionAugmentation(BaseAugmentation):
                     "reason": "Violates Fredholm Alternative - λ is eigenvalue of separable kernel",
                     "edge_case": "no_solution",
                     "augmented": True,
-                    "augmentation_type": "no_solution",
+                    "augmentation_type": self.strategy_name,
                     "augmentation_variant": "separable_kernel_eigenvalue",
                     "recommended_methods": [
                         "Check Fredholm Alternative conditions",
@@ -121,7 +121,7 @@ class NoSolutionAugmentation(BaseAugmentation):
                 "reason": "Violates Fredholm Alternative - symmetric kernel with eigenvalue λ=1",
                 "edge_case": "no_solution",
                 "augmented": True,
-                "augmentation_type": "no_solution",
+                "augmentation_type": self.strategy_name,
                 "augmentation_variant": "symmetric_kernel_eigenvalue",
                 "recommended_methods": [
                     "Check Fredholm Alternative conditions",

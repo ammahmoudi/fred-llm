@@ -13,9 +13,11 @@ from src.data.augmentations import (
     BoundaryLayerAugmentation,
     CompactSupportAugmentation,
     ComposeAugmentation,
+    DisconnectedSupportAugmentation,
     DivergentKernelAugmentation,
     IllPosedAugmentation,
     MixedTypeAugmentation,
+    NearResonanceAugmentation,
     NoSolutionAugmentation,
     OscillatorySolutionAugmentation,
     RangeViolationAugmentation,
@@ -109,6 +111,7 @@ def _apply_augmentation(
         results.extend(NoSolutionAugmentation().augment(item))
         results.extend(RangeViolationAugmentation().augment(item))
         results.extend(DivergentKernelAugmentation().augment(item))
+        results.extend(DisconnectedSupportAugmentation().augment(item))
         return results
 
     elif strategy == "numerical_only":
@@ -126,6 +129,7 @@ def _apply_augmentation(
         )
         results.extend(MixedTypeAugmentation().augment(item))
         results.extend(CompactSupportAugmentation(bandwidth=0.1).augment(item))
+        results.extend(NearResonanceAugmentation(distance=0.1).augment(item))
         return results
 
     elif strategy == "regularization_required":

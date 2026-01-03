@@ -128,11 +128,11 @@ Strategies are organized by **solution type**. Specifying a folder name runs ALL
 
 | Folder | Strategies | Variants | What it teaches |
 |--------|------------|----------|-----------------|
-| `no_solution` | 3 | 9 | Recognize unsolvable equations (eigenvalue issues, range violations) |
-| `numerical_only` | 6 | 18 | Identify when only numerical methods work (complex kernels, singularities) |
+| `no_solution` | 4 | 12 | Recognize unsolvable equations (eigenvalue issues, range violations, rank-deficient) |
+| `numerical_only` | 7 | 21 | Identify when only numerical methods work (complex kernels, singularities, near-resonance) |
 | `regularization_required` | 1 | 3 | Detect ill-posed problems (Fredholm 1st kind) |
-| `non_unique_solution` | 1 | 3 | Handle resonance cases with solution families |
-| **Total** | **11** | **33** | Comprehensive edge case recognition |
+| `non_unique_solution` | 1 | 3 | Handle exact resonance cases with solution families |
+| **Total** | **13** | **39** | Comprehensive edge case recognition |
 
 ### Alternative: Specific Edge Case Training
 
@@ -297,35 +297,37 @@ The project includes **7 augmentation strategies** to expand and diversify train
 - **Shift**: Integration domain shifting ([a,b] → [a±1, b±1])
 - **Compose**: Kernel composition (K → K+x, K+t, K×x)
 
-**Edge Cases - 11 Comprehensive Strategies (FIE-Edge-Cases):**
+**Edge Cases - 13 Comprehensive Strategies (FIE-Edge-Cases):**
 
 Organized in 4 solution-type folders:
 
-**Folder 1: no_solution/** (solution_type: "none") - 3 strategies × 3 variants = 9 edge cases
+**Folder 1: no_solution/** (solution_type: "none") - 4 strategies × 3 variants = 12 edge cases
 - **eigenvalue_cases**: Singular cases where λ is eigenvalue (violates Fredholm Alternative)
 - **range_violation**: RHS not in operator range
 - **divergent_kernel**: Non-integrable singularities
+- **disconnected_support**: Rank-deficient operators (kernels with disconnected support regions)
 
-**Folder 2: numerical_only/** (solution_type: "numerical") - 6 strategies × 3 variants = 18 edge cases
+**Folder 2: numerical_only/** (solution_type: "numerical") - 7 strategies × 3 variants = 21 edge cases
 - **complex_kernels**: No symbolic solution (Gaussian/exponential kernels, requires numerical methods)
 - **weakly_singular**: Integrable singularities (log|x-t|, |x-t|^(-0.5))
 - **boundary_layer**: Sharp gradients near boundaries (ε=0.01)
 - **oscillatory_solution**: Rapid oscillations (Nyquist sampling)
 - **mixed_type**: Volterra + Fredholm hybrid
-- **compact_support**: Sparse kernel structure
+- **compact_support**: Sparse kernel structure (band-limited, localized support)
+- **near_resonance**: Ill-conditioned equations near eigenvalue (λ ≈ λ_critical, large amplitude solutions)
 
 **Folder 3: regularization_required/** (solution_type: "regularized") - 1 strategy × 3 variants = 3 edge cases
 - **ill_posed**: Fredholm 1st kind equations (require regularization like Tikhonov/TSVD)
 
 **Folder 4: non_unique_solution/** (solution_type: "family") - 1 strategy × 3 variants = 3 edge cases
-- **resonance**: λ at bifurcation → non-unique solutions
+- **resonance**: Exact resonance at eigenvalue (λ = λ_critical) → infinite solution family u = C*φ
 
 **Usage**: Specify folder names to run all contained strategies:
 ```bash
---augment-strategies no_solution numerical_only  # Runs 9 strategies total
+--augment-strategies no_solution numerical_only  # Runs 11 strategies total
 ```
 
-Total: **33 edge case variants** (11 strategies × 3 variants each) teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. See [Edge Cases Documentation](docs/EDGE_CASES.md) for details.
+Total: **39 edge case variants** (13 strategies × 3 variants each) teach LLMs to recognize when standard symbolic methods fail and special treatment is needed. The split between exact resonance (infinite solutions) and near-resonance (ill-conditioned but unique) helps models distinguish between these mathematically distinct cases. See [Edge Cases Documentation](docs/EDGE_CASES.md) for details.
 
 #### Unified Output Schema
 
@@ -357,7 +359,7 @@ See [Augmentation README](src/data/augmentations/README.md) for complete schema 
 
 For optimal LLM training, use appropriate multipliers based on strategy count:
 
-**Using All 4 Folders (11 strategies, 33 variants):**
+**Using All 4 Folders (13 strategies, 39 variants):**
 - Multiplier: **1.1-1.2** (recommended: **1.15**)
 - Result: 87% exact solutions, 13% edge cases
 - Example: 5,000 original → ~5,750 total

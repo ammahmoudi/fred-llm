@@ -1,0 +1,41 @@
+# Example: API Key Override Configuration
+# Provider automatically determines which env var to use
+
+dataset:
+  prompts:
+    prompts_dir: data/prompts/few-shot
+    style: few-shot
+
+# Example 1: Using environment variable (DEFAULT - Recommended)
+# Provider determines env var: openai → OPENAI_API_KEY, openrouter → OPENROUTER_API_KEY
+model:
+  provider: openai
+  name: gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+
+# Example 2: Direct API key override (NOT RECOMMENDED for version control)
+# model:
+#   provider: openrouter
+#   name: anthropic/claude-3.5-sonnet
+#   api_key: sk-or-v1-your-direct-key-here  # Overrides OPENROUTER_API_KEY env var
+#   temperature: 0.1
+#   max_tokens: 4096
+
+# Example 3: Different provider
+# model:
+#   provider: openai
+#   name: gpt-4o
+#   api_key: sk-your-openai-key  # Overrides OPENAI_API_KEY env var
+#   temperature: 0.0
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+
+output:
+  dir: outputs/api_test
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

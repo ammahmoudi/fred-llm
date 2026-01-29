@@ -54,7 +54,13 @@ dataset:
 model:
   provider: openai  # openai|openrouter|local
   name: gpt-4o-mini
-  api_key_env: OPENAI_API_KEY
+  
+  # API Key (optional - provider determines env var to use):
+  # - OpenAI provider → uses OPENAI_API_KEY from .env
+  # - OpenRouter provider → uses OPENROUTER_API_KEY from .env
+  # - Uncomment to override with direct key (NOT recommended for version control)
+  # api_key: sk-your-key-here
+  
   base_url: null
   temperature: 0.1
   max_tokens: 2048

@@ -188,7 +188,7 @@ class ModelConfig(BaseModel):
 
     provider: Literal["openai", "openrouter", "local"] = "openai"
     name: str = "gpt-4o-mini"
-    api_key_env: str = "OPENAI_API_KEY"
+    api_key: Optional[str] = None  # Direct API key (overrides env var based on provider)
     base_url: Optional[str] = None
     temperature: float = 0.1
     max_tokens: int = 2048

@@ -34,7 +34,6 @@ class OpenAIModelRunner(BaseModelRunner):
         self,
         model_name: str = "gpt-4",
         api_key: str | None = None,
-        api_key_env: str = "OPENAI_API_KEY",
         base_url: str | None = None,
         temperature: float = 0.1,
         max_tokens: int = 2048,
@@ -45,15 +44,14 @@ class OpenAIModelRunner(BaseModelRunner):
 
         Args:
             model_name: Name of the model to use.
-            api_key: API key (if not provided, uses env var).
-            api_key_env: Environment variable name for API key.
+            api_key: API key (if not provided, uses OPENAI_API_KEY env var).
             base_url: Optional custom base URL.
             temperature: Sampling temperature.
             max_tokens: Maximum tokens in response.
             timeout: Request timeout in seconds.
         """
         self.model_name = model_name
-        self.api_key = api_key or os.getenv(api_key_env)
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -166,7 +164,6 @@ class OpenRouterModelRunner(BaseModelRunner):
         self,
         model_name: str = "anthropic/claude-3.5-sonnet",
         api_key: str | None = None,
-        api_key_env: str = "OPENROUTER_API_KEY",
         temperature: float = 0.1,
         max_tokens: int = 4096,
         timeout: int = 120,
@@ -178,8 +175,7 @@ class OpenRouterModelRunner(BaseModelRunner):
 
         Args:
             model_name: Model identifier (e.g., 'anthropic/claude-3.5-sonnet').
-            api_key: API key (if not provided, uses env var).
-            api_key_env: Environment variable name for API key.
+            api_key: API key (if not provided, uses OPENROUTER_API_KEY env var).
             temperature: Sampling temperature.
             max_tokens: Maximum tokens in response.
             timeout: Request timeout in seconds.
@@ -187,7 +183,7 @@ class OpenRouterModelRunner(BaseModelRunner):
             site_url: Site URL for OpenRouter rankings.
         """
         self.model_name = model_name
-        self.api_key = api_key or os.getenv(api_key_env)
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.timeout = timeout

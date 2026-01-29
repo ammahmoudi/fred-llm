@@ -23,7 +23,7 @@ dataset:
     
     # Splitting (train, val, test)
     split: true
-    split_ratios: [0.7, 0.00, 0.20]
+    split_ratios: [0.8, 0.00, 0.20]
     
     # Convert to LaTeX format
     convert_formats:

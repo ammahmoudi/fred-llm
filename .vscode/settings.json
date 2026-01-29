@@ -27,5 +27,6 @@
         "**/*.egg-info": true
     },
     "editor.rulers": [88],
-    "jupyter.notebookFileRoot": "${workspaceFolder}"
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
+    "postman.settings.dotenv-detection-notification-visibility": false
 }

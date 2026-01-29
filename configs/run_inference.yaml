@@ -9,9 +9,9 @@ dataset:
 
 # Model configuration
 model:
-  provider: openai
+  provider: openai  # Provider determines env var: openai→OPENAI_API_KEY
   name: gpt-4o-mini
-  api_key_env: OPENAI_API_KEY
+  # api_key: sk-your-key-here  # Uncomment to override OPENAI_API_KEY env var
   temperature: 0.1
   max_tokens: 2048
 

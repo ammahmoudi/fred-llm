@@ -11,7 +11,7 @@ dataset:
   max_samples: null
 
 model:
-  provider: openrouter
+  provider: openrouter  # Uses OPENROUTER_API_KEY from .env automatically
   # Popular models available on OpenRouter:
   # - anthropic/claude-3.5-sonnet
   # - openai/gpt-4o
@@ -21,6 +21,10 @@ model:
   # - deepseek/deepseek-chat
   # See full list: https://openrouter.ai/models
   name: anthropic/claude-3.5-sonnet
+  
+  # Uncomment to override OPENROUTER_API_KEY env var (not recommended)
+  # api_key: sk-or-v1-your-key-here
+  
   temperature: 0.1
   max_tokens: 4096
   timeout: 120

@@ -428,10 +428,25 @@ class AdaptivePipeline:
 
     def _run_inference(self) -> list:
         """Run LLM inference."""
+        from src.llm.model_runner import ModelRunner
+
         console.print(f"[cyan]> Running {self.config.model.name}...[/cyan]")
 
-        # TODO: Implement actual inference
-        console.print("[yellow]⚠️  LLM inference not yet implemented[/yellow]")
+        # Create model runner with config
+        # api_key from config overrides the env var (provider determines which env var)
+        model_kwargs = {
+            "model_name": self.config.model.name,
+            "api_key": self.config.model.api_key,  # None = auto-detect from env based on provider
+            "base_url": self.config.model.base_url,
+            "temperature": self.config.model.temperature,
+            "max_tokens": self.config.model.max_tokens,
+            "timeout": self.config.model.timeout,
+        }
+
+        runner = ModelRunner(provider=self.config.model.provider, **model_kwargs)
+
+        # TODO: Load prompts and run inference
+        console.print("[yellow]⚠️  Prompt loading and batch inference not yet implemented[/yellow]")
 
         return []
 

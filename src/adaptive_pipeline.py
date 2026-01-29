@@ -490,7 +490,9 @@ class AdaptivePipeline:
         # Extract prompt texts
         prompt_texts = [p.get("prompt", "") for p in all_prompts]
 
-        console.print(f"\n[cyan]> Generating responses for {len(prompt_texts)} prompts...[/cyan]")
+        console.print(
+            f"\n[cyan]> Generating responses for {len(prompt_texts)} prompts...[/cyan]"
+        )
 
         # Run batch generation
         responses = runner.batch_generate(
@@ -508,11 +510,17 @@ class AdaptivePipeline:
                 "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
                 "prompt": prompt_data.get("prompt", ""),
                 "ground_truth": prompt_data.get("ground_truth"),
-                "ground_truth_has_solution": prompt_data.get("metadata", {}).get("has_solution"),
-                "ground_truth_solution_type": prompt_data.get("metadata", {}).get("solution_type"),
+                "ground_truth_has_solution": prompt_data.get("metadata", {}).get(
+                    "has_solution"
+                ),
+                "ground_truth_solution_type": prompt_data.get("metadata", {}).get(
+                    "solution_type"
+                ),
                 "raw_response": response,
                 "solution_str": parsed.get("solution_str"),
-                "solution_sympy": str(parsed.get("solution_sympy")) if parsed.get("solution_sympy") else None,
+                "solution_sympy": str(parsed.get("solution_sympy"))
+                if parsed.get("solution_sympy")
+                else None,
                 "has_solution": parsed.get("has_solution"),
                 "solution_type": parsed.get("solution_type"),
                 "reasoning": parsed.get("reasoning"),
@@ -637,7 +645,9 @@ class AdaptivePipeline:
             metrics["has_solution_total"] = has_solution_total
 
         if solution_type_total > 0:
-            metrics["solution_type_accuracy"] = solution_type_correct / solution_type_total
+            metrics["solution_type_accuracy"] = (
+                solution_type_correct / solution_type_total
+            )
             metrics["solution_type_total"] = solution_type_total
 
         # Display results
@@ -646,12 +656,20 @@ class AdaptivePipeline:
         console.print(f"  Evaluated: {evaluated_count}")
         if summary.get("total", 0) > 0:
             console.print(f"  Accuracy: {summary.get('accuracy', 0):.2%}")
-            console.print(f"  Symbolic accuracy: {summary.get('symbolic_accuracy', 0):.2%}")
-            console.print(f"  Numeric accuracy: {summary.get('numeric_accuracy', 0):.2%}")
+            console.print(
+                f"  Symbolic accuracy: {summary.get('symbolic_accuracy', 0):.2%}"
+            )
+            console.print(
+                f"  Numeric accuracy: {summary.get('numeric_accuracy', 0):.2%}"
+            )
         if has_solution_total > 0:
-            console.print(f"  Has solution accuracy: {metrics['has_solution_accuracy']:.2%}")
+            console.print(
+                f"  Has solution accuracy: {metrics['has_solution_accuracy']:.2%}"
+            )
         if solution_type_total > 0:
-            console.print(f"  Solution type accuracy: {metrics['solution_type_accuracy']:.2%}")
+            console.print(
+                f"  Solution type accuracy: {metrics['solution_type_accuracy']:.2%}"
+            )
         if errors:
             console.print(f"  [yellow]Parse errors: {len(errors)}[/yellow]")
 

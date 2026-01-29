@@ -77,7 +77,7 @@ class FredholmEquation:
             str(row.get("kernel", row.get("Kernel", ""))).strip()
         )
         lambda_val = str(
-            row.get("lambda", row.get("Lambda", row.get("lmbda", "")))
+            row.get("lambda_val", row.get("lambda", row.get("Lambda", row.get("lmbda", ""))))
         ).strip()
         a = str(row.get("a", row.get("A", "0"))).strip()
         b = str(row.get("b", row.get("B", "1"))).strip()

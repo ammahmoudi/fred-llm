@@ -93,17 +93,26 @@ def _extract_solution(response: str) -> Optional[str]:
     - Solution: ...
     - Therefore, u(x) = ...
     - The solution is u(x) = ...
+    - LaTeX inline: backslash-paren u(x) = ... backslash-paren
     """
     patterns = [
-        r"u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$|\.(?:\s|$))",
+        # Prioritize structured output format (SOLUTION: u(x) = ...)
+        r"^SOLUTION\s*:\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
+        r"^SOLUTION\s*:\s*(.+?)(?:\n|$)",
+        # LaTeX delimited patterns - \( ... \) or $ ... $
+        r"\\\(\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)\s*\\\)",
+        r"\\\(\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
+        r"\$\$?\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)\s*\$\$?",
+        # Then look for other patterns
         r"[Ss]olution[:\s]+u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         r"[Tt]herefore[,:\s]+u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         r"[Ff]inal\s+[Aa]nswer[:\s]+(.+?)(?:\n|$)",
-        r"\$\$?\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)\s*\$\$?",  # LaTeX
+        # Generic u(x) = pattern (last resort, may match reasoning)
+        r"u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$|\.(?:\s|$))",
     ]
 
     for pattern in patterns:
-        match = re.search(pattern, response, re.IGNORECASE | re.DOTALL)
+        match = re.search(pattern, response, re.IGNORECASE | re.MULTILINE)
         if match:
             solution = match.group(1).strip()
             # Clean up the solution
@@ -121,14 +130,173 @@ def _clean_expression(expr: str) -> str:
     # Remove trailing punctuation
     expr = re.sub(r"[,;.]+$", "", expr.strip())
 
-    # Remove LaTeX markers
+    # Remove LaTeX delimiters
     expr = re.sub(r"\$+", "", expr)
-    expr = re.sub(r"\\[a-zA-Z]+\{([^}]+)\}", r"\1", expr)  # Simple LaTeX commands
+    expr = re.sub(r"^\s*\\\(\s*|\s*\\\)\s*$", "", expr)  # \( and \)
+    expr = re.sub(r"\\left|\\right", "", expr)  # \left and \right
 
-    # Normalize whitespace
+    # Remove u(x) = prefix if present (we only want the RHS)
+    expr = re.sub(r"^\s*u\s*\(\s*x\s*\)\s*=\s*", "", expr)
+
+    # Remove trailing explanatory text after the expression
+    # Common patterns: "where C = ...", "(where ...)", "\) where ...", etc.
+    expr = re.sub(r"\s*\\\)\s*(?:where|with|for|if|when).*$", "", expr, flags=re.IGNORECASE)
+    expr = re.sub(r"\s*\((?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE)
+    expr = re.sub(r"\s+(?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE)
+
+    # Remove any remaining \) at end of expression
+    expr = re.sub(r"\s*\\\)\s*\.?\s*$", "", expr)
+
+    # Handle "requires numerical methods" type responses - mark as unparseable
+    if re.search(r"requires?\s+(?:numerical|iterative|computational)", expr, re.IGNORECASE):
+        return ""
+    if re.search(r"(?:cannot|can't|no\s+closed[- ]form)", expr, re.IGNORECASE):
+        return ""
+    if re.search(r"^\s*\[.*\]\s*$", expr):  # [text in brackets]
+        return ""
+    if re.search(r"^\s*\(.*(?:iterative|series|expansion|solution).*\)\s*$", expr, re.IGNORECASE):
+        return ""
+
+    # Remove any remaining \) followed by explanation in parentheses
+    expr = re.sub(r"\s*\\\)\s*\(.*$", "", expr)
+
+    # Convert LaTeX to infix notation
+    expr = _latex_to_infix(expr)
+
+    # Normalize whitespace (but don't add spaces around operators)
     expr = " ".join(expr.split())
 
     return expr
+
+
+def _latex_to_infix(expr: str) -> str:
+    """
+    Convert LaTeX mathematical notation to infix notation for SymPy parsing.
+
+    Handles common LaTeX patterns:
+    - \\sin, \\cos, \\tan, \\exp, \\log, \\ln, \\cosh, \\sinh, \\tanh
+    - \\frac{a}{b} -> (a)/(b)
+    - x^{n} or x^n -> x**n
+    - \\sqrt{x} -> sqrt(x)
+    - \\int_{a}^{b} -> (integral notation, simplified)
+    - \\cdot -> *
+    - \\times -> *
+    """
+    # Remove display math markers
+    expr = re.sub(r"\\begin\{[^}]+\}|\\end\{[^}]+\}", "", expr)
+    expr = re.sub(r"\\\[|\\\]", "", expr)  # \[ and \]
+    expr = re.sub(r"\\,", " ", expr)  # \, (thin space in LaTeX)
+
+    # Handle common functions FIRST (before other replacements)
+    # Order matters: longer names first (cosh before cos)
+    latex_functions = [
+        (r"\\arcsinh", "asinh"),
+        (r"\\arccosh", "acosh"),
+        (r"\\arctanh", "atanh"),
+        (r"\\arcsin", "asin"),
+        (r"\\arccos", "acos"),
+        (r"\\arctan", "atan"),
+        (r"\\sinh", "sinh"),
+        (r"\\cosh", "cosh"),
+        (r"\\tanh", "tanh"),
+        (r"\\sin", "sin"),
+        (r"\\cos", "cos"),
+        (r"\\tan", "tan"),
+        (r"\\cot", "cot"),
+        (r"\\sec", "sec"),
+        (r"\\csc", "csc"),
+        (r"\\exp", "exp"),
+        (r"\\log", "log"),
+        (r"\\ln", "log"),  # SymPy uses log for natural log
+        (r"\\abs", "Abs"),
+        (r"\\sqrt", "sqrt"),
+    ]
+
+    for latex_cmd, sympy_func in latex_functions:
+        # Handle \func{arg} -> func(arg)
+        expr = re.sub(latex_cmd + r"\s*\{([^}]+)\}", sympy_func + r"(\1)", expr)
+        # Handle \func(arg) -> func(arg) (already has parens)
+        expr = re.sub(latex_cmd + r"\s*\(", sympy_func + r"(", expr)
+        # Handle \func followed by space and variable -> func(var)
+        expr = re.sub(latex_cmd + r"\s+([a-zA-Z])", sympy_func + r"(\1)", expr)
+        # Handle \func at end of string or before operator
+        expr = re.sub(latex_cmd + r"(?=[\s+\-*/^)]|$)", sympy_func, expr)
+
+    # Handle fractions: \frac{num}{den} -> (num)/(den)
+    def replace_frac(match: re.Match) -> str:
+        content = match.group(0)
+        brace_pattern = r"\\frac\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}"
+        m = re.match(brace_pattern, content)
+        if m:
+            num, den = m.groups()
+            return f"(({num})/({den}))"
+        return content
+
+    # Iteratively replace fractions (handle nested)
+    for _ in range(5):  # Max 5 levels of nesting
+        new_expr = re.sub(
+            r"\\frac\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\s*\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}",
+            replace_frac,
+            expr,
+        )
+        if new_expr == expr:
+            break
+        expr = new_expr
+
+    # Handle square roots with nth root: \sqrt[n]{x} -> x**(1/n)
+    expr = re.sub(r"sqrt\[([^\]]+)\]\{([^}]+)\}", r"((\2)**(1/(\1)))", expr)
+
+    # Handle exponents: x^{n} -> x**(n), x^n -> x**n (single char)
+    expr = re.sub(r"\^\{([^}]+)\}", r"**(\1)", expr)
+    expr = re.sub(r"\^(\d+)", r"**\1", expr)
+    expr = re.sub(r"\^([a-zA-Z])", r"**\1", expr)
+
+    # Handle subscripts (usually just remove for solution parsing)
+    expr = re.sub(r"_\{([^}]+)\}", r"_\1", expr)
+    expr = re.sub(r"_(\d+)", r"\1", expr)
+
+    # Handle absolute value: |x| -> Abs(x)
+    expr = re.sub(r"\|([^|]+)\|", r"Abs(\1)", expr)
+
+    # Handle multiplication symbols
+    expr = re.sub(r"\\cdot", "*", expr)
+    expr = re.sub(r"\\times", "*", expr)
+
+    # Handle special constants
+    expr = re.sub(r"\\pi", "pi", expr)
+    expr = re.sub(r"\\infty", "oo", expr)
+
+    # Handle e^{x} -> exp(x)
+    expr = re.sub(r"\be\s*\*\*\s*\{([^}]+)\}", r"exp(\1)", expr)
+    expr = re.sub(r"\be\s*\*\*\s*\(([^)]+)\)", r"exp(\1)", expr)
+
+    # Handle integrals - remove them as they can't be easily parsed
+    # Match \int_{a}^{b} ... dt patterns and remove the whole integral
+    expr = re.sub(r"\\int_\{[^}]*\}\^\{[^}]*\}[^,\n]*\\?,?\s*d[a-z]", "", expr)
+    expr = re.sub(r"\\int[^,\n]*\\?,?\s*d[a-z]", "", expr)
+    # Clean up standalone Integral notations and patterns like _a**(b) K(x,t) u(t) dt
+    expr = re.sub(r"Integral_[^\s]*\s*", "", expr)
+    expr = re.sub(r"Integral[^\s]*\s*", "", expr)
+    expr = re.sub(r"_-?[\d.]+\*\*\([^)]+\)\s*K\([^)]+\)\s*u\([^)]+\)\s*d[a-z]", "", expr)
+    expr = re.sub(r"\s*K\(x,\s*t\)\s*u\(t\)\s*d[a-z]", "", expr)
+
+    # Remove remaining LaTeX commands that might cause issues
+    expr = re.sub(r"\\[a-zA-Z]+", "", expr)
+
+    # Clean up braces - convert remaining {} to ()
+    expr = expr.replace("{", "(").replace("}", ")")
+
+    # Handle implicit multiplication in function arguments: exp(2 x) -> exp(2*x)
+    expr = re.sub(r"(\d)\s+([a-zA-Z])", r"\1*\2", expr)
+
+    # Clean up multiple operators or spaces
+    expr = re.sub(r"\s+", " ", expr)
+    expr = re.sub(r"\s*\+\s*\+\s*", " + ", expr)
+    expr = re.sub(r"\s*-\s*-\s*", " + ", expr)
+    expr = re.sub(r"\s*\+\s*$", "", expr)  # Remove trailing +
+    expr = re.sub(r"^\s*\+\s*", "", expr)  # Remove leading +
+
+    return expr.strip()
 
 
 def _fallback_extract(response: str) -> Optional[str]:
@@ -189,12 +357,28 @@ def _parse_to_sympy(expr_str: str) -> sp.Expr:
 
 def _preprocess_for_sympy(expr: str) -> str:
     """Preprocess expression string for SymPy parsing."""
+    # Run LaTeX conversion again in case there are remnants
+    expr = _latex_to_infix(expr)
+
     # Replace common patterns
     expr = expr.replace("^", "**")
     expr = re.sub(r"(\d)([a-zA-Z])", r"\1*\2", expr)  # 2x -> 2*x
     expr = re.sub(r"([a-zA-Z])(\d)", r"\1*\2", expr)  # x2 -> x*2
     expr = re.sub(r"\)(\w)", r")*\1", expr)  # )x -> )*x
     expr = re.sub(r"(\w)\(", r"\1*(", expr)  # x( -> x*(
+
+    # Handle coefficient followed by function: 2sin(x) -> 2*sin(x)
+    funcs = ["sin", "cos", "tan", "exp", "log", "sqrt", "sinh", "cosh", "tanh", "Abs"]
+    for func in funcs:
+        expr = re.sub(rf"(\d)({func})", rf"\1*\2", expr)
+        expr = re.sub(rf"([a-zA-Z])({func})", rf"\1*\2", expr)
+
+    # Remove any remaining backslashes
+    expr = expr.replace("\\", "")
+
+    # Handle e^x -> exp(x)
+    expr = re.sub(r"\be\s*\*\*\s*\(([^)]+)\)", r"exp(\1)", expr)
+    expr = re.sub(r"\be\s*\*\*\s*([a-zA-Z0-9]+)", r"exp(\1)", expr)
 
     return expr
 
@@ -300,15 +484,6 @@ def extract_latex(response: str) -> list[str]:
 def sympy_to_latex(expr: sp.Expr) -> str:
     """Convert SymPy expression to LaTeX string."""
     return sp.latex(expr)
-
-
-def sympy_to_python(expr: sp.Expr) -> str:
-    """Convert SymPy expression to Python code string."""
-    from sympy.printing.pycode import pycode
-
-    return pycode(expr)
-    return pycode(expr)
-    return pycode(expr)
 
 
 def sympy_to_python(expr: sp.Expr) -> str:

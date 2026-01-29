@@ -5,8 +5,18 @@ Supports multiple providers: OpenAI API, OpenRouter, local models, HuggingFace.
 """
 
 import os
+import time
 from abc import ABC, abstractmethod
 from typing import Any
+
+from openai import OpenAI
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 from src.utils.logging_utils import get_logger
 
@@ -59,15 +69,26 @@ class OpenAIModelRunner(BaseModelRunner):
 
         self._client = None
 
-    def _get_client(self) -> Any:
+    def _get_client(self) -> OpenAI:
         """Get or create OpenAI client."""
         if self._client is None:
-            # TODO: Import and initialize OpenAI client
-            # from openai import OpenAI
-            # self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-            pass
+            if not self.api_key:
+                raise ValueError(
+                    "OpenAI API key not found. Set OPENAI_API_KEY env var or pass api_key."
+                )
+            self._client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=self.timeout,
+            )
         return self._client
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((Exception,)),
+        reraise=True,
+    )
     def generate(self, prompt: str, **kwargs: Any) -> str:
         """
         Generate a response from OpenAI API.
@@ -79,35 +100,77 @@ class OpenAIModelRunner(BaseModelRunner):
         Returns:
             Generated text response.
         """
-        # TODO: Implement OpenAI API call
-        logger.info(f"Generating response with {self.model_name}")
+        logger.debug(f"Generating response with {self.model_name}")
 
-        # Placeholder implementation
-        # client = self._get_client()
-        # response = client.chat.completions.create(
-        #     model=self.model_name,
-        #     messages=[{"role": "user", "content": prompt}],
-        #     temperature=kwargs.get("temperature", self.temperature),
-        #     max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        # )
-        # return response.choices[0].message.content
+        client = self._get_client()
+        response = client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=kwargs.get("temperature", self.temperature),
+            max_tokens=kwargs.get("max_tokens", self.max_tokens),
+        )
+        content = response.choices[0].message.content
+        return content if content else ""
 
-        return ""
-
-    def batch_generate(self, prompts: list[str], **kwargs: Any) -> list[str]:
+    def batch_generate(
+        self,
+        prompts: list[str],
+        rate_limit_delay: float = 0.5,
+        show_progress: bool = True,
+        **kwargs: Any,
+    ) -> list[str]:
         """
-        Generate responses for multiple prompts.
+        Generate responses for multiple prompts with rate limiting.
 
         Args:
             prompts: List of input prompts.
+            rate_limit_delay: Delay in seconds between requests.
+            show_progress: Whether to show progress bar.
             **kwargs: Additional generation parameters.
 
         Returns:
             List of generated responses.
         """
-        # TODO: Implement batch generation (with rate limiting)
-        logger.info(f"Batch generating {len(prompts)} responses")
-        return [self.generate(p, **kwargs) for p in prompts]
+        logger.info(f"Batch generating {len(prompts)} responses with {self.model_name}")
+        results: list[str] = []
+        errors: list[tuple[int, str]] = []
+
+        if show_progress:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=True,
+            ) as progress:
+                task = progress.add_task(
+                    f"Generating with {self.model_name}...", total=len(prompts)
+                )
+                for i, prompt in enumerate(prompts):
+                    try:
+                        result = self.generate(prompt, **kwargs)
+                        results.append(result)
+                    except Exception as e:
+                        logger.warning(f"Failed to generate for prompt {i}: {e}")
+                        errors.append((i, str(e)))
+                        results.append("")
+                    progress.advance(task)
+                    if i < len(prompts) - 1:
+                        time.sleep(rate_limit_delay)
+        else:
+            for i, prompt in enumerate(prompts):
+                try:
+                    result = self.generate(prompt, **kwargs)
+                    results.append(result)
+                except Exception as e:
+                    logger.warning(f"Failed to generate for prompt {i}: {e}")
+                    errors.append((i, str(e)))
+                    results.append("")
+                if i < len(prompts) - 1:
+                    time.sleep(rate_limit_delay)
+
+        if errors:
+            logger.warning(f"Batch generation completed with {len(errors)} errors")
+
+        return results
 
 
 class LocalModelRunner(BaseModelRunner):
@@ -144,14 +207,17 @@ class LocalModelRunner(BaseModelRunner):
 
     def generate(self, prompt: str, **kwargs: Any) -> str:
         """Generate a response from local model."""
-        # TODO: Implement local inference
-        logger.info(f"Generating with local model: {self.model_path}")
-        return ""
+        raise NotImplementedError(
+            "Local model inference is not yet implemented. "
+            "Use 'openai' or 'openrouter' provider instead."
+        )
 
     def batch_generate(self, prompts: list[str], **kwargs: Any) -> list[str]:
         """Generate responses for multiple prompts."""
-        # TODO: Implement batch inference
-        return [self.generate(p, **kwargs) for p in prompts]
+        raise NotImplementedError(
+            "Local model inference is not yet implemented. "
+            "Use 'openai' or 'openrouter' provider instead."
+        )
 
 
 class OpenRouterModelRunner(BaseModelRunner):
@@ -192,22 +258,30 @@ class OpenRouterModelRunner(BaseModelRunner):
 
         self._client = None
 
-    def _get_client(self) -> Any:
+    def _get_client(self) -> OpenAI:
         """Get or create OpenAI-compatible client for OpenRouter."""
         if self._client is None:
-            # TODO: Import and initialize OpenAI client with OpenRouter base URL
-            # from openai import OpenAI
-            # self._client = OpenAI(
-            #     api_key=self.api_key,
-            #     base_url=self.BASE_URL,
-            #     default_headers={
-            #         "HTTP-Referer": self.site_url or "",
-            #         "X-Title": self.app_name,
-            #     }
-            # )
-            pass
+            if not self.api_key:
+                raise ValueError(
+                    "OpenRouter API key not found. Set OPENROUTER_API_KEY env var or pass api_key."
+                )
+            self._client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.BASE_URL,
+                timeout=self.timeout,
+                default_headers={
+                    "HTTP-Referer": self.site_url or "",
+                    "X-Title": self.app_name,
+                },
+            )
         return self._client
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type((Exception,)),
+        reraise=True,
+    )
     def generate(self, prompt: str, **kwargs: Any) -> str:
         """
         Generate a response from OpenRouter API.
@@ -219,24 +293,77 @@ class OpenRouterModelRunner(BaseModelRunner):
         Returns:
             Generated text response.
         """
-        logger.info(f"Generating response with OpenRouter model: {self.model_name}")
+        logger.debug(f"Generating response with OpenRouter model: {self.model_name}")
 
-        # TODO: Implement OpenRouter API call
-        # client = self._get_client()
-        # response = client.chat.completions.create(
-        #     model=self.model_name,
-        #     messages=[{"role": "user", "content": prompt}],
-        #     temperature=kwargs.get("temperature", self.temperature),
-        #     max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        # )
-        # return response.choices[0].message.content
+        client = self._get_client()
+        response = client.chat.completions.create(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=kwargs.get("temperature", self.temperature),
+            max_tokens=kwargs.get("max_tokens", self.max_tokens),
+        )
+        content = response.choices[0].message.content
+        return content if content else ""
 
-        return ""
+    def batch_generate(
+        self,
+        prompts: list[str],
+        rate_limit_delay: float = 1.0,
+        show_progress: bool = True,
+        **kwargs: Any,
+    ) -> list[str]:
+        """
+        Generate responses for multiple prompts with rate limiting.
 
-    def batch_generate(self, prompts: list[str], **kwargs: Any) -> list[str]:
-        """Generate responses for multiple prompts."""
+        Args:
+            prompts: List of input prompts.
+            rate_limit_delay: Delay in seconds between requests (default 1.0 for OpenRouter).
+            show_progress: Whether to show progress bar.
+            **kwargs: Additional generation parameters.
+
+        Returns:
+            List of generated responses.
+        """
         logger.info(f"Batch generating {len(prompts)} responses via OpenRouter")
-        return [self.generate(p, **kwargs) for p in prompts]
+        results: list[str] = []
+        errors: list[tuple[int, str]] = []
+
+        if show_progress:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                transient=True,
+            ) as progress:
+                task = progress.add_task(
+                    f"Generating with {self.model_name}...", total=len(prompts)
+                )
+                for i, prompt in enumerate(prompts):
+                    try:
+                        result = self.generate(prompt, **kwargs)
+                        results.append(result)
+                    except Exception as e:
+                        logger.warning(f"Failed to generate for prompt {i}: {e}")
+                        errors.append((i, str(e)))
+                        results.append("")
+                    progress.advance(task)
+                    if i < len(prompts) - 1:
+                        time.sleep(rate_limit_delay)
+        else:
+            for i, prompt in enumerate(prompts):
+                try:
+                    result = self.generate(prompt, **kwargs)
+                    results.append(result)
+                except Exception as e:
+                    logger.warning(f"Failed to generate for prompt {i}: {e}")
+                    errors.append((i, str(e)))
+                    results.append("")
+                if i < len(prompts) - 1:
+                    time.sleep(rate_limit_delay)
+
+        if errors:
+            logger.warning(f"Batch generation completed with {len(errors)} errors")
+
+        return results
 
 
 class ModelRunner:

@@ -446,7 +446,9 @@ class AdaptivePipeline:
         runner = ModelRunner(provider=self.config.model.provider, **model_kwargs)
 
         # TODO: Load prompts and run inference
-        console.print("[yellow]⚠️  Prompt loading and batch inference not yet implemented[/yellow]")
+        console.print(
+            "[yellow]⚠️  Prompt loading and batch inference not yet implemented[/yellow]"
+        )
 
         return []
 

@@ -21,18 +21,16 @@ class TestAPIKeyOverride:
     def test_model_config_no_direct_key(self):
         """Test that ModelConfig works without direct key."""
         config = ModelConfig(provider="openai", name="gpt-4o-mini")
-        
+
         assert config.api_key is None  # No direct key
         assert config.provider == "openai"
 
     def test_model_config_direct_key_override(self):
         """Test that direct api_key in config is stored."""
         config = ModelConfig(
-            provider="openai",
-            name="gpt-4o-mini",
-            api_key="sk-direct-key-123"
+            provider="openai", name="gpt-4o-mini", api_key="sk-direct-key-123"
         )
-        
+
         assert config.api_key == "sk-direct-key-123"
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "env-key-456"})
@@ -40,9 +38,9 @@ class TestAPIKeyOverride:
         """Test OpenAI runner loads key from OPENAI_API_KEY env."""
         runner = OpenAIModelRunner(
             model_name="gpt-4o-mini",
-            api_key=None  # Not provided
+            api_key=None,  # Not provided
         )
-        
+
         assert runner.api_key == "env-key-456"
 
     def test_openai_runner_direct_key_overrides_env(self):
@@ -50,39 +48,35 @@ class TestAPIKeyOverride:
         with patch.dict(os.environ, {"OPENAI_API_KEY": "env-key-789"}):
             runner = OpenAIModelRunner(
                 model_name="gpt-4o-mini",
-                api_key="direct-key-override"  # Direct key provided
+                api_key="direct-key-override",  # Direct key provided
             )
-            
+
             assert runner.api_key == "direct-key-override"
 
     @patch.dict(os.environ, {"OPENROUTER_API_KEY": "env-router-key"})
     def test_openrouter_runner_uses_env_var(self):
         """Test OpenRouter runner loads key from OPENROUTER_API_KEY env."""
         runner = OpenRouterModelRunner(
-            model_name="anthropic/claude-3.5-sonnet",
-            api_key=None
+            model_name="anthropic/claude-3.5-sonnet", api_key=None
         )
-        
+
         assert runner.api_key == "env-router-key"
 
     def test_openrouter_runner_direct_key_overrides_env(self):
         """Test direct key overrides OPENROUTER_API_KEY environment."""
         with patch.dict(os.environ, {"OPENROUTER_API_KEY": "env-router-key"}):
             runner = OpenRouterModelRunner(
-                model_name="anthropic/claude-3.5-sonnet",
-                api_key="direct-router-key"
+                model_name="anthropic/claude-3.5-sonnet", api_key="direct-router-key"
             )
-            
+
             assert runner.api_key == "direct-router-key"
 
     def test_model_runner_factory_passes_keys(self):
         """Test ModelRunner factory passes API keys correctly."""
         runner = ModelRunner(
-            provider="openai",
-            model_name="gpt-4o-mini",
-            api_key="factory-key"
+            provider="openai", model_name="gpt-4o-mini", api_key="factory-key"
         )
-        
+
         assert runner._runner.api_key == "factory-key"
 
     @patch.dict(os.environ, {"OPENAI_API_KEY": "openai-env"})

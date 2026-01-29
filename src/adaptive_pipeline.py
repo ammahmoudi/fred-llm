@@ -464,13 +464,21 @@ class AdaptivePipeline:
         all_prompts: list[dict[str, Any]] = []
         for jsonl_file in jsonl_files:
             console.print(f"[dim]  Loading {jsonl_file.name}...[/dim]")
-            with open(jsonl_file) as f:
+            with open(jsonl_file, encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         prompt_data = json.loads(line)
                         all_prompts.append(prompt_data)
 
         console.print(f"[green]OK[/green] Loaded {len(all_prompts)} prompts")
+
+        # Initialize cost tracker
+        from src.llm.cost_tracker import CostTracker
+
+        run_id = (
+            f"{self.config.output.dir.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        cost_tracker = CostTracker(run_id=run_id)
 
         # Initialize model runner
         model_config = self.config.model
@@ -486,6 +494,9 @@ class AdaptivePipeline:
             runner_kwargs["base_url"] = model_config.base_url
 
         runner = ModelRunner(provider=model_config.provider, **runner_kwargs)
+
+        # Set cost tracker on the runner
+        runner.set_cost_tracker(cost_tracker)
 
         # Extract prompt texts
         prompt_texts = [p.get("prompt", "") for p in all_prompts]
@@ -541,6 +552,14 @@ class AdaptivePipeline:
                 f.write(json.dumps(pred) + "\n")
 
         console.print(f"[cyan]> Saved predictions to {predictions_file}[/cyan]")
+
+        # Save cost tracking
+        cost_summary_file = output_dir / f"cost_summary_{timestamp}.json"
+        cost_details_file = output_dir / f"cost_details_{timestamp}.jsonl"
+
+        cost_tracker.save_summary(cost_summary_file)
+        cost_tracker.save_detailed_log(cost_details_file)
+        cost_tracker.print_summary()
 
         return predictions
 

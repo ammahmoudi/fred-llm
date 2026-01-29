@@ -7,17 +7,21 @@ Supports multiple providers: OpenAI API, OpenRouter, local models, HuggingFace.
 import os
 import time
 from abc import ABC, abstractmethod
+from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from openai import OpenAI
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
 
+from src.llm.cost_calculator import calculate_openai_cost, calculate_openrouter_cost
+from src.llm.cost_tracker import CallCost, CostTracker
 from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -25,6 +29,14 @@ logger = get_logger(__name__)
 
 class BaseModelRunner(ABC):
     """Abstract base class for model runners."""
+
+    def __init__(self):
+        """Initialize base runner with cost tracker."""
+        self.cost_tracker: CostTracker | None = None
+
+    def set_cost_tracker(self, tracker: CostTracker) -> None:
+        """Set the cost tracker for this runner."""
+        self.cost_tracker = tracker
 
     @abstractmethod
     def generate(self, prompt: str, **kwargs: Any) -> str:
@@ -60,6 +72,7 @@ class OpenAIModelRunner(BaseModelRunner):
             max_tokens: Maximum tokens in response.
             timeout: Request timeout in seconds.
         """
+        super().__init__()
         self.model_name = model_name
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.base_url = base_url
@@ -109,6 +122,15 @@ class OpenAIModelRunner(BaseModelRunner):
             temperature=kwargs.get("temperature", self.temperature),
             max_tokens=kwargs.get("max_tokens", self.max_tokens),
         )
+
+        # Track cost if tracker is available
+        if self.cost_tracker:
+            try:
+                cost = calculate_openai_cost(response, self.model_name)
+                self.cost_tracker.add_call(cost)
+            except Exception as e:
+                logger.warning(f"Failed to track cost: {e}")
+
         content = response.choices[0].message.content
         return content if content else ""
 
@@ -248,6 +270,7 @@ class OpenRouterModelRunner(BaseModelRunner):
             app_name: App name for OpenRouter analytics.
             site_url: Site URL for OpenRouter rankings.
         """
+        super().__init__()
         self.model_name = model_name
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.temperature = temperature
@@ -302,6 +325,15 @@ class OpenRouterModelRunner(BaseModelRunner):
             temperature=kwargs.get("temperature", self.temperature),
             max_tokens=kwargs.get("max_tokens", self.max_tokens),
         )
+
+        # Track cost if tracker is available (OpenRouter provides cost in response)
+        if self.cost_tracker:
+            try:
+                cost = calculate_openrouter_cost(response, self.model_name)
+                self.cost_tracker.add_call(cost)
+            except Exception as e:
+                logger.warning(f"Failed to track cost: {e}")
+
         content = response.choices[0].message.content
         return content if content else ""
 
@@ -399,3 +431,7 @@ class ModelRunner:
     def batch_generate(self, prompts: list[str], **kwargs: Any) -> list[str]:
         """Generate responses for multiple prompts."""
         return self._runner.batch_generate(prompts, **kwargs)
+
+    def set_cost_tracker(self, tracker: "CostTracker") -> None:
+        """Set the cost tracker."""
+        self._runner.set_cost_tracker(tracker)

@@ -1,0 +1,28 @@
+# Test Inference Configuration - 7 Diverse Samples with All Edge Cases
+# Tests the full inference pipeline with real API calls and cost tracking
+
+dataset:
+  prompts:
+    prompts_dir: data/prompts/basic_test_5
+    style: basic
+
+# Model configuration - Claude 3.5 Sonnet (better reasoning and LaTeX handling)
+model:
+  provider: openrouter
+  name: anthropic/claude-3.5-sonnet
+  temperature: 0.1
+  max_tokens: 2048
+
+# Evaluation
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 10
+
+# Output
+output:
+  dir: outputs/test_inference_diverse
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

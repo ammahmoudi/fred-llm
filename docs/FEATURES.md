@@ -82,10 +82,27 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## LLM Integration
 
-- [x] OpenAI API support - GPT-4, GPT-3.5 ⚠️ **Scaffolded but TODO: Actual API calls not implemented**
-- [x] OpenRouter API support - Claude, Llama, Mistral, etc. ⚠️ **Scaffolded but TODO: Actual API calls not implemented**
-- [x] Local model support - HuggingFace, vLLM placeholder ⚠️ **Scaffolded but TODO: Model loading not implemented**
-- [x] Batch generation - Process multiple equations efficiently ⚠️ **Scaffolded but TODO: Rate limiting needed**
+- [x] **OpenAI API support** - GPT-4, GPT-3.5, GPT-4o ✅ **Complete API integration, tested (January 29, 2026)**
+  - [x] API key management - Environment variable (OPENAI_API_KEY) or config override ✅
+  - [x] Model selection - Dynamic model_name parameter ✅
+  - [x] Request/response handling - OpenAI SDK with retry logic ✅
+  - [x] Cost tracking - Automatic token and USD tracking ✅ **Using openai-cost-calculator**
+- [x] **OpenRouter API support** - Claude, Llama, Mistral, Gemini, etc. ✅ **Complete API integration, tested (January 29, 2026)**
+  - [x] API key management - Environment variable (OPENROUTER_API_KEY) or config override ✅
+  - [x] Model routing - Access 200+ models through unified API ✅
+  - [x] Request/response handling - OpenAI-compatible SDK ✅
+  - [x] Cost tracking - Native usage.cost from API ✅ **Direct from OpenRouter**
+- [x] **Cost Tracking System** ✅ **Complete implementation (January 29, 2026)**
+  - [x] Per-call tracking - Tokens (prompt/completion/cached), cost in USD, timestamp ✅
+  - [x] Run aggregation - Total cost, requests, tokens by provider and model ✅
+  - [x] Cost calculation - OpenAI (openai-cost-calculator), OpenRouter (native usage.cost) ✅
+  - [x] Financial precision - Decimal type for accurate USD arithmetic ✅
+  - [x] Detailed logging - Per-call JSONL logs with full metadata ✅
+  - [x] Summary reports - JSON summaries with provider/model breakdowns ✅
+  - [x] Terminal output - Rich table display of costs during runs ✅
+  - [x] Test coverage - 10 tests for calculators, tracker, and runner integration ✅ **All passing**
+- [x] Local model support - HuggingFace placeholder ⚠️ **Scaffolded but TODO: Model loading not implemented**
+- [x] Batch generation - Process multiple equations efficiently ✅ **With rate limiting**
 - [ ] Fine-tuning support - Train custom models (Phi, T5) ❌ **Not started**
 - [ ] Tool-assisted solving - LLM generates Python code for SymPy ❌ **Not started**
 - [ ] Iterative refinement - Multi-turn conversation for complex equations ❌ **Not started**
@@ -178,7 +195,10 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Testing & Documentation
 
-- [x] Unit tests - 104 tests covering core functionality ✅ **All passing (100%)**
+- [x] **Unit tests** - 125 tests covering core functionality ✅ **All passing (100%) (January 29, 2026)**
+  - [x] Core data tests - loader, validator, splitter, augmentation, formatters (104 tests)
+  - [x] API key tests - Environment variables and config overrides (15 tests)
+  - [x] Cost tracking tests - Calculators, tracker, and integration (10 tests)
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)

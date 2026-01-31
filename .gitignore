@@ -107,4 +107,4 @@ Thumbs.db
 .uv/
 uv.lock
 data/*
-article/*
+article/others/*

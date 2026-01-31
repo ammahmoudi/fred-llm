@@ -1,0 +1,3 @@
+[submodule "article/fred_llm_article"]
+	path = article/fred_llm_article
+	url = https://github.com/ammahmoudi/fred-llm-article.git

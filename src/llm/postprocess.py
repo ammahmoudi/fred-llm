@@ -67,16 +67,47 @@ def parse_llm_output(
 
     # Extract solution from response
     if extract_solution:
-        solution_str = _extract_solution(response)
-        result["solution_str"] = solution_str
+        from src.llm.math_verify_adapter import HAS_MATH_VERIFY
 
-        if solution_str and validate:
-            try:
-                result["solution_sympy"] = _parse_to_sympy(solution_str)
-                result["confidence"] = 0.8  # Base confidence if parsing succeeds
-            except Exception as e:
-                logger.warning(f"Failed to parse solution to SymPy: {e}")
-                result["confidence"] = 0.3
+        # Primary path: Math-Verify multi-strategy extraction (no manual regex)
+        if HAS_MATH_VERIFY and validate:
+            from src.llm.math_verify_adapter import extract_solution_from_response
+
+            mv_result = extract_solution_from_response(response)
+            if mv_result is not None:
+                expr, raw_str = mv_result
+                result["solution_str"] = raw_str
+                result["solution_sympy"] = expr
+                result["confidence"] = 0.8
+
+        # Fallback: legacy regex pipeline (only when MV unavailable or failed)
+        if result["solution_sympy"] is None:
+            solution_str = _extract_solution(response)
+            result["solution_str"] = solution_str
+
+            if solution_str and validate:
+                try:
+                    result["solution_sympy"] = _parse_to_sympy(solution_str)
+                    result["confidence"] = 0.7
+                except Exception as e:
+                    logger.warning(f"Failed to parse solution to SymPy: {e}")
+                    result["confidence"] = 0.3
+
+    # Infer has_solution=False when solution is empty and response says "no solution"
+    if result["has_solution"] is None and not result["solution_str"]:
+        no_solution_patterns = [
+            r"\bno\s+solution\b",
+            r"\bdoes\s+not\s+(?:have|exist|admit)\b",
+            r"\bno\s+(?:unique\s+)?solution\s+exists?\b",
+            r"\bcannot\s+be\s+solved\b",
+            r"\bno\s+closed[- ]form\b",
+            r"\bunsolvable\b",
+            r"\binconsistent\b",
+        ]
+        for pat in no_solution_patterns:
+            if re.search(pat, response, re.IGNORECASE):
+                result["has_solution"] = False
+                break
 
     # Extract reasoning
     result["reasoning"] = _extract_reasoning(response)
@@ -146,6 +177,10 @@ def _clean_expression(expr: str) -> str:
 
     # Remove any remaining \) at end of expression
     expr = re.sub(r"\s*\\\)\s*\.?\s*$", "", expr)
+
+    # Handle "No solution" responses - not a parseable expression
+    if re.match(r"^\s*no\s+solution\b", expr, re.IGNORECASE):
+        return ""
 
     # Handle "requires numerical methods" type responses - mark as unparseable
     if re.search(r"requires?\s+(?:numerical|iterative|computational)", expr, re.IGNORECASE):
@@ -222,6 +257,34 @@ def _latex_to_infix(expr: str) -> str:
         # Handle \func at end of string or before operator
         expr = re.sub(latex_cmd + r"(?=[\s+\-*/^)]|$)", sympy_func, expr)
 
+    # Handle integrals BEFORE exponent/subscript conversion to preserve _{a}^{b}
+    # Convert to SymPy Integral() notation instead of removing
+    # Definite integral: \int_{a}^{b} ... dt -> Integral(..., (t, a, b))
+    def _replace_definite_integral(m: re.Match) -> str:
+        lower = m.group(1)
+        upper = m.group(2)
+        integrand = m.group(3).strip().rstrip("\\,")
+        var = m.group(4)
+        return f"Integral({integrand}, ({var}, {lower}, {upper}))"
+
+    expr = re.sub(
+        r"\\int_\{([^}]*)\}\^\{([^}]*)\}\s*(.+?)\s*d([a-z])",
+        _replace_definite_integral,
+        expr,
+    )
+
+    # Indefinite integral: \int ... dt -> Integral(..., t)
+    def _replace_indefinite_integral(m: re.Match) -> str:
+        integrand = m.group(1).strip().rstrip("\\,")
+        var = m.group(2)
+        return f"Integral({integrand}, {var})"
+
+    expr = re.sub(
+        r"\\int\s+(.+?)\s*d([a-z])",
+        _replace_indefinite_integral,
+        expr,
+    )
+
     # Handle fractions: \frac{num}{den} -> (num)/(den)
     def replace_frac(match: re.Match) -> str:
         content = match.group(0)
@@ -246,8 +309,9 @@ def _latex_to_infix(expr: str) -> str:
     # Handle square roots with nth root: \sqrt[n]{x} -> x**(1/n)
     expr = re.sub(r"sqrt\[([^\]]+)\]\{([^}]+)\}", r"((\2)**(1/(\1)))", expr)
 
-    # Handle exponents: x^{n} -> x**(n), x^n -> x**n (single char)
+    # Handle exponents: x^{n} -> x**(n), x^(n) -> x**(n), x^n -> x**n
     expr = re.sub(r"\^\{([^}]+)\}", r"**(\1)", expr)
+    expr = re.sub(r"\^\(([^)]+)\)", r"**(\1)", expr)  # ^(n) hybrid notation
     expr = re.sub(r"\^(\d+)", r"**\1", expr)
     expr = re.sub(r"\^([a-zA-Z])", r"**\1", expr)
 
@@ -266,17 +330,12 @@ def _latex_to_infix(expr: str) -> str:
     expr = re.sub(r"\\pi", "pi", expr)
     expr = re.sub(r"\\infty", "oo", expr)
 
-    # Handle e^{x} -> exp(x)
+    # Handle e^{x} -> exp(x), including bare e**x without braces or parens
     expr = re.sub(r"\be\s*\*\*\s*\{([^}]+)\}", r"exp(\1)", expr)
     expr = re.sub(r"\be\s*\*\*\s*\(([^)]+)\)", r"exp(\1)", expr)
+    expr = re.sub(r"\be\s*\*\*\s*([a-zA-Z0-9]+)", r"exp(\1)", expr)
 
-    # Handle integrals - remove them as they can't be easily parsed
-    # Match \int_{a}^{b} ... dt patterns and remove the whole integral
-    expr = re.sub(r"\\int_\{[^}]*\}\^\{[^}]*\}[^,\n]*\\?,?\s*d[a-z]", "", expr)
-    expr = re.sub(r"\\int[^,\n]*\\?,?\s*d[a-z]", "", expr)
-    # Clean up standalone Integral notations and patterns like _a**(b) K(x,t) u(t) dt
-    expr = re.sub(r"Integral_[^\s]*\s*", "", expr)
-    expr = re.sub(r"Integral[^\s]*\s*", "", expr)
+    # Clean up residual integral/kernel patterns not caught by earlier conversion
     expr = re.sub(r"_-?[\d.]+\*\*\([^)]+\)\s*K\([^)]+\)\s*u\([^)]+\)\s*d[a-z]", "", expr)
     expr = re.sub(r"\s*K\(x,\s*t\)\s*u\(t\)\s*d[a-z]", "", expr)
 
@@ -301,21 +360,59 @@ def _latex_to_infix(expr: str) -> str:
 
 def _fallback_extract(response: str) -> Optional[str]:
     """Fallback extraction when no clear solution pattern is found."""
-    # Look for the last mathematical expression in the response
     lines = response.strip().split("\n")
+
+    # First pass: look for u(x) = ... pattern (most reliable)
     for line in reversed(lines):
         line = line.strip()
+        m = re.match(r".*u\s*\(\s*x\s*\)\s*=\s*(.+)", line)
+        if m:
+            cleaned = _clean_expression(m.group(1))
+            if cleaned:
+                return cleaned
+
+    # Second pass: look for any line with = and u, but skip reasoning lines
+    skip_prefixes = (
+        "substitut", "let ", "if ", "when ", "assume", "where ",
+        "since ", "because ", "note ", "recall ", "using ",
+    )
+    for line in reversed(lines):
+        stripped = line.strip().lower()
+        if any(stripped.startswith(p) for p in skip_prefixes):
+            continue
         if "=" in line and "u" in line.lower():
-            # Try to extract the right side of the equation
             parts = line.split("=")
             if len(parts) >= 2:
-                return _clean_expression(parts[-1])
+                cleaned = _clean_expression(parts[-1])
+                if cleaned:
+                    return cleaned
+
+    # Third pass: try Math-Verify extraction on the full response
+    from src.llm.math_verify_adapter import HAS_MATH_VERIFY
+
+    if HAS_MATH_VERIFY:
+        try:
+            from math_verify import parse as mv_parse
+
+            parsed = mv_parse(response)
+            if parsed and len(parsed) >= 2:
+                raw_str = parsed[1]
+                if isinstance(raw_str, str) and raw_str.strip():
+                    cleaned = _clean_expression(raw_str)
+                    if cleaned:
+                        return cleaned
+        except Exception:
+            pass
+
     return None
 
 
 def _parse_to_sympy(expr_str: str) -> sp.Expr:
     """
     Parse a string expression to SymPy.
+
+    Delegates to the Math-Verify adapter which tries Math-Verify first,
+    then falls back to the custom LaTeX-to-infix + parse_expr pipeline.
 
     Args:
         expr_str: Mathematical expression string.
@@ -326,33 +423,9 @@ def _parse_to_sympy(expr_str: str) -> sp.Expr:
     Raises:
         ParseError: If parsing fails.
     """
-    # Define common symbols
-    x, t = sp.symbols("x t")
-    local_dict = {"x": x, "t": t, "e": sp.E, "pi": sp.pi}
+    from src.llm.math_verify_adapter import parse_latex_to_sympy
 
-    # Transformations for parsing
-    transformations = standard_transformations + (implicit_multiplication,)
-
-    try:
-        # Try standard parsing
-        parsed = parse_expr(
-            expr_str,
-            local_dict=local_dict,
-            transformations=transformations,
-        )
-        return parsed
-    except Exception as e:
-        # Try with additional preprocessing
-        cleaned = _preprocess_for_sympy(expr_str)
-        try:
-            parsed = parse_expr(
-                cleaned,
-                local_dict=local_dict,
-                transformations=transformations,
-            )
-            return parsed
-        except Exception as e2:
-            raise ParseError(f"Failed to parse expression: {expr_str}. Error: {e2}")
+    return parse_latex_to_sympy(expr_str)
 
 
 def _preprocess_for_sympy(expr: str) -> str:
@@ -365,7 +438,22 @@ def _preprocess_for_sympy(expr: str) -> str:
     expr = re.sub(r"(\d)([a-zA-Z])", r"\1*\2", expr)  # 2x -> 2*x
     expr = re.sub(r"([a-zA-Z])(\d)", r"\1*\2", expr)  # x2 -> x*2
     expr = re.sub(r"\)(\w)", r")*\1", expr)  # )x -> )*x
-    expr = re.sub(r"(\w)\(", r"\1*(", expr)  # x( -> x*(
+
+    # Add implicit multiplication before ( but NOT for function calls
+    # e.g., x( -> x*( but exp( stays exp(
+    _known_funcs = {
+        "sin", "cos", "tan", "exp", "log", "sqrt", "sinh", "cosh", "tanh",
+        "asin", "acos", "atan", "asinh", "acosh", "atanh",
+        "cot", "sec", "csc", "Abs", "Integral", "Sum",
+    }
+
+    def _implicit_mul_before_paren(m: re.Match) -> str:
+        word = m.group(1)
+        if word in _known_funcs:
+            return m.group(0)  # Don't break function calls
+        return f"{word}*("
+
+    expr = re.sub(r"(\w+)\(", _implicit_mul_before_paren, expr)
 
     # Handle coefficient followed by function: 2sin(x) -> 2*sin(x)
     funcs = ["sin", "cos", "tan", "exp", "log", "sqrt", "sinh", "cosh", "tanh", "Abs"]
@@ -410,12 +498,22 @@ def _extract_has_solution(response: str) -> Optional[bool]:
     - HAS_SOLUTION: yes/no
     - Has solution: Yes/No
     """
-    pattern = r"HAS[_\s]SOLUTION\s*[:\s]+\s*(yes|no|true|false)"
+    pattern = r"HAS[_\s]SOLUTION\s*[:\s]+\s*(yes|no|true|false)\b"
     match = re.search(pattern, response, re.IGNORECASE)
 
     if match:
         value = match.group(1).lower()
         return value in ("yes", "true")
+
+    # If structured yes/no not found, look at the full HAS_SOLUTION line content
+    hs_line_pattern = r"HAS[_\s]SOLUTION\s*[:\s]+\s*(.+?)(?:\n|$)"
+    hs_match = re.search(hs_line_pattern, response, re.IGNORECASE)
+    if hs_match:
+        value = hs_match.group(1).strip().lower()
+        if re.search(r"\bno\b|\bnot\b|\bfalse\b|\bn/?a\b|\bnone\b|\bdoes\s+not\b", value):
+            return False
+        if re.search(r"\byes\b|\btrue\b|\bexists?\b", value):
+            return True
 
     # Fallback: look for natural language indicators
     if re.search(r"\bno\s+solution\s+exists?\b", response, re.IGNORECASE):
@@ -434,11 +532,12 @@ def _extract_solution_type(response: str) -> Optional[str]:
     - SOLUTION_TYPE: exact_symbolic
     - Solution type: approx_coef
     """
-    pattern = r"SOLUTION[_\s]TYPE\s*[:\s]+\s*(\w+)"
+    pattern = r"SOLUTION[_\s]TYPE\s*[:\s]+\s*([\w]+(?:[_\s-][\w]+)*)"
     match = re.search(pattern, response, re.IGNORECASE)
 
     if match:
-        value = match.group(1).lower()
+        # Normalize separators: spaces and dashes to underscores
+        value = re.sub(r"[\s-]+", "_", match.group(1).strip()).lower()
         # Validate against known types
         valid_types = {
             "exact_symbolic",

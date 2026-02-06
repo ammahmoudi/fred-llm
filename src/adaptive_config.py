@@ -204,6 +204,15 @@ class EvaluationConfig(BaseModel):
     symbolic_tolerance: float = 1e-10
     numeric_tolerance: float = 1e-6
     num_test_points: int = 100
+    use_math_verify: bool = True
+    """Use Math-Verify library for parsing and comparison when available."""
+    type_tolerances: dict[str, float] = Field(
+        default_factory=lambda: {
+            "series": 1e-2,
+            "approx_coef": 1e-3,
+            "regularized": 1e-3,
+        }
+    )
 
 
 class OutputConfig(BaseModel):

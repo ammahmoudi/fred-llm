@@ -14,14 +14,10 @@ import sympy as sp
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from sympy.parsing.sympy_parser import (
-    implicit_multiplication,
-    parse_expr,
-    standard_transformations,
-)
 
 from src.adaptive_config import AdaptivePipelineConfig
 from src.llm.evaluate import SolutionEvaluator
+from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.llm.model_runner import ModelRunner
 from src.llm.postprocess import parse_llm_output
 from src.utils.logging_utils import get_logger
@@ -517,17 +513,16 @@ class AdaptivePipeline:
         for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
             parsed = parse_llm_output(response)
 
+            metadata = prompt_data.get("metadata", {})
             prediction = {
                 "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
                 "prompt": prompt_data.get("prompt", ""),
                 "ground_truth": prompt_data.get("ground_truth"),
-                "ground_truth_has_solution": prompt_data.get("metadata", {}).get(
-                    "has_solution"
-                ),
-                "ground_truth_solution_type": prompt_data.get("metadata", {}).get(
-                    "solution_type"
-                ),
+                "ground_truth_has_solution": metadata.get("has_solution"),
+                "ground_truth_solution_type": metadata.get("solution_type"),
+                "ground_truth_domain": metadata.get("domain"),
                 "raw_response": response,
+                "api_error": response == "",  # Flag empty responses from API failures
                 "solution_str": parsed.get("solution_str"),
                 "solution_sympy": str(parsed.get("solution_sympy"))
                 if parsed.get("solution_sympy")
@@ -595,14 +590,21 @@ class AdaptivePipeline:
         solution_type_correct = 0
         solution_type_total = 0
         evaluated_count = 0
+        api_error_count = 0
         errors: list[str] = []
 
-        # Define symbols for parsing
-        x, t = sp.symbols("x t")
-        local_dict = {"x": x, "t": t, "e": sp.E, "pi": sp.pi}
-        transformations = standard_transformations + (implicit_multiplication,)
+        # Read per-type tolerances from config
+        type_tolerances = {}
+        if eval_config and hasattr(eval_config, "type_tolerances"):
+            type_tolerances = eval_config.type_tolerances
 
         for i, pred in enumerate(predictions):
+            # Skip API errors (empty responses from failed API calls)
+            if pred.get("api_error"):
+                api_error_count += 1
+                errors.append(f"Equation {pred.get('equation_id', i)}: API error (empty response)")
+                continue
+
             # Evaluate edge case metrics
             gt_has_solution = pred.get("ground_truth_has_solution")
             pred_has_solution = pred.get("has_solution")
@@ -618,6 +620,15 @@ class AdaptivePipeline:
                 if gt_solution_type == pred_solution_type:
                     solution_type_correct += 1
 
+            # Extract domain from metadata
+            domain = tuple(pred.get("ground_truth_domain") or [0, 1])
+
+            # Branch: "none" type - evaluate by has_solution detection
+            if gt_solution_type == "none":
+                evaluator.evaluate_none_type(pred_has_solution)
+                evaluated_count += 1
+                continue
+
             # Evaluate solution accuracy
             ground_truth_str = pred.get("ground_truth")
             solution_str = pred.get("solution_str")
@@ -626,22 +637,22 @@ class AdaptivePipeline:
                 continue
 
             try:
-                # Parse ground truth
-                gt_expr = parse_expr(
-                    ground_truth_str,
-                    local_dict=local_dict,
-                    transformations=transformations,
-                )
+                gt_expr = parse_latex_to_sympy(ground_truth_str)
+                pred_expr = parse_latex_to_sympy(solution_str)
 
-                # Parse predicted solution
-                pred_expr = parse_expr(
-                    solution_str,
-                    local_dict=local_dict,
-                    transformations=transformations,
-                )
+                # Branch: "family" type - use family comparison
+                if gt_solution_type == "family":
+                    evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                    evaluated_count += 1
+                    continue
 
-                # Run evaluation
-                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
+                # Standard evaluation with per-type tolerance override
+                tol_override = type_tolerances.get(gt_solution_type) if gt_solution_type else None
+                evaluator.evaluate(
+                    pred_expr, gt_expr, domain=domain,
+                    solution_type=gt_solution_type,
+                    numeric_tolerance_override=tol_override,
+                )
                 evaluated_count += 1
 
             except Exception as e:
@@ -656,7 +667,8 @@ class AdaptivePipeline:
             **summary,
             "evaluated_count": evaluated_count,
             "total_predictions": len(predictions),
-            "parse_errors": len(errors),
+            "api_errors": api_error_count,
+            "parse_errors": len(errors) - api_error_count,
         }
 
         if has_solution_total > 0:
@@ -689,8 +701,20 @@ class AdaptivePipeline:
             console.print(
                 f"  Solution type accuracy: {metrics['solution_type_accuracy']:.2%}"
             )
-        if errors:
-            console.print(f"  [yellow]Parse errors: {len(errors)}[/yellow]")
+        # Display per-type breakdown
+        per_type = summary.get("per_type", {})
+        if per_type:
+            console.print(f"\n  [bold]Per-type breakdown:[/bold]")
+            for stype, counts in sorted(per_type.items()):
+                console.print(
+                    f"    {stype}: {counts['correct']}/{counts['total']} "
+                    f"({counts['accuracy']:.0%})"
+                )
+
+        if api_error_count > 0:
+            console.print(f"  [red]API errors: {api_error_count}[/red]")
+        if len(errors) - api_error_count > 0:
+            console.print(f"  [yellow]Parse errors: {len(errors) - api_error_count}[/yellow]")
 
         # Save metrics to file
         output_dir = Path(self.config.output.dir)

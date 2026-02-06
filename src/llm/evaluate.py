@@ -11,6 +11,13 @@ import numpy as np
 import sympy as sp
 from scipy import integrate
 
+from src.llm.math_verify_adapter import (
+    FREDHOLM_LOCAL_DICT,
+    TRANSFORMATIONS,
+    math_verify_compare,
+    parse_latex_to_sympy,
+)
+from src.llm.postprocess import ParseError
 from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +29,7 @@ def evaluate_solutions(
     symbolic_tolerance: float = 1e-10,
     numeric_tolerance: float = 1e-6,
     n_test_points: int = 100,
+    type_tolerances: Optional[dict[str, float]] = None,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """
@@ -33,17 +41,16 @@ def evaluate_solutions(
         symbolic_tolerance: Tolerance for symbolic comparison.
         numeric_tolerance: Tolerance for numeric comparison.
         n_test_points: Number of test points for numeric evaluation.
+        type_tolerances: Per-solution-type numeric tolerance overrides.
         **kwargs: Additional evaluation parameters.
 
     Returns:
         Dictionary with evaluation metrics.
     """
     import json
-    from sympy.parsing.sympy_parser import (
-        implicit_multiplication,
-        parse_expr,
-        standard_transformations,
-    )
+
+    if type_tolerances is None:
+        type_tolerances = {}
 
     results_path = Path(results_path)
     logger.info(f"Evaluating solutions from {results_path}")
@@ -76,11 +83,6 @@ def evaluate_solutions(
         n_test_points=n_test_points,
     )
 
-    # Define symbols for parsing
-    x, t = sp.symbols("x t")
-    local_dict = {"x": x, "t": t, "e": sp.E, "pi": sp.pi}
-    transformations = standard_transformations + (implicit_multiplication,)
-
     # Track edge case metrics
     has_solution_correct = 0
     has_solution_total = 0
@@ -105,6 +107,15 @@ def evaluate_solutions(
             if gt_solution_type == pred_solution_type:
                 solution_type_correct += 1
 
+        # Extract domain from metadata
+        domain = tuple(result.get("ground_truth_domain") or [0, 1])
+
+        # Branch on solution type: "none" type
+        if gt_solution_type == "none":
+            evaluator.evaluate_none_type(pred_has_solution)
+            evaluated_count += 1
+            continue
+
         # Evaluate solution accuracy
         ground_truth_str = result.get("ground_truth")
         solution_str = result.get("solution_str")
@@ -113,28 +124,23 @@ def evaluate_solutions(
             continue
 
         try:
-            # Parse ground truth
-            gt_expr = parse_expr(
-                ground_truth_str,
-                local_dict=local_dict,
-                transformations=transformations,
-            )
+            gt_expr = parse_latex_to_sympy(ground_truth_str)
+            pred_expr = parse_latex_to_sympy(solution_str)
 
-            # Parse predicted solution
-            pred_expr = parse_expr(
-                solution_str,
-                local_dict=local_dict,
-                transformations=transformations,
-            )
+            # Branch on solution type: "family" type
+            if gt_solution_type == "family":
+                evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                evaluated_count += 1
+                continue
 
-            # Run evaluation based on mode
-            if mode in ("symbolic", "both"):
-                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
-                evaluated_count += 1
-            elif mode == "numeric":
-                # Numeric only
-                evaluator.evaluate(pred_expr, gt_expr, domain=(0, 1))
-                evaluated_count += 1
+            # Standard evaluation with per-type tolerance
+            tol_override = type_tolerances.get(gt_solution_type) if gt_solution_type else None
+            evaluator.evaluate(
+                pred_expr, gt_expr, domain=domain,
+                solution_type=gt_solution_type,
+                numeric_tolerance_override=tol_override,
+            )
+            evaluated_count += 1
 
         except Exception as e:
             errors.append(f"Result {result.get('equation_id', i)}: {str(e)}")
@@ -188,6 +194,19 @@ def symbolic_compare(
     }
 
     try:
+        # Math-Verify fast-path: quick boolean check before heavy simplification
+        mv_result = math_verify_compare(solution, ground_truth)
+        if mv_result is True:
+            result["equivalent"] = True
+            result["simplified_match"] = True
+            return result
+
+        # Evaluate any unevaluated Integral objects first
+        if solution.has(sp.Integral):
+            solution = solution.doit()
+        if ground_truth.has(sp.Integral):
+            ground_truth = ground_truth.doit()
+
         # Direct symbolic equality
         if sp.simplify(solution - ground_truth) == 0:
             result["equivalent"] = True
@@ -247,6 +266,21 @@ def numeric_compare(
 
     try:
         x = sp.Symbol("x")
+
+        # Evaluate any unevaluated Integral objects before lambdify
+        if solution.has(sp.Integral):
+            solution = solution.doit()
+        if ground_truth.has(sp.Integral):
+            ground_truth = ground_truth.doit()
+
+        # Check that expressions only depend on x (no other free symbols)
+        extra_sol = solution.free_symbols - {x}
+        extra_gt = ground_truth.free_symbols - {x}
+        if extra_sol or extra_gt:
+            extra = extra_sol | extra_gt
+            result["error"] = f"Expressions contain non-numeric symbols: {extra}"
+            logger.debug(f"Numeric comparison skipped: non-numeric symbols {extra}")
+            return result
 
         # Convert to numeric functions
         f_solution = sp.lambdify(x, solution, modules=["numpy"])
@@ -370,6 +404,62 @@ def verify_solution(
     return result
 
 
+def family_compare(
+    solution: sp.Expr,
+    ground_truth: sp.Expr,
+) -> bool:
+    """
+    Check if solution matches a family ground truth up to a free constant.
+
+    Finds free constant symbols (C, c_1, c_2) in ground_truth, substitutes
+    them with 1 to get the structural part, then checks if solution / structural_part
+    simplifies to an x-free constant.
+
+    Args:
+        solution: Predicted solution expression.
+        ground_truth: Ground truth family expression with free constants.
+
+    Returns:
+        True if solution matches the family structure.
+    """
+    x = sp.Symbol("x")
+    # Identify free constant symbols in ground truth:
+    # any symbol that's not the independent variable (x) or integration variable (t)
+    standard_vars = {"x", "t"}
+    free_constants = [
+        s for s in ground_truth.free_symbols
+        if s.name not in standard_vars
+    ]
+
+    if not free_constants:
+        return False
+
+    try:
+        # Substitute all free constants with 1 to get structural part
+        structural = ground_truth
+        for c in free_constants:
+            structural = structural.subs(c, 1)
+
+        # Check if solution / structural simplifies to an x-free constant
+        if structural == 0:
+            return False
+
+        ratio = sp.simplify(solution / structural)
+        # Ratio should be free of x
+        if x not in ratio.free_symbols:
+            return True
+
+        # Also try difference approach: solution - C * structural = 0
+        diff = sp.simplify(solution - structural)
+        if x not in diff.free_symbols:
+            return True
+
+    except Exception as e:
+        logger.debug(f"Family comparison failed: {e}")
+
+    return False
+
+
 class SolutionEvaluator:
     """Evaluator class for batch solution evaluation."""
 
@@ -391,35 +481,143 @@ class SolutionEvaluator:
         solution: sp.Expr,
         ground_truth: sp.Expr,
         domain: tuple[float, float] = (0, 1),
+        solution_type: Optional[str] = None,
+        numeric_tolerance_override: Optional[float] = None,
     ) -> dict[str, Any]:
-        """Evaluate a single solution."""
+        """Evaluate a single solution.
+
+        Args:
+            solution: Predicted solution expression.
+            ground_truth: Ground truth expression.
+            domain: Evaluation domain.
+            solution_type: Type of solution for per-type tracking.
+            numeric_tolerance_override: Override numeric tolerance for this evaluation.
+        """
+        tol = numeric_tolerance_override if numeric_tolerance_override is not None else self.numeric_tolerance
         symbolic = symbolic_compare(solution, ground_truth, self.symbolic_tolerance)
         numeric = numeric_compare(
-            solution, ground_truth, domain, self.n_test_points, self.numeric_tolerance
+            solution, ground_truth, domain, self.n_test_points, tol
         )
 
         result = {
             "symbolic": symbolic,
             "numeric": numeric,
             "correct": symbolic["equivalent"] or numeric["match"],
+            "solution_type": solution_type,
+        }
+        self.results.append(result)
+        return result
+
+    def evaluate_none_type(self, pred_has_solution: Optional[bool]) -> dict[str, Any]:
+        """Evaluate a 'none' type equation (no solution exists).
+
+        Correct iff the LLM predicted has_solution=False.
+
+        Args:
+            pred_has_solution: The LLM's prediction of whether a solution exists.
+
+        Returns:
+            Evaluation result dict.
+        """
+        correct = pred_has_solution is False
+        result = {
+            "symbolic": {"equivalent": correct, "difference": None, "simplified_match": correct},
+            "numeric": {"match": correct, "max_error": 0.0 if correct else float("inf"),
+                        "mean_error": 0.0 if correct else float("inf"),
+                        "rmse": 0.0 if correct else float("inf")},
+            "correct": correct,
+            "solution_type": "none",
+        }
+        self.results.append(result)
+        return result
+
+    def evaluate_family(
+        self,
+        solution: sp.Expr,
+        ground_truth: sp.Expr,
+        domain: tuple[float, float] = (0, 1),
+    ) -> dict[str, Any]:
+        """Evaluate a 'family' type equation (non-unique solution).
+
+        Uses family_compare first, falls back to standard symbolic/numeric.
+        Correct if any method succeeds.
+
+        Args:
+            solution: Predicted solution expression.
+            ground_truth: Ground truth family expression with free constants.
+            domain: Evaluation domain.
+
+        Returns:
+            Evaluation result dict.
+        """
+        # Try family-specific comparison first
+        family_match = family_compare(solution, ground_truth)
+
+        # For numeric/symbolic fallback, substitute free constants with 1
+        # so expressions can be evaluated numerically
+        x = sp.Symbol("x")
+        standard_vars = {"x", "t"}
+        free_constants = [
+            s for s in ground_truth.free_symbols
+            if s.name not in standard_vars
+        ]
+        gt_concrete = ground_truth
+        for c in free_constants:
+            gt_concrete = gt_concrete.subs(c, 1)
+
+        # Also try standard comparison as fallback
+        symbolic = symbolic_compare(solution, gt_concrete, self.symbolic_tolerance)
+        numeric = numeric_compare(
+            solution, gt_concrete, domain, self.n_test_points, self.numeric_tolerance
+        )
+
+        correct = family_match or symbolic["equivalent"] or numeric["match"]
+        result = {
+            "symbolic": symbolic,
+            "numeric": numeric,
+            "family_match": family_match,
+            "correct": correct,
+            "solution_type": "family",
         }
         self.results.append(result)
         return result
 
     def summary(self) -> dict[str, Any]:
-        """Get summary statistics."""
+        """Get summary statistics including per-type breakdown."""
         if not self.results:
             return {"total": 0}
 
         total = len(self.results)
         correct = sum(1 for r in self.results if r["correct"])
-        symbolic_correct = sum(1 for r in self.results if r["symbolic"]["equivalent"])
-        numeric_correct = sum(1 for r in self.results if r["numeric"]["match"])
+        symbolic_correct = sum(
+            1 for r in self.results
+            if r.get("symbolic", {}).get("equivalent", False)
+        )
+        numeric_correct = sum(
+            1 for r in self.results
+            if r.get("numeric", {}).get("match", False)
+        )
 
-        return {
+        summary: dict[str, Any] = {
             "total": total,
             "correct": correct,
             "accuracy": correct / total,
             "symbolic_accuracy": symbolic_correct / total,
             "numeric_accuracy": numeric_correct / total,
         }
+
+        # Per-type breakdown
+        per_type: dict[str, dict[str, Any]] = {}
+        for r in self.results:
+            st = r.get("solution_type") or "unknown"
+            if st not in per_type:
+                per_type[st] = {"total": 0, "correct": 0}
+            per_type[st]["total"] += 1
+            if r["correct"]:
+                per_type[st]["correct"] += 1
+
+        for _st, counts in per_type.items():
+            counts["accuracy"] = counts["correct"] / counts["total"] if counts["total"] > 0 else 0.0
+
+        summary["per_type"] = per_type
+        return summary

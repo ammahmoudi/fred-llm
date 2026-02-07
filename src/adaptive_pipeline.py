@@ -508,44 +508,81 @@ class AdaptivePipeline:
             show_progress=True,
         )
 
-        # Parse responses and structure predictions
-        predictions: list[dict[str, Any]] = []
-        for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
-            parsed = parse_llm_output(response)
-
-            metadata = prompt_data.get("metadata", {})
-            prediction = {
-                "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
-                "prompt": prompt_data.get("prompt", ""),
-                "ground_truth": prompt_data.get("ground_truth"),
-                "ground_truth_has_solution": metadata.get("has_solution"),
-                "ground_truth_solution_type": metadata.get("solution_type"),
-                "ground_truth_domain": metadata.get("domain"),
-                "raw_response": response,
-                "api_error": response == "",  # Flag empty responses from API failures
-                "solution_str": parsed.get("solution_str"),
-                "solution_sympy": str(parsed.get("solution_sympy"))
-                if parsed.get("solution_sympy")
-                else None,
-                "has_solution": parsed.get("has_solution"),
-                "solution_type": parsed.get("solution_type"),
-                "reasoning": parsed.get("reasoning"),
-                "confidence": parsed.get("confidence", 0.0),
-            }
-            predictions.append(prediction)
-
-        console.print(f"\n[green]OK[/green] Generated {len(predictions)} predictions")
-
-        # Save predictions to file
+        # Save raw responses immediately (before any parsing that could crash)
         output_dir = Path(self.config.output.dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        raw_responses_file = output_dir / f"raw_responses_{timestamp}.jsonl"
+        with open(raw_responses_file, "w") as f:
+            for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
+                metadata = prompt_data.get("metadata", {})
+                raw_entry = {
+                    "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
+                    "prompt": prompt_data.get("prompt", ""),
+                    "ground_truth": prompt_data.get("ground_truth"),
+                    "metadata": metadata,
+                    "raw_response": response,
+                    "api_error": response == "",
+                }
+                f.write(json.dumps(raw_entry) + "\n")
+        console.print(
+            f"[cyan]> Saved raw responses to {raw_responses_file}[/cyan]"
+        )
+
+        # Parse responses and write predictions incrementally
         predictions_file = output_dir / f"predictions_{timestamp}.jsonl"
+        predictions: list[dict[str, Any]] = []
+        parse_failures = 0
 
         with open(predictions_file, "w") as f:
-            for pred in predictions:
-                f.write(json.dumps(pred) + "\n")
+            for i, (prompt_data, response) in enumerate(
+                zip(all_prompts, responses)
+            ):
+                try:
+                    parsed = parse_llm_output(response)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to parse response {i}: {e}"
+                    )
+                    parsed = {
+                        "solution_str": None,
+                        "solution_sympy": None,
+                        "has_solution": None,
+                        "solution_type": None,
+                        "reasoning": None,
+                        "confidence": 0.0,
+                    }
+                    parse_failures += 1
 
+                metadata = prompt_data.get("metadata", {})
+                prediction = {
+                    "equation_id": prompt_data.get("equation_id", f"eq_{i}"),
+                    "prompt": prompt_data.get("prompt", ""),
+                    "ground_truth": prompt_data.get("ground_truth"),
+                    "ground_truth_has_solution": metadata.get("has_solution"),
+                    "ground_truth_solution_type": metadata.get("solution_type"),
+                    "ground_truth_domain": metadata.get("domain"),
+                    "raw_response": response,
+                    "api_error": response == "",
+                    "solution_str": parsed.get("solution_str"),
+                    "solution_sympy": str(parsed.get("solution_sympy"))
+                    if parsed.get("solution_sympy")
+                    else None,
+                    "has_solution": parsed.get("has_solution"),
+                    "solution_type": parsed.get("solution_type"),
+                    "reasoning": parsed.get("reasoning"),
+                    "confidence": parsed.get("confidence", 0.0),
+                }
+                predictions.append(prediction)
+                f.write(json.dumps(prediction) + "\n")
+
+        if parse_failures:
+            console.print(
+                f"\n[yellow]WARNING[/yellow] {parse_failures}/{len(responses)} "
+                f"responses failed to parse"
+            )
+        console.print(f"\n[green]OK[/green] Generated {len(predictions)} predictions")
         console.print(f"[cyan]> Saved predictions to {predictions_file}[/cyan]")
 
         # Save cost tracking

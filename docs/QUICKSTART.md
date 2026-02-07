@@ -74,7 +74,7 @@ For custom workflows, use the scripts in `scripts/` folder directly:
 git clone https://github.com/ammahmoudi/fred-llm.git
 cd fred-llm
 
-# Create virtual environment and install dependencies
+# Create virtual environment and install dependencies (dev extras include Math-Verify for evaluation parsing)
 uv venv
 uv pip install -e ".[dev]"
 

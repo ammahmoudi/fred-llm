@@ -148,15 +148,16 @@ This document tracks all features - implemented and planned. Check off items as 
 
 - [x] Symbolic evaluation - SymPy-based expression comparison ✅ **Implemented in evaluate.py**
 - [x] Numeric evaluation - MAE, MSE, RMSE metrics ✅ **Implemented in evaluate.py**
-- [x] Postprocessing - Extract solutions from LLM responses ✅ **Regex patterns in postprocess.py**
+- [x] Math-Verify integration - LaTeX parsing + fast-path symbolic verification ✅ **Adapter + fallback parsing**
+- [x] Postprocessing - Math-Verify extraction with regex fallback ✅ **Multi-strategy u(x)/SOLUTION parsing**
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
   - _extract_has_solution(): Regex patterns for yes/no classification with validation
   - _extract_solution_type(): Regex patterns for 8-class solution type recognition
   - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
-- [ ] **Edge case evaluation metrics** - Measure edge case recognition accuracy ⚠️ **Structured output ready, metrics TODO**
-  - [ ] has_solution accuracy (binary classification: TP/TN/FP/FN)
-  - [ ] solution_type accuracy (8-class: exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none)
-  - [ ] Edge case recognition rate (% of edge cases correctly identified)
+- [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
+  - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
+  - [x] solution_type accuracy (8-class: exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none)
+  - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**
 - [ ] BLEU / TeX-BLEU - Token-level similarity metrics ❌ **Not started**
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**
 - [ ] Generalization testing - Performance on unseen function types ❌ **Not started**
@@ -195,10 +196,11 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ## Testing & Documentation
 
-- [x] **Unit tests** - 125 tests covering core functionality ✅ **All passing (100%) (January 29, 2026)**
+- [x] **Unit tests** - 238 tests covering core functionality ✅ **Math-Verify coverage added**
   - [x] Core data tests - loader, validator, splitter, augmentation, formatters (104 tests)
   - [x] API key tests - Environment variables and config overrides (15 tests)
   - [x] Cost tracking tests - Calculators, tracker, and integration (10 tests)
+- [x] Math-Verify adapter tests - Parsing, extraction, comparison, integration ✅ **29 tests**
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
@@ -238,19 +240,19 @@ This document tracks all features - implemented and planned. Check off items as 
 | Data Pipeline | 6 | 9 | 67% |
 | LLM Integration | 4 | 8 | 50% |
 | Prompt Engineering | 5 | 9 | 56% |
-| Evaluation | 3 | 7 | 43% |
+| Evaluation | 5 | 9 | 56% |
 | Output Formats | 2 | 5 | 40% |
 | Data Exploration | 5 | 7 | 71% |
 | Configuration | 6 | 6 | 100% |
-| **Total** | **40** | **67** | **60%** |
+| **Total** | **42** | **69** | **61%** |
 
 ---
 
 ## Testing Results (January 2, 2026)
 
-### 🧪 Unit Tests - ALL PASSING ✅
+### 🧪 Unit Tests
 
-Ran complete test suite: **134/134 tests passed (100%)**
+Test suite size: **238 tests** (latest count)
 
 **Test Coverage:**
 - `test_fredholm_loader.py` - 13 tests: FredholmEquation class, type inference, CSV parsing
@@ -262,6 +264,7 @@ Ran complete test suite: **134/134 tests passed (100%)**
 - `test_validation.py` - 5 tests: Data validation and integration
 - `test_splitting.py` - 19 tests: Stratified splitting with sklearn/pandas
 - `test_prompt_generation.py` - 30 tests: Prompt styles, edge case modes, batch processing
+- `test_math_verify_adapter.py` - 29 tests: Math-Verify parsing, extraction, compare, and fallbacks
 
 All core components validated at unit level.
 
@@ -336,7 +339,7 @@ System prompts and user templates all defined.
 
 - Symbolic comparison with SymPy (simplify, expand, trigsimp)
 - Numeric comparison with numpy (MAE, MSE, RMSE, max error)
-- Postprocessing with regex patterns to extract u(x) from LLM outputs
+- Math-Verify parsing and extraction with regex fallback for LLM outputs
 
 ### ❌ Main Pipeline - NOT FUNCTIONAL
 

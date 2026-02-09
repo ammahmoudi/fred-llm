@@ -36,6 +36,7 @@ dependencies = [
     "tenacity>=8.0.0",
     "openai-cost-calculator>=1.0.0",
     "math-verify[antlr4_13_2]>=0.7.0",
+    "nltk>=3.8.0",
 ]
 
 [project.optional-dependencies]

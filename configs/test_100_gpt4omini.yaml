@@ -1,0 +1,27 @@
+dataset:
+  prompts:
+    prompts_dir: data/prompts/basic/test_100
+    style: basic
+
+model:
+  provider: openrouter
+  name: openai/gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 120
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  type_tolerances:
+    series: 0.01
+    approx_coef: 0.001
+    regularized: 0.001
+
+output:
+  dir: outputs/test_100_gpt4omini
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

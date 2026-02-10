@@ -271,6 +271,30 @@ def extract_solution_from_response(
     return None
 
 
+def _clean_mv_content(text: str) -> str:
+    """Strip LaTeX delimiters and trailing explanatory text for MV parsing."""
+    # Strip leading \(
+    text = re.sub(r"^\s*\\\(\s*", "", text)
+    # Strip \) followed by optional punctuation and/or "where ..." text
+    text = re.sub(
+        r"\s*\\\)\s*[,;.]?\s*(?:where|with|for|if|when)\b.*$",
+        "", text, flags=re.IGNORECASE,
+    )
+    text = re.sub(r"\s*\\\)\s*[,;.]*\s*$", "", text)
+    # Strip trailing "where ..." without preceding \)
+    text = re.sub(
+        r"\s*[,;]\s+(?:where|with|for|if|when)\s+.*$",
+        "", text, flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\s+(?:where|with|for|if|when)\s+.*$",
+        "", text, flags=re.IGNORECASE,
+    )
+    # Strip trailing punctuation
+    text = re.sub(r"[,;.]+$", "", text.strip())
+    return text.strip()
+
+
 def _mv_targeted_ux(
     response: str,
 ) -> Optional[tuple[sp.Expr, str]]:
@@ -282,13 +306,7 @@ def _mv_targeted_ux(
     for line in reversed(lines):
         m = re.search(r"u\s*\(\s*x\s*\)\s*=\s*(.+)", line)
         if m:
-            rhs = m.group(1).strip()
-            # Strip trailing punctuation / text that isn't math
-            rhs = re.sub(r"[,;.]+$", "", rhs)
-            rhs = re.sub(r"\s*\\\)\s*$", "", rhs)
-            rhs = re.sub(
-                r"\s+(?:where|with|for|if|when)\s+.*$", "", rhs, flags=re.IGNORECASE
-            )
+            rhs = _clean_mv_content(m.group(1))
             if not rhs:
                 continue
             mv_expr = _try_math_verify_parse(rhs)
@@ -312,10 +330,13 @@ def _mv_structured_output(
             content = m.group(1).strip()
             if not content:
                 continue
-            # Remove u(x) = prefix if present
+            # Strip leading \( and u(x) = prefix
+            content = re.sub(r"^\s*\\\(\s*", "", content)
             ux_m = re.search(r"u\s*\(\s*x\s*\)\s*=\s*", content)
             if ux_m:
                 content = content[ux_m.end() :].strip()
+            # Clean delimiters and trailing text
+            content = _clean_mv_content(content)
             if not content:
                 continue
             mv_expr = _try_math_verify_parse(content)

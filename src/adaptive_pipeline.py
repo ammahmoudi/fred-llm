@@ -488,6 +488,9 @@ class AdaptivePipeline:
         # Only add base_url for OpenAI (not OpenRouter, which uses class constant)
         if model_config.provider == "openai" and model_config.base_url:
             runner_kwargs["base_url"] = model_config.base_url
+        # Pass reasoning config for reasoning models (o1, o3, GPT-5.x)
+        if model_config.reasoning:
+            runner_kwargs["reasoning"] = model_config.reasoning.model_dump()
 
         runner = ModelRunner(provider=model_config.provider, **runner_kwargs)
 

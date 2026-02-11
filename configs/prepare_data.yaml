@@ -1,47 +1,165 @@
-# Data Preparation Configuration
-# Prepares dataset: augment → validate → split → convert formats → generate prompts
-# Stops before LLM inference (no model section)
+# =============================================================================
+# Data Preparation Configuration with Evaluation Points
+# =============================================================================
+# Purpose: Prepare comprehensive training dataset with fixed evaluation points
+# for consistent, reproducible numeric evaluation metrics.
+#
+# Pipeline: Raw Data -> Augment -> Validate -> Split -> Convert -> Generate Prompts
+# 
+# NEW: All augmented equations now include pre-computed evaluation_points:
+#   - 50+ fixed x,y coordinates for ground truth evaluation
+#   - Eliminates random variation in RMSE/MAE across runs
+#   - Denser sampling at boundaries and critical points
+#
+# Output Structure:
+#   data/processed/training_data/
+#     |- train.csv (80% - with evaluation_points)
+#     |- test.csv  (20% - with evaluation_points)
+#     \- metadata.json
+#   data/prompts/basic/
+#     |- train_prompts.jsonl
+#     |- test_prompts.jsonl
+#     \- prompt_metadata.json
+# =============================================================================
 
 dataset:
   raw:
+    # Input: Raw Fredholm equation dataset
     path: data/raw/Fredholm_Dataset_Sample.csv
     
-    # Augmentation with all edge cases
+    # Output directory for processed data (uses explicit path for repeatability)
+    output_dir: data/processed/training_data
+    
+    # Sample limiting (null = use all samples)
+    max_samples: null
+    
+    # -------------------------------------------------------------------------
+    # Augmentation: Generate edge cases with evaluation points
+    # -------------------------------------------------------------------------
     augment: true
-    augment_multiplier: 1.15  # 15% augmented data
+    
+    # Multiplier: 1.15 = 15% augmented edge cases, 85% original equations
+    # Recommended: 1.10-1.20 for balanced distribution
+    augment_multiplier: 1.15
+    
+    # All 6 augmentation categories (14 strategies, 42 variants total):
+    # - approx_coef: Solutions with numeric coefficients (5 strategies)
+    #     |- weakly_singular: log(|x-t|), |x-t|^(-1/2) kernels
+    #     |- boundary_layer: Rapid variation at boundaries
+    #     |- oscillatory_solution: High-frequency oscillations
+    #     |- mixed_type: Volterra-Fredholm mixed equations
+    #     \- compact_support: Sparse kernel matrices
+    #
+    # - discrete_points: Solution as point samples only (2 strategies)
+    #     |- complex_kernels: Gaussian, exponential decay kernels
+    #     \- near_resonance: Near-eigenvalue conditions
+    #
+    # - series: Neumann series expansions (1 strategy)
+    #     \- neumann_series: 4-term truncated series
+    #
+    # - family: Non-unique solutions with free constants (1 strategy)
+    #     \- resonance: Exactly at eigenvalue
+    #
+    # - regularized: Ill-posed 1st kind equations (1 strategy)
+    #     \- ill_posed: Requires Tikhonov/SVD regularization
+    #
+    # - none_solution: No solution exists (4 strategies)
+    #     |- eigenvalue_cases: Fredholm alternative violated
+    #     |- range_violation: f not in range of (I - lambda K)
+    #     |- divergent_kernel: Kernel undefined/divergent
+    #     \- disconnected_support: Domain connectivity issues
+    #
     augment_strategies:
-      - approx_coef
-      - discrete_points
-      - series
-      - family
-      - regularized
-      - none_solution
+      - approx_coef        # 35% of edge cases (boundary layers, singularities)
+      - discrete_points    # 15% of edge cases (complex kernels)
+      - series             # 8% of edge cases (Neumann series)
+      - family             # 8% of edge cases (resonance)
+      - regularized        # 8% of edge cases (ill-posed)
+      - none_solution      # 26% of edge cases (no solution exists)
+    
+    # Include detailed edge case metadata (singularity_type, layer_width, etc.)
+    # Set to true for research/analysis, false for training (reduces file size)
     include_edge_metadata: false
     
-    # Validation
+    # -------------------------------------------------------------------------
+    # Validation: Check data integrity
+    # -------------------------------------------------------------------------
     validate_data: true
     
-    # Splitting (train, val, test)
+    # -------------------------------------------------------------------------
+    # Splitting: Train/Val/Test split
+    # -------------------------------------------------------------------------
     split: true
-    split_ratios: [0.8, 0.00, 0.20]
     
-    # Convert to LaTeX format
+    # Ratios: [train, validation, test]
+    # 80/0/20: No validation set (use test for final eval only)
+    # 70/15/15: Standard split with validation
+    # 60/20/20: More data for validation/testing
+    split_ratios: [0.8, 0.0, 0.2]
+    
+    # -------------------------------------------------------------------------
+    # Format Conversion: Output formats
+    # -------------------------------------------------------------------------
+    # Options: [infix, latex, rpn, tokenized, python]
+    # LaTeX: Standard mathematical notation (recommended for LLMs)
     convert_formats:
       - latex
     
-    output_dir: data/processed/training_data
+    # Output file format: both (CSV + JSONL), json (JSONL only), csv (CSV only)
+    # JSONL recommended for evaluation_points (nested structure)
+    output_format: both
   
-  # Generate prompts
+  # ---------------------------------------------------------------------------
+  # Prompt Generation: Create LLM-ready prompts
+  # ---------------------------------------------------------------------------
   prompting:
+    # Prompt styles:
+    # - basic: Simple instruction + equation
+    # - chain-of-thought: Guided reasoning steps
+    # - few-shot: Include N example solutions
+    # - tool-assisted: Include hints about available tools
     style: basic
-    num_examples: 3
-    edge_case_mode: none
-    include_ground_truth: true
+    
+    # Output directory (explicit path for organization)
     output_dir: data/prompts/basic
+    
+    # Input auto-chains from raw.output_dir (no need to specify)
+    # input_dir: data/processed/training_data  # Auto-detected
+    
+    # Edge case handling:
+    # - none: No special treatment
+    # - guardrails: Add warnings for edge cases
+    # - hints: Provide solving strategy hints
+    edge_case_mode: none
+    
+    # Few-shot examples (only used if style=few-shot)
+    num_examples: 3
+    
+    # Include ground truth solutions in prompts
+    # Set to false for zero-shot evaluation, true for training/validation
+    include_ground_truth: true
+    
+    # Format auto-detected from input (latex)
+    # format: latex  # Optional override
 
-# Output
+# =============================================================================
+# Output Configuration
+# =============================================================================
 output:
+  # Base directory for all outputs
   dir: data/outputs
+  
+  # Logging verbosity: DEBUG|INFO|WARNING|ERROR
   log_level: INFO
 
-# No model section = stops after data prep + prompts
+# =============================================================================
+# Notes
+# =============================================================================
+# [!] No model section = Pipeline stops after data preparation + prompts
+# [i] Evaluation points are automatically generated for all equations with
+#     has_solution=True during augmentation (see base.py)
+# [i] Use configs/run_inference.yaml to run LLM inference on prepared prompts
+# [i] Augmentation preserves original equations (multiplier adds edge cases)
+# [i] Each augmented equation includes evaluation_points dict:
+#     {"x_values": [...], "u_values": [...], "n_points": 50+}
+# =============================================================================

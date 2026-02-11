@@ -75,16 +75,37 @@ class ApproximateOnlyAugmentation(BaseAugmentation):
             # Case 1: Gaussian kernel K(x,t) = exp(-(x²+t²))
             case1 = self._create_gaussian_kernel_case(a, b)
             if case1:
+                # For discrete_points, use sample_points as evaluation ground truth
+                if case1.get("sample_points") and case1.get("sample_values"):
+                    case1["evaluation_points"] = {
+                        "x_values": case1["sample_points"],
+                        "u_values": case1["sample_values"],
+                        "n_points": len(case1["sample_points"]),
+                    }
                 results.append(case1)
 
             # Case 2: Exponential decay K(x,t) = exp(-|x-t|)
             case2 = self._create_exponential_decay_case(a, b)
             if case2:
+                # For discrete_points, use sample_points as evaluation ground truth
+                if case2.get("sample_points") and case2.get("sample_values"):
+                    case2["evaluation_points"] = {
+                        "x_values": case2["sample_points"],
+                        "u_values": case2["sample_values"],
+                        "n_points": len(case2["sample_points"]),
+                    }
                 results.append(case2)
 
             # Case 3: Non-integrable kernel K(x,t) = sin(x*t) / (1 + x*t)
             case3 = self._create_sinc_kernel_case(a, b)
             if case3:
+                # For discrete_points, use sample_points as evaluation ground truth
+                if case3.get("sample_points") and case3.get("sample_values"):
+                    case3["evaluation_points"] = {
+                        "x_values": case3["sample_points"],
+                        "u_values": case3["sample_values"],
+                        "n_points": len(case3["sample_points"]),
+                    }
                 results.append(case3)
 
         except Exception as e:

@@ -239,7 +239,7 @@ def symbolic_compare(
 
 def numeric_compare(
     solution: sp.Expr,
-    ground_truth: sp.Expr,
+    ground_truth: sp.Expr | dict[str, Any],
     domain: tuple[float, float] = (0, 1),
     n_points: int = 100,
     tolerance: float = 1e-6,
@@ -249,9 +249,10 @@ def numeric_compare(
 
     Args:
         solution: Generated solution as SymPy expression.
-        ground_truth: Expected solution as SymPy expression.
+        ground_truth: Expected solution as SymPy expression, or dictionary with
+            'evaluation_points' field containing pre-computed evaluation points.
         domain: Integration domain (a, b).
-        n_points: Number of test points.
+        n_points: Number of test points (used if no pre-computed points available).
         tolerance: Tolerance for numeric comparison.
 
     Returns:
@@ -267,32 +268,69 @@ def numeric_compare(
     try:
         x = sp.Symbol("x")
 
-        # Evaluate any unevaluated Integral objects before lambdify
-        if solution.has(sp.Integral):
-            solution = solution.doit()
-        if ground_truth.has(sp.Integral):
-            ground_truth = ground_truth.doit()
+        # Check if ground_truth is a dictionary with evaluation_points
+        if isinstance(ground_truth, dict):
+            if "evaluation_points" in ground_truth:
+                # Use pre-computed evaluation points for consistent metrics
+                eval_points = ground_truth["evaluation_points"]
+                test_points = np.array(eval_points["x_values"])
+                y_truth = np.array(eval_points["u_values"])
+                
+                # Evaluate solution at the same points
+                if solution.has(sp.Integral):
+                    solution = solution.doit()
+                
+                # Check for extra symbols
+                extra_sol = solution.free_symbols - {x}
+                if extra_sol:
+                    result["error"] = f"Solution contains non-numeric symbols: {extra_sol}"
+                    logger.debug(f"Numeric comparison skipped: non-numeric symbols {extra_sol}")
+                    return result
+                
+                f_solution = sp.lambdify(x, solution, modules=["numpy"])
+                y_solution = np.array([f_solution(xi) for xi in test_points])
+                
+            elif "u" in ground_truth and ground_truth["u"]:
+                # Fallback: Extract u field and use as ground truth expression
+                ground_truth_expr = sp.sympify(ground_truth["u"])
+                # Continue to standard evaluation below
+            else:
+                # No evaluation data available
+                result["error"] = "No evaluation data available in ground_truth dict"
+                logger.debug("Numeric comparison skipped: no evaluation data")
+                return result
+        else:
+            # ground_truth is a SymPy expression - standard behavior
+            ground_truth_expr = ground_truth
 
-        # Check that expressions only depend on x (no other free symbols)
-        extra_sol = solution.free_symbols - {x}
-        extra_gt = ground_truth.free_symbols - {x}
-        if extra_sol or extra_gt:
-            extra = extra_sol | extra_gt
-            result["error"] = f"Expressions contain non-numeric symbols: {extra}"
-            logger.debug(f"Numeric comparison skipped: non-numeric symbols {extra}")
-            return result
+        # Standard evaluation path (when not using pre-computed points)
+        if "y_solution" not in locals():
+            # Evaluate any unevaluated Integral objects before lambdify
+            if solution.has(sp.Integral):
+                solution = solution.doit()
+            if ground_truth_expr.has(sp.Integral):
+                ground_truth_expr = ground_truth_expr.doit()
 
-        # Convert to numeric functions
-        f_solution = sp.lambdify(x, solution, modules=["numpy"])
-        f_truth = sp.lambdify(x, ground_truth, modules=["numpy"])
+            # Check that expressions only depend on x (no other free symbols)
+            extra_sol = solution.free_symbols - {x}
+            extra_gt = ground_truth_expr.free_symbols - {x}
+            if extra_sol or extra_gt:
+                extra = extra_sol | extra_gt
+                result["error"] = f"Expressions contain non-numeric symbols: {extra}"
+                logger.debug(f"Numeric comparison skipped: non-numeric symbols {extra}")
+                return result
 
-        # Generate test points
-        a, b = domain
-        test_points = np.linspace(a, b, n_points)
+            # Convert to numeric functions
+            f_solution = sp.lambdify(x, solution, modules=["numpy"])
+            f_truth = sp.lambdify(x, ground_truth_expr, modules=["numpy"])
 
-        # Evaluate
-        y_solution = np.array([f_solution(xi) for xi in test_points])
-        y_truth = np.array([f_truth(xi) for xi in test_points])
+            # Generate test points
+            a, b = domain
+            test_points = np.linspace(a, b, n_points)
+
+            # Evaluate
+            y_solution = np.array([f_solution(xi) for xi in test_points])
+            y_truth = np.array([f_truth(xi) for xi in test_points])
 
         # Compute errors
         errors = np.abs(y_solution - y_truth)

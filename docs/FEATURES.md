@@ -20,6 +20,10 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Optional model/evaluation - Can run without LLM (data-only workflows) ✅ **January 3, 2026**
   - [x] Script cleanup - Removed 7 obsolete scripts, kept 2 internal runners ✅ **January 3, 2026**
   - [x] Windows compatibility - Fixed Unicode console encoding ✅ **January 3, 2026**
+  - [x] **YAML config ASCII compatibility** ✅ **February 11, 2026**
+    - [x] Replaced all Unicode characters (✅, ⚠️, ℹ️, →, box-drawing) with ASCII equivalents
+    - [x] Fixed cp1252 encoding errors on Windows
+    - [x] All config files now safe for Windows/Linux/Mac
   - [ ] Caching intermediate results - Save prepared data and prompts for reuse 🚧 **Outputs saved but no checkpointing**
   - [ ] Resume capability - Continue from last successful stage ❌
 - [x] Logging utilities - Structured logging with file output support ✅ **Working in all modules**
@@ -49,6 +53,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Non-unique-solution cases - Exact resonance with solution families ✅ **Tested: 3 variants, symbolic u=C*φ**
   - [x] Resonance split - **resonance** (exact, family) vs **near_resonance** (ill-conditioned, discrete_points) ✅ **January 2, 2026**
   - [x] Compact support split - **compact_support** (approx_coef) vs **disconnected_support** (no solution) ✅ **January 2, 2026**
+  - [x] Disconnected support kernels use valid Piecewise expressions ✅ **February 11, 2026**
+  - [x] **All augmentation kernels use parseable SymPy expressions** ✅ **February 11, 2026**
+    - [x] Replaced placeholder strings ("Piecewise: nonzero in...") with valid Piecewise syntax
+    - [x] Converted ternary operators ("t if t <= x else x") to Piecewise notation
+    - [x] Fixed 5 augmentation files: disconnected_support, mixed_type, compact_support (2 cases), neumann_series
+    - [x] All kernel definitions now SymPy-parseable for LaTeX conversion
   - [x] **Solution type refactoring: 5→7 types** ✅ **January 3, 2026**
     - [x] Split `exact` → `exact_symbolic` (formula) (removed `exact_coef` as redundant)
     - [x] Split `numerical` → `approx_coef` (functional form) + `discrete_points` (samples) + `series` (expansions)
@@ -72,6 +82,12 @@ This document tracks all features - implemented and planned. Check off items as 
     - [x] Clean output: Null values (None in JSON, "" in CSV) for unset fields, not deleted
     - [x] Rationale: Cleaner default output for LLM training, full details available for research
 - [x] Data validator - Validate equation syntax and solvability ✅ **Tested: 100/100 equations validated, 0 errors**
+- [x] **Evaluation points filtering - Overflow-safe numeric evaluation** ✅ **February 11, 2026**
+  - [x] NumPy error suppression - Ignore overflow/invalid/divide warnings during lambdify evaluation
+  - [x] Non-finite filtering - Drop inf/nan values from exp, cosh overflows
+  - [x] Critical point inclusion - Boundaries, midpoint, near-boundary points
+  - [x] Fallback handling - Raise error if all points produce non-finite values
+  - [x] Fixed in base.py _generate_evaluation_points() - Used by all has_solution=True augmentations
 - [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
   - [x] Stratified splitting - Maintains balance across original/augmented, solution types, edge cases ✅
   - [x] Flexible split ratios - 80/0/20 default, custom ratios supported ✅

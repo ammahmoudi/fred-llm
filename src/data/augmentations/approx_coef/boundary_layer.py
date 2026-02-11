@@ -122,6 +122,16 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "augmentation_type": "boundary_layer",
                 "augmentation_variant": "left_exponential_layer",
             }
+            # Generate evaluation points for consistent evaluation
+            if case1.get("has_solution") and case1.get("u"):
+                try:
+                    a_val = float(sp.sympify(case1.get("a", "0")))
+                    b_val = float(sp.sympify(case1.get("b", "1")))
+                    case1["evaluation_points"] = self._generate_evaluation_points(
+                        case1["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Right boundary layer - exp((x-b)/ε)
@@ -151,6 +161,16 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "augmentation_type": "boundary_layer",
                 "augmentation_variant": "right_exponential_layer",
             }
+            # Generate evaluation points for consistent evaluation
+            if case2.get("has_solution") and case2.get("u"):
+                try:
+                    a_val = float(sp.sympify(case2.get("a", "0")))
+                    b_val = float(sp.sympify(case2.get("b", "1")))
+                    case2["evaluation_points"] = self._generate_evaluation_points(
+                        case2["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
             # Case 3: Double boundary layers - tanh profile
@@ -181,6 +201,16 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "augmentation_type": "boundary_layer",
                 "augmentation_variant": "double_tanh_layers",
             }
+            # Generate evaluation points for consistent evaluation
+            if case3.get("has_solution") and case3.get("u"):
+                try:
+                    a_val = float(sp.sympify(case3.get("a", "0")))
+                    b_val = float(sp.sympify(case3.get("b", "1")))
+                    case3["evaluation_points"] = self._generate_evaluation_points(
+                        case3["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case3)
 
         except Exception as e:

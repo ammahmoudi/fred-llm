@@ -104,6 +104,16 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "logarithmic_kernel",
             }
+            # Generate evaluation points for consistent evaluation
+            if case1.get("has_solution") and case1.get("u"):
+                try:
+                    a_val = float(sp.sympify(case1.get("a", "0")))
+                    b_val = float(sp.sympify(case1.get("b", "1")))
+                    case1["evaluation_points"] = self._generate_evaluation_points(
+                        case1["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Power law singularity - |x-t|^(-1/2)
@@ -131,6 +141,16 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "power_law_kernel",
             }
+            # Generate evaluation points for consistent evaluation
+            if case2.get("has_solution") and case2.get("u"):
+                try:
+                    a_val = float(sp.sympify(case2.get("a", "0")))
+                    b_val = float(sp.sympify(case2.get("b", "1")))
+                    case2["evaluation_points"] = self._generate_evaluation_points(
+                        case2["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
             # Case 3: Algebraic singularity with smooth part
@@ -158,6 +178,16 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "algebraic_mixed_kernel",
             }
+            # Generate evaluation points for consistent evaluation
+            if case3.get("has_solution") and case3.get("u"):
+                try:
+                    a_val = float(sp.sympify(case3.get("a", "0")))
+                    b_val = float(sp.sympify(case3.get("b", "1")))
+                    case3["evaluation_points"] = self._generate_evaluation_points(
+                        case3["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case3)
 
         except Exception as e:

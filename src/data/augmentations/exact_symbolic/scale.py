@@ -51,6 +51,18 @@ class ScaleAugmentation(BaseAugmentation):
                 new_item["reason"] = f"Lambda coefficient scaled by factor {factor}"
                 new_item["recommended_methods"] = []
                 new_item["numerical_challenge"] = None
+                
+                # Generate evaluation points for consistent evaluation
+                if new_item.get("has_solution") and new_item.get("u"):
+                    try:
+                        a_val = float(sp.sympify(new_item.get("a", "0")))
+                        b_val = float(sp.sympify(new_item.get("b", "1")))
+                        new_item["evaluation_points"] = self._generate_evaluation_points(
+                            new_item["u"], a_val, b_val
+                        )
+                    except Exception as e:
+                        logger.debug(f"Failed to generate evaluation points: {e}")
+                
                 results.append(new_item)
         except Exception as e:
             logger.debug(f"Coefficient scaling failed: {e}")

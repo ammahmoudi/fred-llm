@@ -121,6 +121,19 @@ class ResonanceAugmentation(BaseAugmentation):
                 "augmentation_type": "resonance",
                 "augmentation_variant": "separable_eigenvalue_exact",
             }
+            # Generate evaluation points for consistent evaluation
+            # Note: For family solutions with free constants (C), substitute C=1 for evaluation
+            if case1.get("has_solution") and case1.get("u"):
+                try:
+                    # Substitute free constant C with 1 for evaluation
+                    u_for_eval = case1["u"].replace("C", "1")
+                    a_val = float(sp.sympify(case1.get("a", "0")))
+                    b_val = float(sp.sympify(case1.get("b", "1")))
+                    case1["evaluation_points"] = self._generate_evaluation_points(
+                        u_for_eval, a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Constant kernel K(x,t) = 1 on [0,1]
@@ -154,6 +167,19 @@ class ResonanceAugmentation(BaseAugmentation):
                 "augmentation_type": "resonance",
                 "augmentation_variant": "constant_kernel_resonance",
             }
+            # Generate evaluation points for consistent evaluation
+            # Family solution with free constant C - substitute C=1 for evaluation
+            if case2.get("has_solution") and case2.get("u"):
+                try:
+                    # Substitute C=1 for constant solution
+                    u_for_eval = "1"  # Any constant works; use 1 for evaluation
+                    a_val = float(sp.sympify(case2.get("a", "0")))
+                    b_val = float(sp.sympify(case2.get("b", "1")))
+                    case2["evaluation_points"] = self._generate_evaluation_points(
+                        u_for_eval, a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
         except Exception as e:

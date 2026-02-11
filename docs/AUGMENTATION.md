@@ -259,6 +259,48 @@ Validate augmented data quality:
 - Edge case distribution balance
 - Variant count per strategy
 
+## Implementation Notes
+
+### SymPy Expression Compatibility (February 11, 2026)
+
+All augmentation strategies now generate **parseable SymPy expressions** for kernel definitions:
+
+**✅ Piecewise Expressions**: Replaced placeholder strings and ternary operators with valid Piecewise syntax:
+- ❌ Old: `"Piecewise: nonzero in two disconnected regions"`
+- ✅ New: `"Piecewise((1, (x>=a1) & (x<=b1) & (t>=a2) & (t<=b2)), (0, True))"`
+
+**✅ Logical Operators**: Use SymPy operators `&`, `|`, `~` instead of Python keywords:
+- ❌ Old: `"sin(x)*cos(t) if (c <= x <= d and c <= t <= d) else 0"`
+- ✅ New: `"Piecewise((sin(x)*cos(t), (x>=c) & (x<=d) & (t>=c) & (t<=d)), (0, True))"`
+
+**✅ Series Expansions**: Use `Integral` notation instead of placeholders:
+- ❌ Old: `"f(x) + λ*∫... + λ³*[triple_integral]"`
+- ✅ New: `"f(x) + λ*Integral(exp(-Abs(x-t))*f(t), (t, a, b)) + ..."`
+
+**Fixed strategies**: `disconnected_support` (2 locations), `mixed_type`, `compact_support` (2 locations), `neumann_series`
+
+### Overflow-Safe Evaluation Points (February 11, 2026)
+
+The `_generate_evaluation_points()` method in `BaseAugmentation` now handles numerical overflow gracefully:
+
+**Error Suppression**: Wraps lambdify evaluation in `np.errstate()` context:
+```python
+with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+    u_values = np.array([u_lambda(float(xi)) for xi in x_values], dtype=float)
+```
+
+**Non-Finite Filtering**: Automatically drops inf/nan values from overflow cases:
+```python
+finite_mask = np.isfinite(u_values)
+x_values = x_values[finite_mask]
+u_values = u_values[finite_mask]
+```
+
+**Benefits**:
+- No RuntimeWarnings from `exp(100*x)`, `cosh(large_value)` overflows
+- Robust evaluation for high-frequency oscillations, boundary layers
+- All `has_solution=True` augmentations inherit this safety
+
 ## See Also
 
 - [Edge Case Documentation](EDGE_CASES.md) - Detailed mathematical definitions

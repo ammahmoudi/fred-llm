@@ -100,7 +100,7 @@ class CompactSupportAugmentation(BaseAugmentation):
             case1 = {
                 "u": item["u"],  # Solution may exist but needs sparse methods
                 "f": item["f"],
-                "kernel": f"(x*t) if abs(x - t) < {delta} else 0",
+                "kernel": f"Piecewise((x*t, Abs(x - t) < {delta}), (0, True))",
                 "kernel_description": f"K(x,t) = x*t if |x-t|<{delta}, else 0 (band-limited)",
                 "lambda_val": str(lambda_val * 0.5),
                 "lambda_val": str(lambda_val * 0.5),
@@ -126,6 +126,16 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "augmentation_type": "compact_support",
                 "augmentation_variant": "band_limited",
             }
+            # Generate evaluation points for consistent evaluation
+            if case1.get("has_solution") and case1.get("u"):
+                try:
+                    a_val = float(sp.sympify(case1.get("a", "0")))
+                    b_val = float(sp.sympify(case1.get("b", "1")))
+                    case1["evaluation_points"] = self._generate_evaluation_points(
+                        case1["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Localized support - kernel only nonzero in sub-region
@@ -138,7 +148,10 @@ class CompactSupportAugmentation(BaseAugmentation):
             case2 = {
                 "u": item["u"],
                 "f": item["f"],
-                "kernel": f"sin(x)*cos(t) if ({c} <= x <= {d} and {c} <= t <= {d}) else 0",
+                "kernel": (
+                    "Piecewise((sin(x)*cos(t), "
+                    f"(x>={c}) & (x<={d}) & (t>={c}) & (t<={d})), (0, True))"
+                ),
                 "kernel_description": f"K nonzero only in [{c:.2f},{d:.2f}]×[{c:.2f},{d:.2f}]",
                 "lambda_val": str(lambda_val * 0.3),
                 "lambda_val": str(lambda_val * 0.3),
@@ -164,6 +177,16 @@ class CompactSupportAugmentation(BaseAugmentation):
                 "augmentation_type": "compact_support",
                 "augmentation_variant": "localized_box",
             }
+            # Generate evaluation points for consistent evaluation
+            if case2.get("has_solution") and case2.get("u"):
+                try:
+                    a_val = float(sp.sympify(case2.get("a", "0")))
+                    b_val = float(sp.sympify(case2.get("b", "1")))
+                    case2["evaluation_points"] = self._generate_evaluation_points(
+                        case2["u"], a_val, b_val
+                    )
+                except Exception as e:
+                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
         except Exception as e:

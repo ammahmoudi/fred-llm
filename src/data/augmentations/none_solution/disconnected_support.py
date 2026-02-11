@@ -75,11 +75,22 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
             region1_x = (a, a + 0.2 * (b - a))
             region2_x = (a + 0.6 * (b - a), a + 0.8 * (b - a))
 
+            kernel_case1 = (
+                "Piecewise("
+                f"(1, (x>={region1_x[0]:.6g}) & (x<={region1_x[1]:.6g}) & "
+                f"(t>={region1_x[0]:.6g}) & (t<={region1_x[1]:.6g})), "
+                f"(1, (x>={region2_x[0]:.6g}) & (x<={region2_x[1]:.6g}) & "
+                f"(t>={region2_x[0]:.6g}) & (t<={region2_x[1]:.6g})), "
+                "(0, True))"
+            )
             case1 = {
                 "u": "",  # No solution - rank deficient
                 "f": item.get("f", "x"),
-                "kernel": "Piecewise: nonzero in two disconnected regions",
-                "kernel_description": f"K≠0 in [{region1_x[0]:.2f},{region1_x[1]:.2f}] and [{region2_x[0]:.2f},{region2_x[1]:.2f}], zero elsewhere",
+                "kernel": kernel_case1,
+                "kernel_description": (
+                    f"K!=0 in [{region1_x[0]:.2f},{region1_x[1]:.2f}] and "
+                    f"[{region2_x[0]:.2f},{region2_x[1]:.2f}], zero elsewhere"
+                ),
                 "lambda_val": str(lambda_val * 0.2),
                 "a": str(a),
                 "b": str(b),
@@ -111,11 +122,23 @@ class DisconnectedSupportAugmentation(BaseAugmentation):
             region2 = (a + 0.4 * (b - a), a + 0.55 * (b - a))
             region3 = (a + 0.8 * (b - a), b)
 
+            kernel_case2 = (
+                "Piecewise("
+                f"(1, (x>={region1[0]:.6g}) & (x<={region1[1]:.6g}) & "
+                f"(t>={region1[0]:.6g}) & (t<={region1[1]:.6g})), "
+                f"(1, (x>={region2[0]:.6g}) & (x<={region2[1]:.6g}) & "
+                f"(t>={region2[0]:.6g}) & (t<={region2[1]:.6g})), "
+                f"(1, (x>={region3[0]:.6g}) & (x<={region3[1]:.6g}) & "
+                f"(t>={region3[0]:.6g}) & (t<={region3[1]:.6g})), "
+                "(0, True))"
+            )
             case2 = {
                 "u": "",
                 "f": item.get("f", "sin(x)"),
-                "kernel": "Piecewise: nonzero in three disconnected regions",
-                "kernel_description": f"K≠0 in three separate regions, covering only 30% of domain",
+                "kernel": kernel_case2,
+                "kernel_description": (
+                    "K!=0 in three separate regions, covering only 30% of domain"
+                ),
                 "lambda_val": str(lambda_val * 0.15),
                 "a": str(a),
                 "b": str(b),

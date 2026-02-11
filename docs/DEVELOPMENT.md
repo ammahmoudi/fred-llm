@@ -410,6 +410,25 @@ python -m src.cli run --config config.yaml
 - Run `mypy src/` to see all type issues
 - Add type hints incrementally
 
+**YAML config encoding errors (Windows)**
+- Error: `UnicodeDecodeError: 'cp1252' codec can't decode byte...`
+- Cause: Unicode characters (✅, ⚠️, ℹ️, →, box-drawing) in YAML files
+- Solution: Use ASCII-only characters in YAML configs
+- Fixed in: `configs/prepare_data.yaml` (February 11, 2026)
+
+**RuntimeWarning: overflow in exp/cosh during augmentation**
+- Error: `RuntimeWarning: overflow encountered in exp` during evaluation point generation
+- Cause: Large exponents (e.g., `exp(100*x)`) producing inf/nan values
+- Solution: Non-finite filtering in `BaseAugmentation._generate_evaluation_points()`
+- Fixed in: `src/data/augmentations/base.py` (February 11, 2026)
+
+**SympifyError: could not parse augmentation kernel string**
+- Error: `SympifyError: could not parse 'Piecewise: nonzero in...'` or `'t if t <= x else x'`
+- Cause: Placeholder strings or Python ternary operators not parseable by SymPy
+- Solution: Use valid Piecewise expressions with logical operators (&, |, ~)
+- Fixed in: 5 augmentation files (disconnected_support, mixed_type, compact_support, neumann_series)
+- Example: `"Piecewise((expr, condition), (0, True))"` with `(x>=a) & (x<=b)` conditions
+
 ## Resources
 
 - [SymPy Documentation](https://docs.sympy.org/)

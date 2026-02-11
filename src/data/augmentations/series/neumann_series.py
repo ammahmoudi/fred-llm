@@ -95,18 +95,48 @@ class NeumannSeriesAugmentation(BaseAugmentation):
             # K(x,t) = g(x)h(t), makes nested integrals tractable
             case1 = self._create_separable_series(item, a, b, lambda_conv)
             if case1:
+                # Generate evaluation points for consistent evaluation
+                if case1.get("has_solution") and case1.get("u"):
+                    try:
+                        a_val = float(sp.sympify(case1.get("a", "0")))
+                        b_val = float(sp.sympify(case1.get("b", "1")))
+                        case1["evaluation_points"] = self._generate_evaluation_points(
+                            case1["u"], a_val, b_val
+                        )
+                    except Exception as e:
+                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case1)
 
             # Case 2: Polynomial kernel - finite series representation
             # K(x,t) = xt, successive powers create polynomial growth
             case2 = self._create_polynomial_series(item, a, b, lambda_conv)
             if case2:
+                # Generate evaluation points for consistent evaluation
+                if case2.get("has_solution") and case2.get("u"):
+                    try:
+                        a_val = float(sp.sympify(case2.get("a", "0")))
+                        b_val = float(sp.sympify(case2.get("b", "1")))
+                        case2["evaluation_points"] = self._generate_evaluation_points(
+                            case2["u"], a_val, b_val
+                        )
+                    except Exception as e:
+                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case2)
 
             # Case 3: Exponential decay kernel - rapidly converging series
             # K(x,t) = exp(-|x-t|), smooth kernel ensures fast convergence
             case3 = self._create_exponential_series(item, a, b, lambda_conv)
             if case3:
+                # Generate evaluation points for consistent evaluation
+                if case3.get("has_solution") and case3.get("u"):
+                    try:
+                        a_val = float(sp.sympify(case3.get("a", "0")))
+                        b_val = float(sp.sympify(case3.get("b", "1")))
+                        case3["evaluation_points"] = self._generate_evaluation_points(
+                            case3["u"], a_val, b_val
+                        )
+                    except Exception as e:
+                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case3)
 
         except Exception as e:
@@ -247,10 +277,10 @@ class NeumannSeriesAugmentation(BaseAugmentation):
             # Provide approximate form showing structure
             
             series_str = (
-                f"f(x) + "
-                f"{lambda_val}*∫exp(-|x-t|)*f(t)dt + "
-                f"{lambda_val**2}*∫∫exp(-|x-s|)*exp(-|s-t|)*f(t)dsdt + "
-                f"{lambda_val**3}*[triple_integral]"
+                "f(x) + "
+                f"{lambda_val}*Integral(exp(-Abs(x - t))*f(t), (t, {a}, {b})) + "
+                f"{lambda_val**2}*Integral(Integral(exp(-Abs(x - s))*exp(-Abs(s - t))*f(t), "
+                f"(t, {a}, {b})), (s, {a}, {b}))"
             )
             
             convergence_rate = abs(lambda_val) * 0.5  # Exponential decay helps

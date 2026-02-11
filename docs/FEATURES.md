@@ -155,6 +155,10 @@ This document tracks all features - implemented and planned. Check off items as 
     - LaTeX: "Express solution in LaTeX notation (x^2 + \sin(x))"
     - RPN: "Express solution in RPN notation (x 2 ^ x sin +)"
     - Benefits: Clearer instructions, no ambiguity, format-specific training
+  - [x] **Solution-type-specific output formats** ⏳ **In Progress (February 11, 2026)**
+    - [x] discrete_points format specification: "Format: [(x1, y1), (x2, y2), ...]" ✅ **Completed in 4 prompt styles**
+    - [ ] series format specification: "Format: f + λK·f + λ²K²·f + ... (4-6 terms)" ⏳ **Pending**
+    - Benefits: Structured LLM output enables reliable parsing, consistent evaluation, type-specific metrics
   - [x] Test coverage - 30 tests covering all components ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**

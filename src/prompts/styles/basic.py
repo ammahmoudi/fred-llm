@@ -45,7 +45,7 @@ SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regular
 For SOLUTION_TYPE:
 - exact_symbolic: Closed-form symbolic solution (e.g., u(x) = sin(x))
 - approx_coef: Approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
-- discrete_points: Solution only at discrete points
+- discrete_points: Point values only. Format: [(x1, y1), (x2, y2), ...]
 - series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
 - family: Non-unique solutions (arbitrary c_1, c_2, ...)
 - regularized: Ill-posed, requires regularization

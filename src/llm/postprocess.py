@@ -52,6 +52,7 @@ def parse_llm_output(
         "solution_sympy": None,
         "has_solution": None,
         "solution_type": None,
+        "discrete_points": None,  # For discrete_points solution type
         "reasoning": None,
         "confidence": 0.0,
         "raw_response": response,
@@ -64,6 +65,19 @@ def parse_llm_output(
     # Extract structured fields
     result["has_solution"] = _extract_has_solution(response)
     result["solution_type"] = _extract_solution_type(response)
+
+    # Special handling for discrete_points solution type
+    if result["solution_type"] == "discrete_points":
+        points = extract_discrete_points(response)
+        if points:
+            result["discrete_points"] = points
+            result["solution_str"] = str(points)
+            result["confidence"] = 0.8
+        else:
+            logger.warning("discrete_points type specified but no points extracted")
+            result["confidence"] = 0.3
+        # Don't try to parse as SymPy expression - it's a point list
+        return result
 
     # Extract solution from response
     if extract_solution:
@@ -591,6 +605,66 @@ def _extract_solution_type(response: str) -> Optional[str]:
             return value
 
     return None
+
+
+def extract_discrete_points(response: str) -> Optional[list[tuple[float, float]]]:
+    """
+    Extract discrete point list from LLM response.
+
+    Looks for format: [(x1, y1), (x2, y2), ...]
+    or variations like: [(0.0, 1.2), (0.5, 3.4), (1.0, 2.1)]
+
+    Args:
+        response: LLM response text.
+
+    Returns:
+        List of (x, y) tuples if found and valid, None otherwise.
+    """
+    # Pattern to match list of tuples with floating point or scientific notation
+    # Matches: [(x1, y1), (x2, y2), ...] with optional whitespace
+    pattern = r"\[\s*\(\s*([\d.eE+-]+)\s*,\s*([\d.eE+-]+)\s*\)(?:\s*,\s*\(\s*([\d.eE+-]+)\s*,\s*([\d.eE+-]+)\s*\))*\s*\]"
+
+    # First try to find the SOLUTION: line with discrete points
+    solution_line_pattern = r"SOLUTION\s*:\s*(\[.*?\])(?:\n|$)"
+    solution_match = re.search(solution_line_pattern, response, re.IGNORECASE | re.MULTILINE)
+
+    if solution_match:
+        points_str = solution_match.group(1)
+    else:
+        # Try to find any list of tuples in the response
+        list_pattern = r"(\[\s*\([\d.eE+-]+\s*,\s*[\d.eE+-]+\s*\)(?:\s*,\s*\([\d.eE+-]+\s*,\s*[\d.eE+-]+\s*\))*\s*\])"
+        list_match = re.search(list_pattern, response)
+        if list_match:
+            points_str = list_match.group(1)
+        else:
+            return None
+
+    # Parse individual tuples from the matched string
+    tuple_pattern = r"\(\s*([\d.eE+-]+)\s*,\s*([\d.eE+-]+)\s*\)"
+    tuple_matches = re.findall(tuple_pattern, points_str)
+
+    if not tuple_matches:
+        return None
+
+    # Convert to list of float tuples
+    try:
+        points = [(float(x), float(y)) for x, y in tuple_matches]
+
+        # Validation: at least 2 points, reasonable values
+        if len(points) < 2:
+            logger.warning(f"Too few discrete points: {len(points)} (need >= 2)")
+            return None
+
+        # Check for reasonable x-values (should be ordered or at least finite)
+        if not all(abs(x) < 1e10 and abs(y) < 1e10 for x, y in points):
+            logger.warning("Discrete points contain unreasonably large values")
+            return None
+
+        return points
+
+    except ValueError as e:
+        logger.warning(f"Failed to parse discrete points: {e}")
+        return None
 
 
 def extract_latex(response: str) -> list[str]:

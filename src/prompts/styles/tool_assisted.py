@@ -50,7 +50,7 @@ SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regular
 For SOLUTION_TYPE:
 - exact_symbolic: Closed-form symbolic solution
 - approx_coef: Approximate with NUMERIC coefficients (e.g., 0.5 + 1.2*x)
-- discrete_points: Solution only at discrete points
+- discrete_points: Point values only. Format: [(x1, y1), (x2, y2), ...]
 - series: Infinite series solution
 - family: Non-unique solutions (arbitrary c_1, c_2, ...)
 - regularized: Ill-posed, requires regularization

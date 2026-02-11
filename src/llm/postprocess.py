@@ -626,7 +626,9 @@ def extract_discrete_points(response: str) -> Optional[list[tuple[float, float]]
 
     # First try to find the SOLUTION: line with discrete points
     solution_line_pattern = r"SOLUTION\s*:\s*(\[.*?\])(?:\n|$)"
-    solution_match = re.search(solution_line_pattern, response, re.IGNORECASE | re.MULTILINE)
+    solution_match = re.search(
+        solution_line_pattern, response, re.IGNORECASE | re.MULTILINE
+    )
 
     if solution_match:
         points_str = solution_match.group(1)

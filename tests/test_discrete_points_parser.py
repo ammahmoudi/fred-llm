@@ -12,7 +12,7 @@ class TestExtractDiscretePoints:
         """Test extraction from standard format."""
         response = "SOLUTION: [(0.0, 1.234), (0.25, 2.456), (0.5, 3.789), (0.75, 1.123), (1.0, 0.567)]"
         result = extract_discrete_points(response)
-        
+
         assert result is not None
         assert len(result) == 5
         assert result[0] == (0.0, 1.234)
@@ -22,7 +22,7 @@ class TestExtractDiscretePoints:
         """Test extraction with extra whitespace."""
         response = "SOLUTION: [ ( 0.0 , 1.2 ) , ( 0.5 , 3.4 ) , ( 1.0 , 2.1 ) ]"
         result = extract_discrete_points(response)
-        
+
         assert result is not None
         assert len(result) == 3
         assert result[0] == (0.0, 1.2)
@@ -31,7 +31,7 @@ class TestExtractDiscretePoints:
         """Test extraction with scientific notation."""
         response = "SOLUTION: [(0.0, 1.23e-2), (0.5, 3.45e1), (1.0, 2.1e0)]"
         result = extract_discrete_points(response)
-        
+
         assert result is not None
         assert len(result) == 3
         assert abs(result[0][1] - 0.0123) < 1e-10
@@ -40,7 +40,7 @@ class TestExtractDiscretePoints:
         """Test extraction with negative values."""
         response = "SOLUTION: [(-1.0, -2.5), (0.0, 0.0), (1.0, 2.5)]"
         result = extract_discrete_points(response)
-        
+
         assert result is not None
         assert len(result) == 3
         assert result[0] == (-1.0, -2.5)
@@ -51,9 +51,9 @@ class TestExtractDiscretePoints:
 SOLUTION: [(0.0, 1.0), (0.5, 2.0), (1.0, 3.0)]
 HAS_SOLUTION: yes
 SOLUTION_TYPE: discrete_points"""
-        
+
         result = extract_discrete_points(response)
-        
+
         assert result is not None
         assert len(result) == 3
         assert result[0] == (0.0, 1.0)
@@ -62,21 +62,21 @@ SOLUTION_TYPE: discrete_points"""
         """Test that single point is rejected."""
         response = "SOLUTION: [(0.0, 1.0)]"
         result = extract_discrete_points(response)
-        
+
         assert result is None
 
     def test_no_points(self):
         """Test that missing points returns None."""
         response = "SOLUTION: No discrete points available"
         result = extract_discrete_points(response)
-        
+
         assert result is None
-    
+
     def test_invalid_format(self):
         """Test that invalid format returns None."""
         response = "SOLUTION: [0.0, 1.0, 0.5, 2.0]"  # Missing tuples
         result = extract_discrete_points(response)
-        
+
         assert result is None
 
 
@@ -90,9 +90,9 @@ class TestParseDiscretePointsIntegration:
 SOLUTION: [(0.0, 1.234), (0.25, 2.456), (0.5, 3.789), (0.75, 1.123), (1.0, 0.567)]
 HAS_SOLUTION: yes
 SOLUTION_TYPE: discrete_points"""
-        
+
         result = parse_llm_output(response, extract_solution=True, validate=True)
-        
+
         assert result["has_solution"] is True
         assert result["solution_type"] == "discrete_points"
         assert result["discrete_points"] is not None
@@ -104,9 +104,9 @@ SOLUTION_TYPE: discrete_points"""
         """Test that points without SOLUTION_TYPE marker are not extracted specially."""
         response = """SOLUTION: [(0.0, 1.0), (0.5, 2.0), (1.0, 3.0)]
 HAS_SOLUTION: yes"""
-        
+
         result = parse_llm_output(response, extract_solution=True, validate=True)
-        
+
         # Should not extract as discrete_points without SOLUTION_TYPE marker
         assert result["solution_type"] is None
         assert result["discrete_points"] is None
@@ -116,9 +116,9 @@ HAS_SOLUTION: yes"""
         response = """SOLUTION: No points could be computed
 HAS_SOLUTION: no
 SOLUTION_TYPE: discrete_points"""
-        
+
         result = parse_llm_output(response, extract_solution=True, validate=True)
-        
+
         assert result["solution_type"] == "discrete_points"
         assert result["discrete_points"] is None
         assert result["confidence"] == 0.3

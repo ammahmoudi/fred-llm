@@ -157,9 +157,10 @@ This document tracks all features - implemented and planned. Check off items as 
     - Benefits: Clearer instructions, no ambiguity, format-specific training
   - [x] **Solution-type-specific output formats** ⏳ **In Progress (February 11, 2026)**
     - [x] discrete_points format specification: "Format: [(x1, y1), (x2, y2), ...]" ✅ **Completed in 4 prompt styles**
+    - [x] discrete_points parser: `extract_discrete_points()` in postprocess.py ✅ **Completed with 11 passing tests**
     - [ ] series format specification: "Format: f + λK·f + λ²K²·f + ... (4-6 terms)" ⏳ **Pending**
     - Benefits: Structured LLM output enables reliable parsing, consistent evaluation, type-specific metrics
-  - [x] Test coverage - 30 tests covering all components ✅ **All passing**
+  - [x] Test coverage - 30 prompt tests + 11 discrete_points parser tests ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
 - [ ] Step-by-step breakdown - Decompose complex kernels ❌ **Not started**
 - [ ] Error correction prompts - Self-correction mechanisms ❌ **Not started**
@@ -174,8 +175,12 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
   - _extract_has_solution(): Regex patterns for yes/no classification with validation
   - _extract_solution_type(): Regex patterns for 8-class solution type recognition
-  - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
-- [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
+  - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}- [x] **discrete_points parser** - Extract point lists from LLM responses \u2705 **(February 11, 2026)**
+  - extract_discrete_points(): Parses [(x1, y1), (x2, y2), ...] format
+  - Integrated with parse_llm_output() for automatic detection
+  - Handles scientific notation, negative values, extra whitespace
+  - Validation: minimum 2 points, finite values (<1e10)
+  - Test coverage: 11 unit tests covering all formats and edge cases- [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
   - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**

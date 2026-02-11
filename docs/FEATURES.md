@@ -49,13 +49,14 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Non-unique-solution cases - Exact resonance with solution families ✅ **Tested: 3 variants, symbolic u=C*φ**
   - [x] Resonance split - **resonance** (exact, family) vs **near_resonance** (ill-conditioned, discrete_points) ✅ **January 2, 2026**
   - [x] Compact support split - **compact_support** (approx_coef) vs **disconnected_support** (no solution) ✅ **January 2, 2026**
-  - [x] **Solution type refactoring: 5→8 types** ✅ **January 3, 2026**
-    - [x] Split `exact` → `exact_symbolic` (formula) + `exact_coef` (basis weights, future)
+  - [x] **Solution type refactoring: 5→7 types** ✅ **January 3, 2026**
+    - [x] Split `exact` → `exact_symbolic` (formula) (removed `exact_coef` as redundant)
     - [x] Split `numerical` → `approx_coef` (functional form) + `discrete_points` (samples) + `series` (expansions)
     - [x] Keep `family`, `regularized`, `none` unchanged
     - [x] New strategy: **neumann_series** (4-term Neumann expansions) → `series` type
     - [x] Rationale: Clear pedagogical signals, different evaluation methods, mathematical rigor
     - [x] Updated: All 18 augmentation files, splitter.py, augmentation.py, validator.py
+    - [x] **Removed `exact_coef`** (mathematically identical to `family`, impossible to evaluate)
     - [x] **Folder reorganization** ✅ **January 3, 2026**
       - [x] Renamed folders to match solution type taxonomy
       - [x] OLD: no_solution/, numerical_only/, regularization_required/, non_unique_solution/
@@ -156,7 +157,7 @@ This document tracks all features - implemented and planned. Check off items as 
   - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
 - [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
-  - [x] solution_type accuracy (8-class: exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none)
+  - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
   - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**
 - [ ] BLEU / TeX-BLEU - Token-level similarity metrics ❌ **Not started**
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**

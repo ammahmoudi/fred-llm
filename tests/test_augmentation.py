@@ -190,7 +190,6 @@ class TestDataAugmentation:
             assert isinstance(entry["recommended_methods"], list)
             assert entry["solution_type"] in [
                 "exact_symbolic",
-                "exact_coef",
                 "approx_coef",
                 "discrete_points",
                 "series",

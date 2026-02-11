@@ -1,12 +1,11 @@
 """
 Augmentation strategies for Fredholm integral equations.
 
-Strategies are organized by solution type (8 types total):
+Strategies are organized by solution type (7 types total):
 
 ## Folder Structure (by Solution Type)
 
 - **exact_symbolic/**: Closed-form analytical solutions (substitute, scale, shift, compose)
-- **exact_coef/**: Finite basis with exact coefficients (future)
 - **approx_coef/**: Functional forms with numerical params (boundary_layer, oscillatory, etc.)
 - **discrete_points/**: Pure point samples (complex_kernels, near_resonance)
 - **series/**: Truncated series expansions (neumann_series)

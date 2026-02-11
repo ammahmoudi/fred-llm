@@ -181,11 +181,10 @@ prompt = style.generate(eq)
 - `has_solution`: `True`/`False` - whether a solution exists
 - `solution_type`: one of:
   - `exact_symbolic` - closed-form symbolic solution (e.g., u(x) = sin(x))
-  - `exact_coef` - exact solution with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
-  - `approx_coef` - approximate solution with unknown coefficients (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+  - `approx_coef` - approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
   - `discrete_points` - solution defined only at discrete points
   - `series` - solution as infinite series (e.g., u(x) = Σ aₙxⁿ)
-  - `family` - family of solutions (multiple valid solutions)
+  - `family` - family of solutions with ARBITRARY parameters (e.g., u(x) = c₁*sin(x) + c₂*cos(x))
   - `regularized` - ill-posed equation requiring regularization
   - `none` - no solution exists
 
@@ -241,7 +240,7 @@ All prompt styles instruct the LLM to output in a structured format for reliable
 ```
 SOLUTION: u(x) = [solution expression in detected format]
 HAS_SOLUTION: [yes/no]
-SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regularized/none]
 ```
 
 **Format-Specific Generation**: The prompt generation system automatically detects the input format and provides **targeted format instructions**:

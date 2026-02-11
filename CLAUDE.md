@@ -95,7 +95,7 @@ uv run python -m src.cli convert data/equations.json --format rpn --output outpu
 
 ### Key Data Structures
 
-**8 Solution Types**: `exact_symbolic`, `exact_coef`, `approx_coef`, `discrete_points`, `series`, `family`, `regularized`, `none`
+**7 Solution Types**: `exact_symbolic`, `approx_coef`, `discrete_points`, `series`, `family`, `regularized`, `none`
 
 **3 Edge Case Modes** in prompts: `none` (pure inference), `guardrails` (add handling instructions), `hints` (include solution type hints)
 

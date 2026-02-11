@@ -103,12 +103,11 @@ python scripts/run_prompt_generation.py --input data/processed --output data/pro
 
 → **Full guide**: [Adaptive Pipeline Documentation](docs/ADAPTIVE_PIPELINE.md)
 
-## Solution Types (8 Categories)
+## Solution Types (7 Categories)
 
 | Type | Description | Example |
 |------|-------------|---------|
 | `exact_symbolic` | Closed-form solution | u(x) = sin(x) + x² |
-| `exact_coef` | Exact with coefficients | u(x) = c₁sin(x) + c₂cos(x) |
 | `approx_coef` | Approximate with coefficients | u(x) ≈ a₀ + a₁x + a₂x² |
 | `discrete_points` | Solution at discrete points only | [(0, 1.2), (0.5, 3.4), ...] |
 | `series` | Infinite series solution | u(x) = Σ aₙxⁿ |

@@ -48,15 +48,14 @@ Approach each problem systematically:
 Show your reasoning at each step, then provide the final answer in this format:
 SOLUTION: u(x) = [your solution here]
 HAS_SOLUTION: [yes/no]
-SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regularized/none]
 
 For SOLUTION_TYPE:
 - exact_symbolic: Closed-form symbolic (e.g., sin(x))
-- exact_coef: Exact with unknown coefficients (e.g., c₁sin(x) + c₂cos(x))
-- approx_coef: Approximate with coefficients (e.g., a₀ + a₁x + a₂x²)
+- approx_coef: Approximate with NUMERIC coefficients (e.g., 0.5*sin(x) + 1.2*x)
 - discrete_points: Only discrete point samples
 - series: Infinite series (e.g., Σ aₙxⁿ)
-- family: Multiple valid solutions
+- family: Multiple valid solutions with ARBITRARY parameters (e.g., c₁*sin(x) + c₂*cos(x))
 - regularized: Ill-posed, needs regularization
 - none: No solution exists"""
 

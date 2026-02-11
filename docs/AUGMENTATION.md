@@ -20,22 +20,21 @@ Strategies are organized by **solution type**. Specifying a folder name runs ALL
 | `none_solution` | 4 | 12 | No solution exists (eigenvalue issues, range violations, divergent kernels) |
 | **Total** | **14** | **42** | Comprehensive edge case recognition |
 
-## Solution Type Taxonomy (8 types)
+## Solution Type Taxonomy (7 types)
 
-The augmentation system produces equations with 8 distinct solution types:
+The augmentation system produces equations with 7 distinct solution types:
 
 | Solution Type | Description | Example | How to Solve |
 |--------------|-------------|---------|--------------|
 | `exact_symbolic` | Closed-form symbolic solution | u(x) = sin(x) + x² | Analytical methods |
-| `exact_coef` | Exact with unknown coefficients | u(x) = c₁sin(x) + c₂cos(x) | Solve for coefficients |
-| `approx_coef` | Approximate with coefficients | u(x) ≈ a₀ + a₁x + a₂x² | Collocation, least squares |
+| `approx_coef` | Approximate with NUMERIC coefficients | u(x) = 0.5*sin(x) + 1.2*x | Collocation, least squares |
 | `discrete_points` | Solution only at discrete points | [(0, 1.2), (0.5, 3.4), ...] | Numerical integration |
 | `series` | Infinite series solution | u(x) = Σ aₙxⁿ | Neumann series, perturbation |
-| `family` | Non-unique solution family | u(x) = f(x) + C·φ(x) | Identify eigenspace |
+| `family` | Non-unique with ARBITRARY parameters | u(x) = c₁*sin(x) + c₂*cos(x) | Identify eigenspace |
 | `regularized` | Requires regularization | Tikhonov, Landweber | Ill-posed, stabilize |
 | `none` | No solution exists | N/A | Recognize impossibility |
 
-### Why 8 Types?
+### Why 7 Types?
 
 **Pedagogical Clarity**: Each type represents a distinct mathematical concept and solution methodology.
 
@@ -65,7 +64,7 @@ All augmentation strategies produce the same 18 core fields:
     # Edge case metadata
     "augmentation_type": str,      # Strategy name
     "has_solution": bool,          # Solution exists?
-    "solution_type": str,          # One of 8 types
+    "solution_type": str,          # One of 7 types
     "edge_case": str,              # Brief description
     "reason": str,                 # Why this edge case occurs
     "recommended_methods": list,   # Suggested solution approaches

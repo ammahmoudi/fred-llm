@@ -354,7 +354,6 @@ Classification of solution structure. Extracted from `SOLUTION_TYPE:` marker:
 | Type | Meaning | Example |
 |------|---------|---------|
 | `exact_symbolic` | Closed-form symbolic | `u(x) = sin(x)` |
-| `exact_coef` | Exact with unknown coefficients | `u(x) = c₁sin(x) + c₂cos(x)` |
 | `approx_coef` | Approximate with coefficients | `u(x) ≈ a₀ + a₁x + a₂x²` |
 | `series` | Infinite series | `u(x) = Σ aₙxⁿ` |
 | `family` | Family of solutions (non-unique) | `u(x) = C·sin(πx)` |

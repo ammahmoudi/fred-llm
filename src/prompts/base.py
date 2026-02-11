@@ -28,7 +28,7 @@ class EquationData:
     # Edge case fields (optional)
     has_solution: bool | None = None  # Whether a solution exists
     solution_type: str | None = (
-        None  # exact_symbolic, exact_coef, approx_coef, discrete_points, series, family, regularized, none
+        None  # exact_symbolic, approx_coef, discrete_points, series, family, regularized, none
     )
 
 
@@ -137,11 +137,10 @@ class PromptStyle(ABC):
         return """
 Note: Solutions may take different forms:
 - Exact symbolic (e.g., u(x) = sin(x))
-- Exact with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
-- Approximate with coefficients to determine (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+- Approximate with NUMERIC coefficients (e.g., u(x) = 0.5 + 1.2*x - 0.3*x²)
 - Discrete points only
 - Infinite series (e.g., u(x) = Σ aₙxⁿ)
-- Family of solutions (multiple valid solutions)
+- Family of solutions with ARBITRARY parameters (e.g., u(x) = c₁*sin(x) + c₂*cos(x))
 - Ill-posed requiring regularization
 - No solution exists
 

@@ -232,7 +232,7 @@ All generated prompts instruct LLMs to respond with:
 ```
 SOLUTION: u(x) = [your solution in the same format as input]
 HAS_SOLUTION: yes/no
-SOLUTION_TYPE: exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none
+SOLUTION_TYPE: exact_symbolic/approx_coef/discrete_points/series/family/regularized/none
 ```
 
 **Format examples:**

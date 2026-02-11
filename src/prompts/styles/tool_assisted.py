@@ -45,15 +45,14 @@ You can use the following tools:
 Show your work using these tools when helpful, then provide the final answer in this format:
 SOLUTION: u(x) = [your solution here]
 HAS_SOLUTION: [yes/no]
-SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regularized/none]
 
 For SOLUTION_TYPE:
 - exact_symbolic: Closed-form symbolic solution
-- exact_coef: Exact with unknown coefficients
-- approx_coef: Approximate with coefficients
+- approx_coef: Approximate with NUMERIC coefficients (e.g., 0.5 + 1.2*x)
 - discrete_points: Solution only at discrete points
 - series: Infinite series solution
-- family: Family of solutions (non-unique)
+- family: Family of solutions with ARBITRARY parameters (e.g., c₁*sin(x) + c₂*cos(x))
 - regularized: Ill-posed, requires regularization
 - none: No solution exists"""
 

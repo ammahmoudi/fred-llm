@@ -40,15 +40,14 @@ Or of the first kind (ill-posed, requires regularization):
 Provide your answer in the following format:
 SOLUTION: u(x) = [your solution here]
 HAS_SOLUTION: [yes/no]
-SOLUTION_TYPE: [exact_symbolic/exact_coef/approx_coef/discrete_points/series/family/regularized/none]
+SOLUTION_TYPE: [exact_symbolic/approx_coef/discrete_points/series/family/regularized/none]
 
 For SOLUTION_TYPE:
 - exact_symbolic: Closed-form symbolic solution (e.g., u(x) = sin(x))
-- exact_coef: Exact with unknown coefficients (e.g., u(x) = c₁sin(x) + c₂cos(x))
-- approx_coef: Approximate with coefficients (e.g., u(x) ≈ a₀ + a₁x + a₂x²)
+- approx_coef: Approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
 - discrete_points: Solution only at discrete points
 - series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
-- family: Family of solutions (non-unique)
+- family: Family of solutions with ARBITRARY parameters (e.g., u(x) = c_1*sin(x) + c_2*cos(x))
 - regularized: Ill-posed, requires regularization
 - none: No solution exists
 

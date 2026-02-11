@@ -23,14 +23,13 @@ Edge cases are augmented variants of Fredholm integral equations that represent 
 
 **Total: 18 strategies (4 basic + 14 edge) × various variants = 42 edge case types**
 
-## Solution Type Taxonomy (8 Types)
+## Solution Type Taxonomy (7 Types)
 
-**Updated:** January 3, 2026 - Refined from 5 to 8 solution types for clearer pedagogical signals.
+**Updated:** January 3, 2026 - Removed `exact_coef` (redundant with `family`, impossible to evaluate).
 
 | Solution Type | Description | u Field Content | Has Solution | Example Strategies |
 |---------------|-------------|-----------------|--------------|-------------------|
 | `exact_symbolic` | Closed-form analytical expressions | Formula: `2*x + sin(x)` | ✅ True | substitute, scale, shift |
-| `exact_coef` | Finite basis expansion with exact rational weights | Coefficients array (future) | ✅ True | TBD (future feature) |
 | `approx_coef` | Functional form with numerical parameters | Formula: `exp(-x/0.01)` | ✅ True | boundary_layer, oscillatory |
 | `discrete_points` | Pure point samples, no closed form | Empty `""` + sample arrays | ✅ True | complex_kernels, near_resonance |
 | `series` | Truncated Neumann/Taylor series | Series formula: `f + λ∫K + λ²∫K²` | ✅ True | neumann_series |

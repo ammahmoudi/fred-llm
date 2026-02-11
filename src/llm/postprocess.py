@@ -171,8 +171,12 @@ def _clean_expression(expr: str) -> str:
 
     # Remove trailing explanatory text after the expression
     # Common patterns: "where C = ...", "(where ...)", "\) where ...", etc.
-    expr = re.sub(r"\s*\\\)\s*(?:where|with|for|if|when).*$", "", expr, flags=re.IGNORECASE)
-    expr = re.sub(r"\s*\((?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE)
+    expr = re.sub(
+        r"\s*\\\)\s*(?:where|with|for|if|when).*$", "", expr, flags=re.IGNORECASE
+    )
+    expr = re.sub(
+        r"\s*\((?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE
+    )
     expr = re.sub(r"\s+(?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE)
 
     # Remove any remaining \) at end of expression
@@ -183,13 +187,17 @@ def _clean_expression(expr: str) -> str:
         return ""
 
     # Handle "requires numerical methods" type responses - mark as unparseable
-    if re.search(r"requires?\s+(?:numerical|iterative|computational)", expr, re.IGNORECASE):
+    if re.search(
+        r"requires?\s+(?:numerical|iterative|computational)", expr, re.IGNORECASE
+    ):
         return ""
     if re.search(r"(?:cannot|can't|no\s+closed[- ]form)", expr, re.IGNORECASE):
         return ""
     if re.search(r"^\s*\[.*\]\s*$", expr):  # [text in brackets]
         return ""
-    if re.search(r"^\s*\(.*(?:iterative|series|expansion|solution).*\)\s*$", expr, re.IGNORECASE):
+    if re.search(
+        r"^\s*\(.*(?:iterative|series|expansion|solution).*\)\s*$", expr, re.IGNORECASE
+    ):
         return ""
 
     # Remove any remaining \) followed by explanation in parentheses
@@ -336,7 +344,9 @@ def _latex_to_infix(expr: str) -> str:
     expr = re.sub(r"\be\s*\*\*\s*([a-zA-Z0-9]+)", r"exp(\1)", expr)
 
     # Clean up residual integral/kernel patterns not caught by earlier conversion
-    expr = re.sub(r"_-?[\d.]+\*\*\([^)]+\)\s*K\([^)]+\)\s*u\([^)]+\)\s*d[a-z]", "", expr)
+    expr = re.sub(
+        r"_-?[\d.]+\*\*\([^)]+\)\s*K\([^)]+\)\s*u\([^)]+\)\s*d[a-z]", "", expr
+    )
     expr = re.sub(r"\s*K\(x,\s*t\)\s*u\(t\)\s*d[a-z]", "", expr)
 
     # Remove remaining LaTeX commands that might cause issues
@@ -373,8 +383,17 @@ def _fallback_extract(response: str) -> Optional[str]:
 
     # Second pass: look for any line with = and u, but skip reasoning lines
     skip_prefixes = (
-        "substitut", "let ", "if ", "when ", "assume", "where ",
-        "since ", "because ", "note ", "recall ", "using ",
+        "substitut",
+        "let ",
+        "if ",
+        "when ",
+        "assume",
+        "where ",
+        "since ",
+        "because ",
+        "note ",
+        "recall ",
+        "using ",
     )
     for line in reversed(lines):
         stripped = line.strip().lower()
@@ -442,9 +461,27 @@ def _preprocess_for_sympy(expr: str) -> str:
     # Add implicit multiplication before ( but NOT for function calls
     # e.g., x( -> x*( but exp( stays exp(
     _known_funcs = {
-        "sin", "cos", "tan", "exp", "log", "sqrt", "sinh", "cosh", "tanh",
-        "asin", "acos", "atan", "asinh", "acosh", "atanh",
-        "cot", "sec", "csc", "Abs", "Integral", "Sum",
+        "sin",
+        "cos",
+        "tan",
+        "exp",
+        "log",
+        "sqrt",
+        "sinh",
+        "cosh",
+        "tanh",
+        "asin",
+        "acos",
+        "atan",
+        "asinh",
+        "acosh",
+        "atanh",
+        "cot",
+        "sec",
+        "csc",
+        "Abs",
+        "Integral",
+        "Sum",
     }
 
     def _implicit_mul_before_paren(m: re.Match) -> str:
@@ -510,7 +547,9 @@ def _extract_has_solution(response: str) -> Optional[bool]:
     hs_match = re.search(hs_line_pattern, response, re.IGNORECASE)
     if hs_match:
         value = hs_match.group(1).strip().lower()
-        if re.search(r"\bno\b|\bnot\b|\bfalse\b|\bn/?a\b|\bnone\b|\bdoes\s+not\b", value):
+        if re.search(
+            r"\bno\b|\bnot\b|\bfalse\b|\bn/?a\b|\bnone\b|\bdoes\s+not\b", value
+        ):
             return False
         if re.search(r"\byes\b|\btrue\b|\bexists?\b", value):
             return True
@@ -541,7 +580,6 @@ def _extract_solution_type(response: str) -> Optional[str]:
         # Validate against known types
         valid_types = {
             "exact_symbolic",
-            "exact_coef",
             "approx_coef",
             "discrete_points",
             "series",

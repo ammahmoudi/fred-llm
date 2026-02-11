@@ -25,7 +25,7 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 | `augmentation_type` | str | ✅ | Strategy name (e.g., "scale", "eigenvalue_cases", "boundary_layer") |
 | `augmentation_variant` | str | ✅ | Specific variant (e.g., "scale_2.0x") |
 | `has_solution` | bool | ✅ | Solution exists? |
-| `solution_type` | str | ✅ | `"exact_symbolic"` \| `"exact_coef"` \| `"approx_coef"` \| `"discrete_points"` \| `"series"` \| `"family"` \| `"regularized"` \| `"none"` |
+| `solution_type` | str | ✅ | `"exact_symbolic"` \| `"approx_coef"` \| `"discrete_points"` \| `"series"` \| `"family"` \| `"regularized"` \| `"none"` |
 | `edge_case` | str \| None | ✅ | Edge case type or `None` for basic |
 | `reason` | str | ✅ | Explanation of augmentation/case |
 | `recommended_methods` | list[str] | ✅ | Suggested methods (empty list `[]` if none) |

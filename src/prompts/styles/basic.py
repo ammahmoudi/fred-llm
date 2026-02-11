@@ -47,7 +47,7 @@ For SOLUTION_TYPE:
 - approx_coef: Approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
 - discrete_points: Solution only at discrete points
 - series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
-- family: Family of solutions with ARBITRARY parameters (e.g., u(x) = c_1*sin(x) + c_2*cos(x))
+- family: Non-unique solutions (arbitrary c_1, c_2, ...)
 - regularized: Ill-posed, requires regularization
 - none: No solution exists
 

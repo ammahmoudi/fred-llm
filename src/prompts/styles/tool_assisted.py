@@ -52,7 +52,7 @@ For SOLUTION_TYPE:
 - approx_coef: Approximate with NUMERIC coefficients (e.g., 0.5 + 1.2*x)
 - discrete_points: Solution only at discrete points
 - series: Infinite series solution
-- family: Family of solutions with ARBITRARY parameters (e.g., c₁*sin(x) + c₂*cos(x))
+- family: Non-unique solutions (arbitrary c_1, c_2, ...)
 - regularized: Ill-posed, requires regularization
 - none: No solution exists"""
 

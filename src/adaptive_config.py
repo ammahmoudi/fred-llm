@@ -142,7 +142,7 @@ class PreparedPromptsConfig(BaseModel):
 
 class EvaluationDataConfig(BaseModel):
     """Configuration for evaluation-only mode.
-    
+
     Used when you have LLM predictions and only want to run evaluation.
     No data preparation, prompting, or inference needed.
     """

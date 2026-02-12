@@ -8,19 +8,19 @@ All logic is in the src.data modules.
 Usage:
     # Basic: Load and save data
     python scripts/prepare_dataset.py --input data/raw/Fredholm_Dataset_Sample.csv --output data/processed/
-    
+
     # Process with all steps
     python scripts/prepare_dataset.py --max-samples 100 --augment --convert --validate
-    
+
     # Augment and split into train/test
     python scripts/prepare_dataset.py --max-samples 200 --augment --split
-    
+
     # Create stratified sample (1 equation per solution type for diverse testing)
     python scripts/prepare_dataset.py --stratified-sample --samples-per-type 1 --convert
-    
+
     # Create balanced sample with edge cases (augment first, then sample)
     python scripts/prepare_dataset.py --augment --stratified-sample --samples-per-type 1 --convert
-    
+
     # Create large balanced sample (5 equations per solution type)
     python scripts/prepare_dataset.py --stratified-sample --samples-per-type 5 --convert --split
 """
@@ -288,11 +288,7 @@ def main() -> None:
     from src.data.augmentation import DataAugmenter
     from src.data.format_converter import FormatConverter
     from src.data.fredholm_loader import FredholmDatasetLoader
-    from src.data.splitter import (
-        get_split_statistics,
-        split_dataset,
-        stratified_sample,
-    )
+    from src.data.splitter import get_split_statistics, split_dataset, stratified_sample
     from src.data.validator import validate_dataset
 
     console.print("[bold blue]Fred-LLM Dataset Preparation[/bold blue]\n")
@@ -371,7 +367,7 @@ def main() -> None:
         # Sample from augmented data if available, otherwise from original
         sample_source = augmented_data if augmented_data else data
         original_count = len(sample_source)
-        
+
         sampled_data = stratified_sample(
             sample_source, samples_per_type=args.samples_per_type, seed=42
         )
@@ -379,7 +375,7 @@ def main() -> None:
             f"  ✓ Sampled {len(sampled_data)} equations from {original_count} "
             f"({args.samples_per_type} per solution type)\n"
         )
-        
+
         # Replace data/augmented_data with sampled version
         if augmented_data:
             augmented_data = sampled_data

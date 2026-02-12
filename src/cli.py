@@ -104,10 +104,11 @@ def evaluate(
     """Evaluate LLM-generated solutions against ground truth."""
     import json
     from pathlib import Path
+
     from src.llm.evaluate import evaluate_solutions
 
     input_file = Path(input_file)
-    
+
     if not input_file.exists():
         console.print(f"[red]✗ Input file not found: {input_file}[/red]")
         raise typer.Exit(code=1)
@@ -131,27 +132,31 @@ def evaluate(
     console.print("\n[bold]Evaluation Results:[/bold]")
     console.print(f"  Total predictions: {results.get('total_results', 0)}")
     console.print(f"  Evaluated: {results.get('evaluated_count', 0)}")
-    if results.get('total', 0) > 0:
+    if results.get("total", 0) > 0:
         console.print(f"  Accuracy: {results.get('accuracy', 0):.2%}")
         console.print(f"  Symbolic accuracy: {results.get('symbolic_accuracy', 0):.2%}")
         console.print(f"  Numeric accuracy: {results.get('numeric_accuracy', 0):.2%}")
-    
-    if results.get('has_solution_accuracy') is not None:
-        console.print(f"  Has solution accuracy: {results.get('has_solution_accuracy', 0):.2%}")
-    
-    if results.get('solution_type_accuracy') is not None:
-        console.print(f"  Solution type accuracy: {results.get('solution_type_accuracy', 0):.2%}")
-    
+
+    if results.get("has_solution_accuracy") is not None:
+        console.print(
+            f"  Has solution accuracy: {results.get('has_solution_accuracy', 0):.2%}"
+        )
+
+    if results.get("solution_type_accuracy") is not None:
+        console.print(
+            f"  Solution type accuracy: {results.get('solution_type_accuracy', 0):.2%}"
+        )
+
     # Display per-type breakdown
-    per_type = results.get('per_type', {})
+    per_type = results.get("per_type", {})
     if per_type:
         console.print(f"\n  [bold]Per-type breakdown:[/bold]")
         for stype, counts in sorted(per_type.items()):
-            accuracy = counts['correct'] / counts['total'] if counts['total'] > 0 else 0
+            accuracy = counts["correct"] / counts["total"] if counts["total"] > 0 else 0
             console.print(
                 f"    {stype}: {counts['correct']}/{counts['total']} ({accuracy:.0%})"
             )
-    
+
     # Save results if output specified
     if output:
         output = Path(output)
@@ -613,4 +618,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    main()
     main()

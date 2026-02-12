@@ -251,9 +251,7 @@ def stratified_sample(
 
     # Group by solution type
     type_counts = df[solution_type_key].value_counts()
-    logger.info(
-        f"Found {len(type_counts)} solution types: {dict(type_counts)}"
-    )
+    logger.info(f"Found {len(type_counts)} solution types: {dict(type_counts)}")
 
     # Sample from each group
     sampled_dfs = []
@@ -269,9 +267,7 @@ def stratified_sample(
 
         sampled = group_df.sample(n=n_samples, random_state=seed)
         sampled_dfs.append(sampled)
-        logger.info(
-            f"  Sampled {n_samples}/{group_size} from '{solution_type}'"
-        )
+        logger.info(f"  Sampled {n_samples}/{group_size} from '{solution_type}'")
 
     # Combine all samples
     result_df = pd.concat(sampled_dfs, ignore_index=True)

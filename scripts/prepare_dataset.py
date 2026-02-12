@@ -503,7 +503,23 @@ def _save_data(
     """Save data as JSON, CSV, or both, handling enum and SymPy serialization. Returns list of created file paths."""
     import pandas as pd
     import sympy as sp
+    import numpy as np
     from rich.progress import track
+
+    def _serialize_value(value: object) -> object:
+        if hasattr(value, "value"):
+            return value.value
+        if isinstance(value, (sp.Basic, sp.Expr)):
+            return str(value)
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        if isinstance(value, list):
+            return [_serialize_value(v) for v in value]
+        if isinstance(value, dict):
+            return {k: _serialize_value(v) for k, v in value.items()}
+        if pd.isna(value):
+            return None
+        return value
 
     # Prepare serializable data
     serializable = []
@@ -512,20 +528,7 @@ def _save_data(
 
         # Convert all values to JSON-serializable types
         for key, value in list(item_copy.items()):
-            # Convert enums to strings
-            if hasattr(value, "value"):
-                item_copy[key] = value.value
-            # Convert SymPy expressions to strings
-            elif isinstance(value, (sp.Basic, sp.Expr)):
-                item_copy[key] = str(value)
-            # Convert lists containing SymPy objects
-            elif isinstance(value, list):
-                item_copy[key] = [
-                    str(v) if isinstance(v, (sp.Basic, sp.Expr)) else v for v in value
-                ]
-            # Convert NaN to None for proper JSON null representation
-            elif pd.isna(value):
-                item_copy[key] = None
+            item_copy[key] = _serialize_value(value)
 
         serializable.append(item_copy)
 

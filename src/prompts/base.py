@@ -24,6 +24,7 @@ class EquationData:
     a: float  # Lower bound
     b: float  # Upper bound
     equation_id: str | None = None  # Optional ID for tracking
+    evaluation_points: dict[str, Any] | None = None
 
     # Edge case fields (optional)
     has_solution: bool | None = None  # Whether a solution exists
@@ -203,6 +204,9 @@ State clearly which type applies and provide appropriate representation."""
             "lambda_val": equation.lambda_val,
             "domain": [equation.a, equation.b],
         }
+
+        if equation.evaluation_points is not None:
+            metadata["evaluation_points"] = equation.evaluation_points
 
         # Add edge case info to metadata if present
         if equation.has_solution is not None:

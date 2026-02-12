@@ -226,6 +226,7 @@ def evaluate_solutions(
     numeric_tolerance: float = 1e-6,
     n_test_points: int = 100,
     type_tolerances: Optional[dict[str, float]] = None,
+    include_points: bool = False,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """
@@ -305,6 +306,10 @@ def evaluate_solutions(
 
         # Extract domain from metadata
         domain = tuple(result.get("ground_truth_domain") or [0, 1])
+        eval_points = (
+            result.get("evaluation_points")
+            or result.get("metadata", {}).get("evaluation_points")
+        )
 
         # Branch on solution type: "none" type
         if gt_solution_type == "none":
@@ -325,7 +330,13 @@ def evaluate_solutions(
 
             # Branch on solution type: "family" type
             if gt_solution_type == "family":
-                evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                evaluator.evaluate_family(
+                    pred_expr,
+                    gt_expr,
+                    domain=domain,
+                    evaluation_points=eval_points,
+                    include_points=include_points,
+                )
                 evaluated_count += 1
                 continue
 
@@ -339,6 +350,8 @@ def evaluate_solutions(
                 domain=domain,
                 solution_type=gt_solution_type,
                 numeric_tolerance_override=tol_override,
+                evaluation_points=eval_points,
+                include_points=include_points,
             )
             evaluated_count += 1
 
@@ -445,6 +458,7 @@ def numeric_compare(
     domain: tuple[float, float] = (0, 1),
     n_points: int = 100,
     tolerance: float = 1e-6,
+    include_points: bool = False,
 ) -> dict[str, Any]:
     """
     Compare two expressions numerically over a domain.
@@ -495,6 +509,7 @@ def numeric_compare(
 
                 f_solution = sp.lambdify(x, solution, modules=["numpy"])
                 y_solution = np.array([f_solution(xi) for xi in test_points])
+                points_source = "evaluation_points"
 
             elif "u" in ground_truth and ground_truth["u"]:
                 # Fallback: Extract u field and use as ground truth expression
@@ -537,6 +552,7 @@ def numeric_compare(
             # Evaluate
             y_solution = np.array([f_solution(xi) for xi in test_points])
             y_truth = np.array([f_truth(xi) for xi in test_points])
+            points_source = "generated"
 
         # Compute errors
         errors = np.abs(y_solution - y_truth)
@@ -546,6 +562,12 @@ def numeric_compare(
 
         # Check if within tolerance
         result["match"] = result["max_error"] < tolerance
+
+        if include_points:
+            result["x_values"] = test_points.tolist()
+            result["y_pred"] = y_solution.tolist()
+            result["y_true"] = y_truth.tolist()
+            result["points_source"] = points_source
 
     except Exception as e:
         logger.warning(f"Numeric comparison failed: {e}")
@@ -710,6 +732,8 @@ def _family_numeric_compare_samples(
     n_points: int,
     tolerance: float,
     constant_samples: list[float],
+    evaluation_points: dict[str, Any] | None = None,
+    include_points: bool = False,
 ) -> dict[str, Any]:
     """Numeric comparison for family solutions across multiple constant samples."""
     x = sp.Symbol("x")
@@ -717,7 +741,88 @@ def _family_numeric_compare_samples(
     constants = (solution.free_symbols | ground_truth.free_symbols) - {x, t}
 
     if not constants:
+        if evaluation_points:
+            return numeric_compare(
+                solution,
+                {"evaluation_points": evaluation_points, "u": str(ground_truth)},
+                domain,
+                n_points,
+                tolerance,
+                include_points=include_points,
+            )
         return numeric_compare(solution, ground_truth, domain, n_points, tolerance)
+
+    if evaluation_points and evaluation_points.get("x_values"):
+        x_values = np.array(evaluation_points["x_values"], dtype=float)
+        if x_values.size > 0:
+            if "u_values_samples" in evaluation_points:
+                gt_samples = evaluation_points["u_values_samples"]
+                sample_constants = evaluation_points.get(
+                    "constant_samples", constant_samples
+                )
+            else:
+                gt_samples = [evaluation_points.get("u_values", [])]
+                sample_constants = constant_samples[:1]
+
+            if len(gt_samples) != len(sample_constants):
+                sample_constants = sample_constants[: len(gt_samples)]
+
+            sample_results = []
+            for sample, y_truth in zip(sample_constants, gt_samples):
+                subs_map = {sym: sample for sym in constants}
+                sol_sub = solution.subs(subs_map)
+                if sol_sub.has(sp.Integral):
+                    sol_sub = sol_sub.doit()
+
+                extra_sol = sol_sub.free_symbols - {x}
+                if extra_sol:
+                    sample_results.append(
+                        {
+                            "match": False,
+                            "max_error": float("inf"),
+                            "mean_error": float("inf"),
+                            "rmse": float("inf"),
+                            "error": f"Solution contains non-numeric symbols: {extra_sol}",
+                        }
+                    )
+                    continue
+
+                f_solution = sp.lambdify(x, sol_sub, modules=["numpy"])
+                y_solution = np.array([f_solution(xi) for xi in x_values], dtype=float)
+                y_truth_arr = np.array(y_truth, dtype=float)
+
+                if y_solution.shape != y_truth_arr.shape:
+                    min_len = min(len(y_solution), len(y_truth_arr))
+                    y_solution = y_solution[:min_len]
+                    y_truth_arr = y_truth_arr[:min_len]
+
+                errors = np.abs(y_solution - y_truth_arr)
+                sample_result = {
+                    "match": float(np.max(errors)) < tolerance,
+                    "max_error": float(np.max(errors)),
+                    "mean_error": float(np.mean(errors)),
+                    "rmse": float(np.sqrt(np.mean(errors**2))),
+                }
+                if include_points:
+                    sample_result["x_values"] = x_values.tolist()
+                    sample_result["y_pred"] = y_solution.tolist()
+                    sample_result["y_true"] = y_truth_arr.tolist()
+                    sample_result["points_source"] = "evaluation_points"
+                sample_results.append(sample_result)
+
+            max_error = max(r["max_error"] for r in sample_results)
+            mean_error = float(np.mean([r["mean_error"] for r in sample_results]))
+            rmse = float(np.mean([r["rmse"] for r in sample_results]))
+            match = all(r["match"] for r in sample_results)
+
+            return {
+                "match": match,
+                "max_error": max_error,
+                "mean_error": mean_error,
+                "rmse": rmse,
+                "sample_results": sample_results,
+                "constant_samples": sample_constants,
+            }
 
     sample_results = []
     for sample in constant_samples:
@@ -884,6 +989,8 @@ class SolutionEvaluator:
         domain: tuple[float, float] = (0, 1),
         solution_type: Optional[str] = None,
         numeric_tolerance_override: Optional[float] = None,
+        evaluation_points: Optional[dict[str, Any]] = None,
+        include_points: bool = False,
     ) -> dict[str, Any]:
         """Evaluate a single solution.
 
@@ -900,9 +1007,24 @@ class SolutionEvaluator:
             else self.numeric_tolerance
         )
         symbolic = symbolic_compare(solution, ground_truth, self.symbolic_tolerance)
-        numeric = numeric_compare(
-            solution, ground_truth, domain, self.n_test_points, tol
-        )
+        if evaluation_points is not None:
+            numeric = numeric_compare(
+                solution,
+                {"evaluation_points": evaluation_points, "u": str(ground_truth)},
+                domain,
+                self.n_test_points,
+                tol,
+                include_points=include_points,
+            )
+        else:
+            numeric = numeric_compare(
+                solution,
+                ground_truth,
+                domain,
+                self.n_test_points,
+                tol,
+                include_points=include_points,
+            )
 
         result = {
             "symbolic": symbolic,
@@ -970,6 +1092,8 @@ class SolutionEvaluator:
         solution: sp.Expr,
         ground_truth: sp.Expr,
         domain: tuple[float, float] = (0, 1),
+        evaluation_points: Optional[dict[str, Any]] = None,
+        include_points: bool = False,
     ) -> dict[str, Any]:
         """Evaluate a 'family' type equation (non-unique solution).
 
@@ -1008,6 +1132,8 @@ class SolutionEvaluator:
             self.n_test_points,
             self.numeric_tolerance,
             constant_samples=[-1.0, 1.0, 2.0],
+            evaluation_points=evaluation_points,
+            include_points=include_points,
         )
         term_eval = evaluate_series_terms(
             sol_concrete,
@@ -1053,6 +1179,8 @@ class SolutionEvaluator:
         result_dict = evaluate_discrete_points(
             pred_points, gt_points, x_tolerance=1e-3, y_tolerance=self.numeric_tolerance
         )
+        result_dict["pred_points"] = pred_points
+        result_dict["gt_points"] = gt_points
 
         result = {
             "symbolic": {"equivalent": False},  # Not applicable for discrete points

@@ -445,6 +445,8 @@ def numeric_compare(solution, ground_truth, domain=(-1, 1), n_points=100):
 
 **Metric**: `numeric_accuracy` – % of sampled points within tolerance
 
+**Note:** If `evaluation_points` are present in the prediction metadata, numeric comparison uses those stored points instead of generating new samples.
+
 ---
 
 ### Type-Specific Evaluators
@@ -573,6 +575,12 @@ When running the adaptive pipeline, an evaluated file is also emitted with per-c
         "numeric_match": true,
         "series_term_eval": {
             "term_rmse": [0.0, 0.01, 0.02, 0.03]
+        },
+        "numeric": {
+            "x_values": [0.0, 0.1],
+            "y_pred": [0.0, 0.1],
+            "y_true": [0.0, 0.1],
+            "points_source": "evaluation_points"
         }
     }
 }

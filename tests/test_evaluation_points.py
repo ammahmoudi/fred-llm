@@ -188,7 +188,9 @@ class TestEvaluationPointsGeneration:
         assert np.all(np.isfinite(u_values))
         assert result["n_points"] > 0
 
-    def test_generate_evaluation_points_substitutes_free_constants(self, mock_augmentation):
+    def test_generate_evaluation_points_substitutes_free_constants(
+        self, mock_augmentation
+    ):
         """Test that free constants are substituted for numeric evaluation."""
         u_expr = "C*x + 2"
         a, b = 0.0, 1.0

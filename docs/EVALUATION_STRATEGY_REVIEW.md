@@ -61,8 +61,8 @@ u_values = u_values[finite_mask]
 - ✅ **Phase 2, Task 2.1**: discrete_points evaluation - COMPLETED (February 12, 2026)
 - ✅ **Phase 2, Task 2.2**: series evaluation - COMPLETED
 - ✅ **Phase 2, Task 2.3**: family evaluator enhancements - COMPLETED
-- ⏳ **Phase 2, Task 2.4**: use stored evaluation_points in evaluate.py (pending)
-- ⏳ **Phase 2, Task 2.5**: write evaluation_points into dataset outputs (pending)
+- ✅ **Phase 2, Task 2.4**: use stored evaluation_points in evaluate.py - COMPLETED
+- ✅ **Phase 2, Task 2.5**: write evaluation_points into dataset outputs - COMPLETED
 - ⏳ **Phase 3**: Enhanced reporting and metrics (not started)
 
 ---
@@ -375,8 +375,8 @@ def numeric_compare_fixed_points(solution, ground_truth_points, tolerance=1e-6):
 
 **Scope:**
 - ✅ Update all 14 augmentation strategies in `src/data/augmentations/` (inherited via BaseAugmentation)
-- ⏳ Modify CSV/JSONL writers to include evaluation_points field (not yet implemented)
-- ⏳ Update evaluate.py to prioritize stored points over random generation (not yet implemented)
+- ✅ Modify CSV/JSONL writers to include evaluation_points field (completed)
+- ✅ Update evaluate.py to prioritize stored points over random generation (completed)
 
 **Additional Improvements (February 11, 2026):**
 - ✅ **Kernel Expression Compatibility**: All augmentation kernels now use parseable SymPy Piecewise notation
@@ -688,7 +688,7 @@ uv run pytest tests/test_prompting.py tests/test_prompt_generation.py -v
 # ✅ 37/37 tests passing
 ```
 
-**Next:** Proceed to Task 2.4 (evaluation_points integration)
+**Next:** Proceed to Phase 3 (reporting + metrics)
 
 ---
 
@@ -846,7 +846,7 @@ class SolutionEvaluator:
 - ✅ Production-ready for discrete_points evaluation
 
 **Next Tasks:**
-- ⏳ Task 2.4: Use stored evaluation_points in evaluate.py
+- ⏳ Phase 3: Enhanced reporting and metrics
 
 ---
 
@@ -900,26 +900,16 @@ uv run pytest tests/test_evaluate.py -v
 
 ---
 
-#### Task 2.4: Update evaluate.py to use evaluation_points
+#### Task 2.4: Update evaluate.py to use evaluation_points ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Prioritize stored points over random generation
+**Files modified:**
+- ✅ `src/llm/evaluate.py` - Numeric comparison uses stored evaluation_points when available
+- ✅ `src/adaptive_pipeline.py` - Persist evaluation_points in predictions and use during evaluation
+- ✅ `src/prompts/base.py` + `src/prompts/batch_processor.py` - Carry evaluation_points into prompt metadata
 
-**Change:**
-```python
-def numeric_compare(solution, ground_truth, domain, n_points=100):
-    # OLD: Always generate random points
-    test_points = np.linspace(a, b, n_points)
-    
-    # NEW: Use stored points if available
-    if hasattr(ground_truth, 'evaluation_points'):
-        test_points = ground_truth.evaluation_points['x_values']
-        gt_values = ground_truth.evaluation_points['u_values']
-    else:
-        # Fallback to random generation
-        test_points = np.linspace(a, b, n_points)
-        gt_values = [ground_truth(x) for x in test_points]
-```
+**Implementation summary:**
+- Numeric comparison prefers stored points for consistency
+- Family numeric comparison uses pre-computed multi-sample points when available
 
 ---
 
@@ -1240,8 +1230,8 @@ By Solution Type:
 8. ✅ `src/llm/evaluate.py` - Add specialized evaluators (series, approx_coef, discrete_points, family)
 9. ✅ Family evaluator implementation
 10. ✅ `src/data/augmentations/base.py` - Evaluation points generation available **[COMPLETED - can be integrated]**
-11. ⏳ `src/llm/evaluate.py` - Use stored evaluation_points (pending)
-12. ⏳ Dataset writers - Persist evaluation_points into CSV/JSONL outputs (pending)
+11. ✅ `src/llm/evaluate.py` - Use stored evaluation_points
+12. ✅ Dataset writers - Persist evaluation_points into CSV/JSONL outputs
 
 ### Phase 3 Files (Reporting)
 
@@ -1253,7 +1243,7 @@ By Solution Type:
 
 **Overall Progress (February 12, 2026):**
 - ✅ Phase 1: 5/7 tasks complete (71%) - discrete_points + series format complete
-- ✅ Phase 2: 4/5 tasks complete (80%) - discrete_points, series, approx_coef, family evaluation complete
+- ✅ Phase 2: 5/5 tasks complete (100%) - discrete_points, series, approx_coef, family evaluation complete + evaluation_points integration
 - ⏳ Phase 3: 0/3 tasks complete (0%)
 - **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, and specialized evaluators are working
 
@@ -1278,7 +1268,7 @@ By Solution Type:
 
 ### Questions to Resolve
 
-1. **Dataset regeneration:** ✅ **RESOLVED** - Evaluation points can be generated on-demand via `BaseAugmentation._generate_evaluation_points()`. Future enhancement: Store in output files for faster evaluation.
+1. **Dataset regeneration:** ✅ **RESOLVED** - Evaluation points are generated on-demand and persisted in dataset outputs for faster evaluation.
 2. **Backward compatibility:** Should old predictions still be evaluable?
 3. **Series format preference:** Fixed 4-term sum (resolved)
 4. **Tolerance tuning:** What relative tolerance for approx_coef (currently 10%)?
@@ -1342,7 +1332,7 @@ By Solution Type:
 - Enables Task 1.3: discrete_points parser implementation
 - Structured format ensures consistent evaluation
 
-**Next Priority:** Integrate evaluation_points into evaluate.py + dataset outputs
+**Next Priority:** Phase 3 reporting and metrics
 
 ### February 11, 2026 - Phase 1 (Task 1.3) Implementation
 
@@ -1364,7 +1354,7 @@ By Solution Type:
 - Enables specialized evaluation for discrete_points equations (Phase 2)
 - Foundation for point-wise comparison metrics
 
-**Next Priority:** Integrate evaluation_points into evaluate.py + dataset outputs
+**Next Priority:** Phase 3 reporting and metrics
 
 ---
 

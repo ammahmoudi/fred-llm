@@ -88,6 +88,7 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Critical point inclusion - Boundaries, midpoint, near-boundary points
   - [x] Fallback handling - Raise error if all points produce non-finite values
   - [x] Fixed in base.py _generate_evaluation_points() - Used by all has_solution=True augmentations
+  - [x] Persist evaluation_points in dataset outputs ✅ **February 12, 2026**
 - [x] **Dataset splitting with stratification (sklearn + pandas)** ✅ **Tested: 19 tests, all passing**
   - [x] Stratified splitting - Maintains balance across original/augmented, solution types, edge cases ✅
   - [x] Flexible split ratios - 80/0/20 default, custom ratios supported ✅
@@ -170,6 +171,7 @@ This document tracks all features - implemented and planned. Check off items as 
 
 - [x] Symbolic evaluation - SymPy-based expression comparison ✅ **Implemented in evaluate.py**
 - [x] Numeric evaluation - MAE, MSE, RMSE metrics ✅ **Implemented in evaluate.py**
+  - Uses stored evaluation_points when available ✅ **February 12, 2026**
 - [x] Math-Verify integration - LaTeX parsing + fast-path symbolic verification ✅ **Adapter + fallback parsing**
 - [x] Postprocessing - Math-Verify extraction with regex fallback ✅ **Multi-strategy u(x)/SOLUTION parsing**
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**

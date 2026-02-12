@@ -4,6 +4,7 @@ Batch prompt processor for generating prompts from datasets.
 Handles reading CSV files, generating prompts, and saving to JSONL format.
 """
 
+import ast
 import json
 from pathlib import Path
 
@@ -68,6 +69,24 @@ class BatchPromptProcessor:
         # Optional edge case columns (only essential ones)
         edge_case_cols = ["has_solution", "solution_type"]
 
+        def _parse_evaluation_points(raw_value: object) -> dict | None:
+            if isinstance(raw_value, dict):
+                return raw_value
+            if isinstance(raw_value, str):
+                text = raw_value.strip()
+                if not text:
+                    return None
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    try:
+                        return ast.literal_eval(text)
+                    except (ValueError, SyntaxError):
+                        return None
+            if pd.isna(raw_value):
+                return None
+            return None
+
         # Convert to EquationData objects
         equations = []
         for idx, row in df.iterrows():
@@ -81,6 +100,16 @@ class BatchPromptProcessor:
                 "b": float(row["b"]),
                 "equation_id": f"eq_{idx}",
             }
+
+            if "evaluation_points" in df.columns:
+                eval_points = _parse_evaluation_points(row["evaluation_points"])
+                if eval_points is not None:
+                    eq_kwargs["evaluation_points"] = eval_points
+                elif pd.notna(row["evaluation_points"]):
+                    logger.warning(
+                        "Failed to parse evaluation_points for row %s",
+                        idx,
+                    )
 
             # Add optional edge case fields if present
             for col in edge_case_cols:

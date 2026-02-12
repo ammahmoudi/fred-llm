@@ -522,6 +522,7 @@ class AdaptivePipeline:
                     "prompt": prompt_data.get("prompt", ""),
                     "ground_truth": prompt_data.get("ground_truth"),
                     "metadata": metadata,
+                    "evaluation_points": metadata.get("evaluation_points"),
                     "raw_response": response,
                     "api_error": response == "",
                 }
@@ -563,6 +564,7 @@ class AdaptivePipeline:
                     "ground_truth_has_solution": metadata.get("has_solution"),
                     "ground_truth_solution_type": metadata.get("solution_type"),
                     "ground_truth_domain": metadata.get("domain"),
+                    "evaluation_points": metadata.get("evaluation_points"),
                     "raw_response": response,
                     "api_error": response == "",
                     "solution_str": parsed.get("solution_str"),
@@ -666,6 +668,10 @@ class AdaptivePipeline:
 
             # Extract domain from metadata
             domain = tuple(pred.get("ground_truth_domain") or [0, 1])
+            eval_points = (
+                pred.get("evaluation_points")
+                or pred.get("metadata", {}).get("evaluation_points")
+            )
 
             # Branch: "none" type - evaluate by has_solution detection
             if gt_solution_type == "none":
@@ -693,7 +699,13 @@ class AdaptivePipeline:
 
                 # Branch: "family" type - use family comparison
                 if gt_solution_type == "family":
-                    eval_result = evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                    eval_result = evaluator.evaluate_family(
+                        pred_expr,
+                        gt_expr,
+                        domain=domain,
+                        evaluation_points=eval_points,
+                        include_points=True,
+                    )
                     pred["evaluation"] = eval_result
                     evaluated_predictions.append(pred)
                     evaluated_count += 1
@@ -705,6 +717,8 @@ class AdaptivePipeline:
                     pred_expr, gt_expr, domain=domain,
                     solution_type=gt_solution_type,
                     numeric_tolerance_override=tol_override,
+                    evaluation_points=eval_points,
+                    include_points=True,
                 )
                 pred["evaluation"] = eval_result
                 evaluated_predictions.append(pred)

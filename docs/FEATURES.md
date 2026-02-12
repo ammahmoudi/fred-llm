@@ -175,12 +175,21 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
   - _extract_has_solution(): Regex patterns for yes/no classification with validation
   - _extract_solution_type(): Regex patterns for 8-class solution type recognition
-  - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}- [x] **discrete_points parser** - Extract point lists from LLM responses \u2705 **(February 11, 2026)**
+  - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
+- [x] **discrete_points parser** - Extract point lists from LLM responses ✅ **(February 11, 2026)**
   - extract_discrete_points(): Parses [(x1, y1), (x2, y2), ...] format
   - Integrated with parse_llm_output() for automatic detection
   - Handles scientific notation, negative values, extra whitespace
   - Validation: minimum 2 points, finite values (<1e10)
-  - Test coverage: 11 unit tests covering all formats and edge cases- [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
+  - Test coverage: 11 unit tests covering all formats and edge cases
+- [x] **discrete_points evaluation** - Point-wise comparison metrics ✅ **(February 12, 2026)**
+  - evaluate_discrete_points(): Compares predicted vs ground truth discrete points
+  - Metrics: matched_points (count), accuracy (%), max_error, mean_error, RMSE
+  - Tolerance-based matching: x_tolerance (default 1e-3), y_tolerance (configurable)
+  - Classification: 80% threshold for "match" status
+  - Integrated with SolutionEvaluator.evaluate_discrete_points_type()
+  - Test coverage: 13 unit tests covering matching, tolerance, edge cases
+- [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
   - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**

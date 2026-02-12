@@ -140,6 +140,10 @@ SOLUTION_TYPE: exact_symbolic
 - ✅ `0.5*sin(x) + 0.3*cos(x) + 1.2*exp(-x)`
 - ❌ NOT symbolic: `C*sin(x)`
 
+**Evaluation:**
+- Symbolic + numeric evaluation
+- Extra per-term coefficient comparison is recorded for analysis
+
 **Example:**
 ```
 SOLUTION: u(x) ≈ -1447.128*x**2 - 169.763*cosh(x**4)
@@ -257,7 +261,7 @@ REASONING: Kernel is rank deficient and RHS not in range of integral operator
 | exact_symbolic | Function | Numeric constants | `x**2 + sin(x)` |
 | approx_coef | Numeric params | Values | `-1447.128*x**2 + 0.567*cosh(x)` |
 | discrete_points | Point values | x,y pairs | `(0,1.2), (0.5,2.4)` |
-| series | Series terms | Coefficients | `a_0 + a_1*x + a_2*x**2 + ...` |
+| series | Series terms | Coefficients | `term1 + term2 + term3 + term4` |
 | family | Parameterized | Arbitrary C | `x - 100*C` |
 | regularized | Method description | N/A | "Tikhonov with α=0.01" |
 | none | Explanation | N/A | "No solution: ill-posed" |

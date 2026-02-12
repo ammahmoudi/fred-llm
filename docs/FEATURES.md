@@ -193,6 +193,10 @@ This document tracks all features - implemented and planned. Check off items as 
   - evaluate_series_terms(): Compares series terms by index using numeric RMSE
   - Metadata: series_term_count, series_term_match, series_term_stats
   - Integrated with SolutionEvaluator.evaluate() when solution_type is series
+- [x] **approx_coef term comparison** - Per-term coefficient errors ✅ **(February 12, 2026)**
+  - evaluate_approx_coeffs(): Compares coefficients per top-level term
+  - Metadata: approx_coef_eval, approx_coef_stats
+  - Integrated with SolutionEvaluator.evaluate() when solution_type is approx_coef
 - [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)

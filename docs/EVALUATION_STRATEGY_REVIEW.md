@@ -60,7 +60,7 @@ u_values = u_values[finite_mask]
 - ✅ **Task 1.3**: Add discrete_points parser - COMPLETED
 - ✅ **Phase 2, Task 2.1**: discrete_points evaluation - COMPLETED (February 12, 2026)
 - ✅ **Phase 2, Task 2.2**: series evaluation (completed)
-- ⏳ **Phase 2, Task 2.3**: approx_coef/family custom evaluators (not started)
+- ⏳ **Phase 2, Task 2.3**: family custom evaluator (not started)
 - ⏳ **Phase 3**: Enhanced reporting and metrics (not started)
 
 ---
@@ -160,8 +160,8 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
 | Type | Current Evaluation | Issue |
 |------|-------------------|-------|
 | `exact_symbolic` | ✅ Full support | None |
-| `approx_coef` | ⚠️ Full expression only | **No per-coefficient comparison** |
-| `discrete_points` | ❌ No specialized method | **No point-list parsing/comparison** |
+| `approx_coef` | ✅ Symbolic + numeric + per-term coeffs | None |
+| `discrete_points` | ✅ Point-wise comparison | None |
 | `series` | ✅ Symbolic + numeric + term-by-term | None |
 | `family` | ⚠️ Structural match only | **No coefficient accuracy check** |
 | `regularized` | ✅ Type classification only | None (no solution to evaluate) |
@@ -174,15 +174,14 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
     - LLM output: Fixed 4-term sum in SOLUTION
     - Evaluation: Symbolic + numeric + term-by-term RMSE
 
-- **`discrete_points`**: No structured output format
-  - Ground truth: Function values at specific points
-  - LLM output: No standard format specified in prompts
-  - Evaluation: No parser exists
+- **`discrete_points`**: Standardized output and parser implemented
+    - Ground truth: Function values at specific points
+    - LLM output: Structured list format
+    - Evaluation: Point-wise metrics with tolerance
 
-- **`approx_coef`**: No coefficient extraction
-  - Ground truth: `-1447.128*x**2 + 0.567*cosh(x)`
-  - Evaluation: Only checks full expression symbolic match (fails often)
-  - Missing: Individual coefficient comparison with tolerance
+- **`approx_coef`**: Per-term coefficient comparison implemented
+    - Ground truth: `-1447.128*x**2 + 0.567*cosh(x)`
+    - Evaluation: Symbolic + numeric + per-term coefficient errors
 
 - **`family`**: Insufficient validation
   - Current: Only checks structural form (ratio test)
@@ -201,9 +200,8 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
 - Ground truth uses truncated 4-term expansions
 
 **Discrete Points:**
-- No structured format in prompts
-- No example in documentation
-- Parsing not implemented
+- Structured format in prompts
+- Parser implemented and tested
 
 #### 3. Ground Truth Issues
 
@@ -263,7 +261,7 @@ def family_compare(solution, ground_truth):
 | Solution Type | Primary Method | Fallback Method | LLM Output Format | Pre-compute in Dataset |
 |---------------|----------------|-----------------|-------------------|------------------------|
 | **`exact_symbolic`** | ✅ Symbolic equivalence | ✅ Numeric RMSE | Natural math expression | ❌ None needed |
-| **`approx_coef`** | 🆕 **Coefficient extraction + tolerance** | ✅ Numeric RMSE | **📝 Standard: numeric values only** | ✅ **Store coefficient dict** |
+| **`approx_coef`** | ✅ **Per-term coefficient comparison** | ✅ Numeric RMSE | **📝 Standard: numeric values only** | ❌ None |
 | **`discrete_points`** | 🆕 **Point-wise comparison** | ❌ N/A | **📝 Structured: `[(x1,y1), ...]`** | ✅ **Store evaluation points** |
 | **`series`** | 🆕 **Term-by-term comparison** | ✅ Numeric RMSE (truncated) | **📝 Standard: 4 explicit terms in SOLUTION** | ❌ None |
 | **`family`** | ✅ Structural match + 🆕 parameter check | ✅ Numeric (substitute c=1) | **📝 Use `c_1, c_2, ...`** | ❌ Current OK |
@@ -522,101 +520,31 @@ Not required. Series remains a single expression in `u` with 4 explicit terms.
 
 ---
 
-### 4. Improve `approx_coef` Evaluation 📊
+### 4. Improve `approx_coef` Evaluation ✅ **COMPLETED (February 12, 2026)**
 
-**Current Problem:** Only checks full expression equivalence, ignores individual coefficients
-
-#### Dataset Enhancement
-
-**Store coefficient dictionaries:**
-
-```python
-# In augmentation strategies (boundary_layer, oscillatory, etc.):
-{
-    "solution_type": "approx_coef",
-    "u": "-1447.128*x**2 + 0.567*cosh(x)",
-    "coefficients": {
-        "x**2": -1447.128,
-        "cosh(x)": 0.567,
-        "constant": 0.0
-    },
-    "basis_functions": ["x**2", "cosh(x)"]
-}
-```
-
-#### Parser Implementation
-
-**Add to `postprocess.py`**:
-
-```python
-def extract_coefficients(expr: sp.Expr, basis_functions: list[str]) -> dict[str, float]:
-    """
-    Extract coefficients from expression for given basis functions.
-    
-    Example:
-        expr = -1447.128*x**2 + 0.567*cosh(x)
-        basis = ["x**2", "cosh(x)"]
-        → {"x**2": -1447.128, "cosh(x)": 0.567}
-    """
-    coefficients = {}
-    x = sp.Symbol('x')
-    
-    for basis_str in basis_functions:
-        basis = sp.sympify(basis_str)
-        # Extract coefficient
-        coef = expr.coeff(basis)
-        if coef is not None:
-            coefficients[basis_str] = float(coef)
-        else:
-            coefficients[basis_str] = 0.0
-    
-    return coefficients
-```
+**Approach:** Compare coefficients per top-level term in the expression.
 
 #### Evaluation Implementation
 
-**Add to `evaluate.py`**:
+**Added to `evaluate.py`:**
 
 ```python
-def evaluate_approx_coef(
-    pred_expr: sp.Expr,
-    gt_coeffs: dict[str, float],
-    basis_functions: list[str],
-    relative_tolerance: float = 0.1  # 10% relative error
+def evaluate_approx_coeffs(
+    solution: sp.Expr,
+    ground_truth: sp.Expr,
+    tolerance: float = 1e-6,
+    relative_tolerance: float = 0.1
 ) -> dict[str, Any]:
     """
-    Compare approximate coefficient solutions.
-    
-    Extracts coefficients and compares with relative tolerance.
+    Compare approx_coef solutions by extracting per-term coefficients.
     """
-    # Extract predicted coefficients
-    pred_coeffs = extract_coefficients(pred_expr, basis_functions)
-    
-    # Compare each coefficient
-    matches = []
-    errors = []
-    relative_errors = []
-    
-    for basis in basis_functions:
-        pred_val = pred_coeffs.get(basis, 0.0)
-        gt_val = gt_coeffs.get(basis, 0.0)
-        
-        abs_error = abs(pred_val - gt_val)
-        rel_error = abs_error / abs(gt_val) if gt_val != 0 else float('inf')
-        
-        matches.append(rel_error < relative_tolerance)
-        errors.append(abs_error)
-        relative_errors.append(rel_error)
-    
-    return {
-        "coefficient_match_rate": sum(matches) / len(matches),
-        "all_coefficients_match": all(matches),
-        "mean_absolute_error": np.mean(errors),
-        "mean_relative_error": np.mean(relative_errors),
-        "per_coefficient_errors": dict(zip(basis_functions, errors)),
-        "per_coefficient_relative_errors": dict(zip(basis_functions, relative_errors))
-    }
+    # Returns match_rate, mean/max errors, and per-term errors
+    pass
 ```
+
+**Notes:**
+- No dataset coefficient storage required
+- Metrics are recorded in `approx_coef_eval` and summarized in `approx_coef_stats`
 
 ---
 
@@ -755,7 +683,7 @@ uv run pytest tests/test_prompting.py tests/test_prompt_generation.py -v
 # ✅ 37/37 tests passing
 ```
 
-**Next:** Proceed to Task 2.3 (approx_coef and family evaluators)
+**Next:** Proceed to Task 2.3 (family evaluator)
 
 ---
 
@@ -850,7 +778,7 @@ uv run pytest tests/test_discrete_points_parser.py -v
 **Functions Implemented:**
 1. ✅ `evaluate_discrete_points()` - Point-wise comparison with tolerance (75 lines)
 2. ✅ `evaluate_series_terms()` - Term-by-term numeric comparison (completed)
-3. ⏳ `evaluate_approx_coef()` - Coefficient extraction + comparison (pending)
+3. ✅ `evaluate_approx_coeffs()` - Per-term coefficient comparison (completed)
 4. ⏳ `evaluate_family_improved()` - Enhanced family validation (pending)
 
 **Integration:**
@@ -913,7 +841,7 @@ class SolutionEvaluator:
 - ✅ Production-ready for discrete_points evaluation
 
 **Next Tasks:**
-- ⏳ Task 2.3: Implement approx_coef and family evaluators
+- ⏳ Task 2.3: Implement family evaluator
 
 ---
 
@@ -952,28 +880,10 @@ uv run pytest tests/test_evaluate.py -v
 
 ---
 
-#### Task 2.3: Store coefficients for approx_coef and family
+#### Task 2.3: Implement family evaluator
 
 **Files to modify:**
-- `src/data/augmentations/approx_coef/boundary_layer.py`
-- `src/data/augmentations/approx_coef/oscillatory.py`
-- (Other approx_coef strategies)
-
-**Pattern:**
-```python
-def augment(self, entry):
-    # ... existing augmentation ...
-    
-    # NEW: Extract and store coefficients
-    if result["solution_type"] == "approx_coef":
-        result["coefficients"] = self._extract_coefficients(
-            result["u"], 
-            basis_functions=["x**2", "cosh(x)", "sin(x)", ...]
-        )
-        result["basis_functions"] = basis_functions
-    
-    return result
-```
+- `src/llm/evaluate.py` - Add `evaluate_family_improved()`
 
 **Implementation pending** - See section draft below for planned approach.
 ````
@@ -1318,7 +1228,7 @@ By Solution Type:
 ### Phase 2 Files (Enhanced Evaluation)
 
 8. ⏳ `src/llm/evaluate.py` - Add specialized evaluators (4 functions)
-9. ⏳ Approx_coef augmentation strategies - Store coefficients
+9. ⏳ Family evaluator implementation
 10. ✅ `src/data/augmentations/base.py` - Evaluation points generation available **[COMPLETED - can be integrated]**
 
 ### Phase 3 Files (Reporting)
@@ -1378,7 +1288,7 @@ By Solution Type:
 
 **Pending for Remaining Tasks:**
 
-1. ⏳ **Unit tests** for approx_coef and family evaluators (Phase 2)
+1. ⏳ **Unit tests** for family evaluator (Phase 2)
 3. ⏳ **Integration tests** on sample dataset (10-20 equations per type)
 4. ⏳ **Full evaluation** on test_100 dataset with known results
 5. ⏳ **Comparison** before/after metrics to verify improvements
@@ -1421,7 +1331,7 @@ By Solution Type:
 - Enables Task 1.3: discrete_points parser implementation
 - Structured format ensures consistent evaluation
 
-**Next Priority:** Implement approx_coef and family evaluators (Phase 2)
+**Next Priority:** Implement family evaluator (Phase 2)
 
 ### February 11, 2026 - Phase 1 (Task 1.3) Implementation
 
@@ -1443,7 +1353,7 @@ By Solution Type:
 - Enables specialized evaluation for discrete_points equations (Phase 2)
 - Foundation for point-wise comparison metrics
 
-**Next Priority:** Implement approx_coef and family evaluators (Phase 2)
+**Next Priority:** Implement family evaluator (Phase 2)
 
 ---
 

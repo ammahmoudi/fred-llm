@@ -211,6 +211,30 @@ class TestSolutionEvaluator:
         assert stats["match"] == 2
         assert stats["target"] == 4
 
+    def test_approx_coef_eval_metadata(self) -> None:
+        """Test approx_coef evaluation metadata is recorded."""
+        x = sp.Symbol("x")
+        evaluator = SolutionEvaluator()
+
+        expr = 2 * x + 3 * sp.sin(x)
+        result = evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="approx_coef")
+
+        assert result["approx_coef_eval"]["match"] is True
+        assert result["approx_coef_eval"]["terms_compared"] == 2
+
+    def test_approx_coef_stats_in_summary(self) -> None:
+        """Test approx_coef stats are included in summary."""
+        x = sp.Symbol("x")
+        evaluator = SolutionEvaluator()
+
+        expr = 2 * x + 3 * sp.sin(x)
+        evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="approx_coef")
+
+        summary = evaluator.summary()
+
+        assert "approx_coef_stats" in summary
+        assert summary["approx_coef_stats"]["total"] == 1
+
 
 class TestEvaluateSolutions:
     """Tests for evaluate_solutions function."""

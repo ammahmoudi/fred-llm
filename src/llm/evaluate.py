@@ -101,7 +101,9 @@ def evaluate_approx_coeffs(
         for base, gt_val in gt_coeffs.items():
             pred_val = pred_coeffs.get(base, 0.0)
             abs_error = abs(pred_val - gt_val)
-            rel_error = abs_error / abs(gt_val) if abs(gt_val) > tolerance else float("inf")
+            rel_error = (
+                abs_error / abs(gt_val) if abs(gt_val) > tolerance else float("inf")
+            )
             term_match = abs_error <= tolerance or rel_error <= relative_tolerance
 
             abs_errors.append(abs_error)
@@ -125,10 +127,18 @@ def evaluate_approx_coeffs(
         terms_compared = len(gt_coeffs)
         result["terms_compared"] = terms_compared
         result["match_rate"] = matches / terms_compared if terms_compared else 0.0
-        result["mean_abs_error"] = float(np.mean(abs_errors)) if abs_errors else float("inf")
-        result["max_abs_error"] = float(np.max(abs_errors)) if abs_errors else float("inf")
-        result["mean_rel_error"] = float(np.mean(rel_errors)) if rel_errors else float("inf")
-        result["max_rel_error"] = float(np.max(rel_errors)) if rel_errors else float("inf")
+        result["mean_abs_error"] = (
+            float(np.mean(abs_errors)) if abs_errors else float("inf")
+        )
+        result["max_abs_error"] = (
+            float(np.max(abs_errors)) if abs_errors else float("inf")
+        )
+        result["mean_rel_error"] = (
+            float(np.mean(rel_errors)) if rel_errors else float("inf")
+        )
+        result["max_rel_error"] = (
+            float(np.max(rel_errors)) if rel_errors else float("inf")
+        )
         result["per_term_errors"] = per_term
         result["match"] = matches == terms_compared and terms_compared > 0
 
@@ -306,9 +316,8 @@ def evaluate_solutions(
 
         # Extract domain from metadata
         domain = tuple(result.get("ground_truth_domain") or [0, 1])
-        eval_points = (
-            result.get("evaluation_points")
-            or result.get("metadata", {}).get("evaluation_points")
+        eval_points = result.get("evaluation_points") or result.get("metadata", {}).get(
+            "evaluation_points"
         )
 
         # Branch on solution type: "none" type
@@ -879,7 +888,9 @@ def _family_param_metadata(
     def _name_valid(sym: sp.Symbol) -> bool:
         return sym.name == "C" or sym.name.startswith("c_")
 
-    naming_valid = all(_name_valid(sym) for sym in pred_params) if pred_params else False
+    naming_valid = (
+        all(_name_valid(sym) for sym in pred_params) if pred_params else False
+    )
 
     return {
         "param_count_pred": len(pred_params),
@@ -1216,11 +1227,13 @@ class SolutionEvaluator:
         series_counts = [
             r.get("series_term_count")
             for r in self.results
-            if r.get("solution_type") == "series" and r.get("series_term_count") is not None
+            if r.get("solution_type") == "series"
+            and r.get("series_term_count") is not None
         ]
         if series_counts:
             series_matches = sum(
-                1 for r in self.results
+                1
+                for r in self.results
                 if r.get("solution_type") == "series" and r.get("series_term_match")
             )
             series_total = len(series_counts)

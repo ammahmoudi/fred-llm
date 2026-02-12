@@ -501,9 +501,9 @@ def _save_data(
     data: list[dict], path: Path, label: str, format: str = "json"
 ) -> list[Path]:
     """Save data as JSON, CSV, or both, handling enum and SymPy serialization. Returns list of created file paths."""
+    import numpy as np
     import pandas as pd
     import sympy as sp
-    import numpy as np
     from rich.progress import track
 
     def _serialize_value(value: object) -> object:

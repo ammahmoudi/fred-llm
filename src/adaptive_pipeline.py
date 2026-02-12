@@ -527,9 +527,7 @@ class AdaptivePipeline:
                     "api_error": response == "",
                 }
                 f.write(json.dumps(raw_entry) + "\n")
-        console.print(
-            f"[cyan]> Saved raw responses to {raw_responses_file}[/cyan]"
-        )
+        console.print(f"[cyan]> Saved raw responses to {raw_responses_file}[/cyan]")
 
         # Parse responses and write predictions incrementally
         predictions_file = output_dir / f"predictions_{timestamp}.jsonl"
@@ -537,15 +535,11 @@ class AdaptivePipeline:
         parse_failures = 0
 
         with open(predictions_file, "w") as f:
-            for i, (prompt_data, response) in enumerate(
-                zip(all_prompts, responses)
-            ):
+            for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
                 try:
                     parsed = parse_llm_output(response)
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to parse response {i}: {e}"
-                    )
+                    logger.warning(f"Failed to parse response {i}: {e}")
                     parsed = {
                         "solution_str": None,
                         "solution_sympy": None,
@@ -643,7 +637,9 @@ class AdaptivePipeline:
             # Skip API errors (empty responses from failed API calls)
             if pred.get("api_error"):
                 api_error_count += 1
-                errors.append(f"Equation {pred.get('equation_id', i)}: API error (empty response)")
+                errors.append(
+                    f"Equation {pred.get('equation_id', i)}: API error (empty response)"
+                )
                 pred["evaluation"] = {
                     "error": "api_error",
                     "correct": False,
@@ -668,9 +664,8 @@ class AdaptivePipeline:
 
             # Extract domain from metadata
             domain = tuple(pred.get("ground_truth_domain") or [0, 1])
-            eval_points = (
-                pred.get("evaluation_points")
-                or pred.get("metadata", {}).get("evaluation_points")
+            eval_points = pred.get("evaluation_points") or pred.get("metadata", {}).get(
+                "evaluation_points"
             )
 
             # Branch: "none" type - evaluate by has_solution detection
@@ -712,9 +707,13 @@ class AdaptivePipeline:
                     continue
 
                 # Standard evaluation with per-type tolerance override
-                tol_override = type_tolerances.get(gt_solution_type) if gt_solution_type else None
+                tol_override = (
+                    type_tolerances.get(gt_solution_type) if gt_solution_type else None
+                )
                 eval_result = evaluator.evaluate(
-                    pred_expr, gt_expr, domain=domain,
+                    pred_expr,
+                    gt_expr,
+                    domain=domain,
                     solution_type=gt_solution_type,
                     numeric_tolerance_override=tol_override,
                     evaluation_points=eval_points,
@@ -788,13 +787,17 @@ class AdaptivePipeline:
         if api_error_count > 0:
             console.print(f"  [red]API errors: {api_error_count}[/red]")
         if len(errors) - api_error_count > 0:
-            console.print(f"  [yellow]Parse errors: {len(errors) - api_error_count}[/yellow]")
+            console.print(
+                f"  [yellow]Parse errors: {len(errors) - api_error_count}[/yellow]"
+            )
 
         # Save evaluated predictions to file
         output_dir = Path(self.config.output.dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        evaluated_predictions_file = output_dir / f"predictions_evaluated_{timestamp}.jsonl"
+        evaluated_predictions_file = (
+            output_dir / f"predictions_evaluated_{timestamp}.jsonl"
+        )
 
         with open(evaluated_predictions_file, "w") as f:
             for entry in evaluated_predictions:

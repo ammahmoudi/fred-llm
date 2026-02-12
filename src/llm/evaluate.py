@@ -134,9 +134,13 @@ def evaluate_solutions(
                 continue
 
             # Standard evaluation with per-type tolerance
-            tol_override = type_tolerances.get(gt_solution_type) if gt_solution_type else None
+            tol_override = (
+                type_tolerances.get(gt_solution_type) if gt_solution_type else None
+            )
             evaluator.evaluate(
-                pred_expr, gt_expr, domain=domain,
+                pred_expr,
+                gt_expr,
+                domain=domain,
                 solution_type=gt_solution_type,
                 numeric_tolerance_override=tol_override,
             )
@@ -166,7 +170,9 @@ def evaluate_solutions(
         metrics["solution_type_accuracy"] = solution_type_correct / solution_type_total
         metrics["solution_type_total"] = solution_type_total
 
-    logger.info(f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}")
+    logger.info(
+        f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}"
+    )
 
     return metrics
 
@@ -275,21 +281,25 @@ def numeric_compare(
                 eval_points = ground_truth["evaluation_points"]
                 test_points = np.array(eval_points["x_values"])
                 y_truth = np.array(eval_points["u_values"])
-                
+
                 # Evaluate solution at the same points
                 if solution.has(sp.Integral):
                     solution = solution.doit()
-                
+
                 # Check for extra symbols
                 extra_sol = solution.free_symbols - {x}
                 if extra_sol:
-                    result["error"] = f"Solution contains non-numeric symbols: {extra_sol}"
-                    logger.debug(f"Numeric comparison skipped: non-numeric symbols {extra_sol}")
+                    result["error"] = (
+                        f"Solution contains non-numeric symbols: {extra_sol}"
+                    )
+                    logger.debug(
+                        f"Numeric comparison skipped: non-numeric symbols {extra_sol}"
+                    )
                     return result
-                
+
                 f_solution = sp.lambdify(x, solution, modules=["numpy"])
                 y_solution = np.array([f_solution(xi) for xi in test_points])
-                
+
             elif "u" in ground_truth and ground_truth["u"]:
                 # Fallback: Extract u field and use as ground truth expression
                 ground_truth_expr = sp.sympify(ground_truth["u"])
@@ -465,8 +475,7 @@ def family_compare(
     # any symbol that's not the independent variable (x) or integration variable (t)
     standard_vars = {"x", "t"}
     free_constants = [
-        s for s in ground_truth.free_symbols
-        if s.name not in standard_vars
+        s for s in ground_truth.free_symbols if s.name not in standard_vars
     ]
 
     if not free_constants:
@@ -519,7 +528,9 @@ def evaluate_discrete_points(
         Dictionary with point-wise comparison metrics.
     """
     if not pred_points or not gt_points:
-        logger.warning(f"Empty discrete_points: pred={len(pred_points)}, gt={len(gt_points)}")
+        logger.warning(
+            f"Empty discrete_points: pred={len(pred_points)}, gt={len(gt_points)}"
+        )
         return {
             "match": False,
             "matched_points": 0,
@@ -563,7 +574,9 @@ def evaluate_discrete_points(
         "accuracy": matched / len(pred_points) if pred_points else 0.0,
         "max_error": float(np.max(errors)) if errors else float("inf"),
         "mean_error": float(np.mean(errors)) if errors else float("inf"),
-        "rmse": float(np.sqrt(np.mean(np.array(errors) ** 2))) if errors else float("inf"),
+        "rmse": float(np.sqrt(np.mean(np.array(errors) ** 2)))
+        if errors
+        else float("inf"),
     }
 
     return result
@@ -602,7 +615,11 @@ class SolutionEvaluator:
             solution_type: Type of solution for per-type tracking.
             numeric_tolerance_override: Override numeric tolerance for this evaluation.
         """
-        tol = numeric_tolerance_override if numeric_tolerance_override is not None else self.numeric_tolerance
+        tol = (
+            numeric_tolerance_override
+            if numeric_tolerance_override is not None
+            else self.numeric_tolerance
+        )
         symbolic = symbolic_compare(solution, ground_truth, self.symbolic_tolerance)
         numeric = numeric_compare(
             solution, ground_truth, domain, self.n_test_points, tol
@@ -630,10 +647,17 @@ class SolutionEvaluator:
         """
         correct = pred_has_solution is False
         result = {
-            "symbolic": {"equivalent": correct, "difference": None, "simplified_match": correct},
-            "numeric": {"match": correct, "max_error": 0.0 if correct else float("inf"),
-                        "mean_error": 0.0 if correct else float("inf"),
-                        "rmse": 0.0 if correct else float("inf")},
+            "symbolic": {
+                "equivalent": correct,
+                "difference": None,
+                "simplified_match": correct,
+            },
+            "numeric": {
+                "match": correct,
+                "max_error": 0.0 if correct else float("inf"),
+                "mean_error": 0.0 if correct else float("inf"),
+                "rmse": 0.0 if correct else float("inf"),
+            },
             "correct": correct,
             "solution_type": "none",
         }
@@ -667,8 +691,7 @@ class SolutionEvaluator:
         x = sp.Symbol("x")
         standard_vars = {"x", "t"}
         free_constants = [
-            s for s in ground_truth.free_symbols
-            if s.name not in standard_vars
+            s for s in ground_truth.free_symbols if s.name not in standard_vars
         ]
         gt_concrete = ground_truth
         for c in free_constants:
@@ -711,9 +734,7 @@ class SolutionEvaluator:
             Evaluation result dict with point-wise comparison metrics.
         """
         result_dict = evaluate_discrete_points(
-            pred_points, gt_points,
-            x_tolerance=1e-3,
-            y_tolerance=self.numeric_tolerance
+            pred_points, gt_points, x_tolerance=1e-3, y_tolerance=self.numeric_tolerance
         )
 
         result = {
@@ -733,12 +754,10 @@ class SolutionEvaluator:
         total = len(self.results)
         correct = sum(1 for r in self.results if r["correct"])
         symbolic_correct = sum(
-            1 for r in self.results
-            if r.get("symbolic", {}).get("equivalent", False)
+            1 for r in self.results if r.get("symbolic", {}).get("equivalent", False)
         )
         numeric_correct = sum(
-            1 for r in self.results
-            if r.get("numeric", {}).get("match", False)
+            1 for r in self.results if r.get("numeric", {}).get("match", False)
         )
 
         summary: dict[str, Any] = {
@@ -760,7 +779,9 @@ class SolutionEvaluator:
                 per_type[st]["correct"] += 1
 
         for _st, counts in per_type.items():
-            counts["accuracy"] = counts["correct"] / counts["total"] if counts["total"] > 0 else 0.0
+            counts["accuracy"] = (
+                counts["correct"] / counts["total"] if counts["total"] > 0 else 0.0
+            )
 
         summary["per_type"] = per_type
         return summary

@@ -158,7 +158,7 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] **Solution-type-specific output formats** ⏳ **In Progress (February 11, 2026)**
     - [x] discrete_points format specification: "Format: [(x1, y1), (x2, y2), ...]" ✅ **Completed in 4 prompt styles**
     - [x] discrete_points parser: `extract_discrete_points()` in postprocess.py ✅ **Completed with 11 passing tests**
-    - [ ] series format specification: "Format: f + λK·f + λ²K²·f + ... (4-6 terms)" ⏳ **Pending**
+    - [x] series format specification: "Format: 4 explicit terms in SOLUTION" **February 12, 2026**
     - Benefits: Structured LLM output enables reliable parsing, consistent evaluation, type-specific metrics
   - [x] Test coverage - 30 prompt tests + 11 discrete_points parser tests ✅ **All passing**
 - [ ] Approximation prompts - Request series/polynomial approximations ❌ **Not started**
@@ -189,6 +189,10 @@ This document tracks all features - implemented and planned. Check off items as 
   - Classification: 80% threshold for "match" status
   - Integrated with SolutionEvaluator.evaluate_discrete_points_type()
   - Test coverage: 13 unit tests covering matching, tolerance, edge cases
+- [x] **series term-by-term evaluation** - Per-term numeric RMSE ✅ **(February 12, 2026)**
+  - evaluate_series_terms(): Compares series terms by index using numeric RMSE
+  - Metadata: series_term_count, series_term_match, series_term_stats
+  - Integrated with SolutionEvaluator.evaluate() when solution_type is series
 - [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)

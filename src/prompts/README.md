@@ -183,7 +183,7 @@ prompt = style.generate(eq)
   - `exact_symbolic` - closed-form symbolic solution (e.g., u(x) = sin(x))
   - `approx_coef` - approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
   - `discrete_points` - solution defined only at discrete points
-  - `series` - solution as infinite series (e.g., u(x) = Σ aₙxⁿ)
+    - `series` - truncated series with exactly 4 explicit terms
   - `family` - family of solutions with ARBITRARY parameters (e.g., u(x) = c₁*sin(x) + c₂*cos(x))
   - `regularized` - ill-posed equation requiring regularization
   - `none` - no solution exists

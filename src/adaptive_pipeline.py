@@ -635,11 +635,18 @@ class AdaptivePipeline:
         if eval_config and hasattr(eval_config, "type_tolerances"):
             type_tolerances = eval_config.type_tolerances
 
+        evaluated_predictions: list[dict[str, Any]] = []
+
         for i, pred in enumerate(predictions):
             # Skip API errors (empty responses from failed API calls)
             if pred.get("api_error"):
                 api_error_count += 1
                 errors.append(f"Equation {pred.get('equation_id', i)}: API error (empty response)")
+                pred["evaluation"] = {
+                    "error": "api_error",
+                    "correct": False,
+                }
+                evaluated_predictions.append(pred)
                 continue
 
             # Evaluate edge case metrics
@@ -662,7 +669,9 @@ class AdaptivePipeline:
 
             # Branch: "none" type - evaluate by has_solution detection
             if gt_solution_type == "none":
-                evaluator.evaluate_none_type(pred_has_solution)
+                eval_result = evaluator.evaluate_none_type(pred_has_solution)
+                pred["evaluation"] = eval_result
+                evaluated_predictions.append(pred)
                 evaluated_count += 1
                 continue
 
@@ -671,6 +680,11 @@ class AdaptivePipeline:
             solution_str = pred.get("solution_str")
 
             if not ground_truth_str or not solution_str:
+                pred["evaluation"] = {
+                    "error": "missing_ground_truth_or_solution",
+                    "correct": False,
+                }
+                evaluated_predictions.append(pred)
                 continue
 
             try:
@@ -679,22 +693,31 @@ class AdaptivePipeline:
 
                 # Branch: "family" type - use family comparison
                 if gt_solution_type == "family":
-                    evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                    eval_result = evaluator.evaluate_family(pred_expr, gt_expr, domain=domain)
+                    pred["evaluation"] = eval_result
+                    evaluated_predictions.append(pred)
                     evaluated_count += 1
                     continue
 
                 # Standard evaluation with per-type tolerance override
                 tol_override = type_tolerances.get(gt_solution_type) if gt_solution_type else None
-                evaluator.evaluate(
+                eval_result = evaluator.evaluate(
                     pred_expr, gt_expr, domain=domain,
                     solution_type=gt_solution_type,
                     numeric_tolerance_override=tol_override,
                 )
+                pred["evaluation"] = eval_result
+                evaluated_predictions.append(pred)
                 evaluated_count += 1
 
             except Exception as e:
                 errors.append(f"Equation {pred.get('equation_id', i)}: {str(e)}")
                 logger.debug(f"Failed to evaluate prediction {i}: {e}")
+                pred["evaluation"] = {
+                    "error": str(e),
+                    "correct": False,
+                }
+                evaluated_predictions.append(pred)
 
         # Get summary
         summary = evaluator.summary()
@@ -753,10 +776,21 @@ class AdaptivePipeline:
         if len(errors) - api_error_count > 0:
             console.print(f"  [yellow]Parse errors: {len(errors) - api_error_count}[/yellow]")
 
-        # Save metrics to file
+        # Save evaluated predictions to file
         output_dir = Path(self.config.output.dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        evaluated_predictions_file = output_dir / f"predictions_evaluated_{timestamp}.jsonl"
+
+        with open(evaluated_predictions_file, "w") as f:
+            for entry in evaluated_predictions:
+                f.write(json.dumps(entry) + "\n")
+
+        console.print(
+            f"[cyan]> Saved evaluated predictions to {evaluated_predictions_file}[/cyan]"
+        )
+
+        # Save metrics to file
         metrics_file = output_dir / f"metrics_{timestamp}.json"
 
         with open(metrics_file, "w") as f:

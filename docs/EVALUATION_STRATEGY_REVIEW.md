@@ -59,7 +59,7 @@ u_values = u_values[finite_mask]
 - ✅ **Task 1.2**: Standardize discrete_points format in prompts - COMPLETED
 - ✅ **Task 1.3**: Add discrete_points parser - COMPLETED
 - ✅ **Phase 2, Task 2.1**: discrete_points evaluation - COMPLETED (February 12, 2026)
-- ⏳ **Phase 2, Task 2.2**: series evaluation (not started)
+- ✅ **Phase 2, Task 2.2**: series evaluation (completed)
 - ⏳ **Phase 2, Task 2.3**: approx_coef/family custom evaluators (not started)
 - ⏳ **Phase 3**: Enhanced reporting and metrics (not started)
 
@@ -162,17 +162,17 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
 | `exact_symbolic` | ✅ Full support | None |
 | `approx_coef` | ⚠️ Full expression only | **No per-coefficient comparison** |
 | `discrete_points` | ❌ No specialized method | **No point-list parsing/comparison** |
-| `series` | ⚠️ Treated as symbolic | **No term-by-term comparison** |
+| `series` | ✅ Symbolic + numeric + term-by-term | None |
 | `family` | ⚠️ Structural match only | **No coefficient accuracy check** |
 | `regularized` | ✅ Type classification only | None (no solution to evaluate) |
 | `none` | ✅ Binary check | None |
 
 **Key Problems:**
 
-- **`series`**: No standardized output format for LLMs
-  - Ground truth: Series expansion with 4-6 terms
-  - LLM output: Varies wildly (symbolic, text description, truncated)
-  - Evaluation: Currently uses symbolic equivalence (fails for truncated series)
+- **`series`**: Standardized 4-term output format now defined
+    - Ground truth: Series expansion with 4 terms
+    - LLM output: Fixed 4-term sum in SOLUTION
+    - Evaluation: Symbolic + numeric + term-by-term RMSE
 
 - **`discrete_points`**: No structured output format
   - Ground truth: Function values at specific points
@@ -197,9 +197,8 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
 - Adds complexity and potential errors
 
 **Series Notation:**
-- No standardized LLM output format
-- Prompts don't specify how to express series
-- Ground truth varies (symbolic sum vs coefficient list)
+- Standardized 4-term series format in prompts
+- Ground truth uses truncated 4-term expansions
 
 **Discrete Points:**
 - No structured format in prompts
@@ -266,7 +265,7 @@ def family_compare(solution, ground_truth):
 | **`exact_symbolic`** | ✅ Symbolic equivalence | ✅ Numeric RMSE | Natural math expression | ❌ None needed |
 | **`approx_coef`** | 🆕 **Coefficient extraction + tolerance** | ✅ Numeric RMSE | **📝 Standard: numeric values only** | ✅ **Store coefficient dict** |
 | **`discrete_points`** | 🆕 **Point-wise comparison** | ❌ N/A | **📝 Structured: `[(x1,y1), ...]`** | ✅ **Store evaluation points** |
-| **`series`** | 🆕 **Term-by-term comparison** | ✅ Numeric RMSE (truncated) | **📝 Standard: coefficient list** | ✅ **Store series coefficients** |
+| **`series`** | 🆕 **Term-by-term comparison** | ✅ Numeric RMSE (truncated) | **📝 Standard: 4 explicit terms in SOLUTION** | ❌ None |
 | **`family`** | ✅ Structural match + 🆕 parameter check | ✅ Numeric (substitute c=1) | **📝 Use `c_1, c_2, ...`** | ❌ Current OK |
 | **`regularized`** | ✅ Type classification only | ❌ N/A | Text description | ❌ None needed |
 | **`none`** | ✅ `has_solution==False` check | ❌ N/A | Text: "No solution" | ❌ None needed |
@@ -476,94 +475,50 @@ def evaluate_discrete_points(
 
 ---
 
-### 3. Standardize `series` Format 🔥 **CRITICAL**
+### 3. Standardize `series` Format ✅ **COMPLETED (February 12, 2026)**
 
-**Current Problem:** No consistent series representation, varies from symbolic to text
+**Current Problem (resolved):** Inconsistent series representation across LLM outputs
 
 #### LLM Prompt Addition (Minimal)
 
 **Add to prompt styles:**
 
 ```python
-- series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
-+ series: Series expansion. Format: f(x) + λK·f + λ²K²·f + ... (4-6 terms)
-```
-
-**Alternative (if LLM struggles):**
-
-```python
-"""
-For series solutions, either:
-  (1) Express as sum: f(x) + λ∫K·f + λ²∫K²·f + ...
-  (2) Provide coefficients: SERIES_COEFFICIENTS: [a_0, a_1, a_2, a_3]
-"""
+- series: Truncated series with exactly 4 explicit terms in SOLUTION
 ```
 
 #### Parser Implementation
 
-**Add to `postprocess.py`**:
-
-```python
-def extract_series_coefficients(response: str) -> Optional[list[float]]:
-    """Extract series coefficients from marked section."""
-    pattern = r'SERIES_COEFFICIENTS:\s*\[([\d.,\s+-eE]+)\]'
-    match = re.search(pattern, response)
-    
-    if match:
-        coef_str = match.group(1)
-        coefficients = [float(c.strip()) for c in coef_str.split(',')]
-        return coefficients
-    
-    return None
-```
+**No extra parser required** - series stays in SOLUTION and is parsed as a single expression.
 
 #### Evaluation Implementation
+
+- Symbolic + numeric evaluation uses standard pipeline
+- Added term-by-term numeric evaluation for per-term RMSE (extra metric)
 
 **Add to `evaluate.py`**:
 
 ```python
-def evaluate_series(
-    pred_coeffs: list[float],
-    gt_coeffs: list[float],
-    tolerance: float = 1e-3
+def evaluate_series_terms(
+    solution: sp.Expr,
+    ground_truth: sp.Expr,
+    domain: tuple[float, float] = (0, 1),
+    n_points: int = 100,
+    tolerance: float = 1e-6
 ) -> dict[str, Any]:
     """
-    Compare series solutions term-by-term.
-    
-    Truncates to shortest length for comparison.
+    Compare series solutions term-by-term using numeric RMSE.
+
+    Splits each expression into top-level terms and compares
+    term i against term i over shared evaluation points.
     """
-    n_terms = min(len(pred_coeffs), len(gt_coeffs))
-    
-    # Per-term errors
-    errors = [abs(pred_coeffs[i] - gt_coeffs[i]) for i in range(n_terms)]
-    
-    # Check if all terms within tolerance
-    all_match = all(e < tolerance for e in errors)
-    
-    return {
-        "terms_compared": n_terms,
-        "pred_length": len(pred_coeffs),
-        "gt_length": len(gt_coeffs),
-        "mean_term_error": np.mean(errors),
-        "max_term_error": np.max(errors),
-        "all_terms_match": all_match,
-        "per_term_errors": errors
-    }
+    # Returns per-term RMSE, mean/max RMSE, and match rate
+    pass
 ```
 
 **Dataset Enhancement:**
 
-Store series coefficients in ground truth:
-
-```python
-# For series-type equations in augmentation:
-{
-    "solution_type": "series",
-    "u": "f(x) + λ*∫K·f + λ²*∫K²·f + λ³*∫K³·f",
-    "series_coefficients": [1.0, 0.5, 0.25, 0.125],  # Neumann series coefficients
-    "truncation_order": 4
-}
-```
+Not required. Series remains a single expression in `u` with 4 explicit terms.
 
 ---
 
@@ -769,9 +724,9 @@ uv run python -m src.cli run --config configs/prepare_data.yaml
 
 ---
 
-#### Task 1.2: Standardize discrete_points and series formats ⏳ **IN PROGRESS**
+#### Task 1.2: Standardize discrete_points and series formats ✅ **COMPLETED (February 12, 2026)**
 
-**Implementation Date:** February 11, 2026 (discrete_points completed)
+**Implementation Date:** February 12, 2026
 
 **Files to modify:**
 - ✅ `src/prompts/styles/basic.py` - Added discrete_points format specification
@@ -790,7 +745,7 @@ uv run python -m src.cli run --config configs/prepare_data.yaml
 
 **Status:**
 - ✅ discrete_points format specification complete (4/4 files updated)
-- ⏳ series format specification pending
+- ✅ series format specification complete (4 explicit terms in SOLUTION)
 - ✅ All tests passing (37/37 prompt tests)
 
 **Testing:**
@@ -800,7 +755,7 @@ uv run pytest tests/test_prompting.py tests/test_prompt_generation.py -v
 # ✅ 37/37 tests passing
 ```
 
-**Next:** Update series format specification, then proceed to Task 1.3 (parser implementation)
+**Next:** Proceed to Task 2.3 (approx_coef and family evaluators)
 
 ---
 
@@ -894,7 +849,7 @@ uv run pytest tests/test_discrete_points_parser.py -v
 
 **Functions Implemented:**
 1. ✅ `evaluate_discrete_points()` - Point-wise comparison with tolerance (75 lines)
-2. ⏳ `evaluate_series()` - Term-by-term comparison (pending)
+2. ✅ `evaluate_series_terms()` - Term-by-term numeric comparison (completed)
 3. ⏳ `evaluate_approx_coef()` - Coefficient extraction + comparison (pending)
 4. ⏳ `evaluate_family_improved()` - Enhanced family validation (pending)
 
@@ -958,17 +913,42 @@ class SolutionEvaluator:
 - ✅ Production-ready for discrete_points evaluation
 
 **Next Tasks:**
-- ⏳ Task 2.2: Implement series evaluation
 - ⏳ Task 2.3: Implement approx_coef and family evaluators
 
 ---
 
-#### Task 2.2: Implement series evaluation
+#### Task 2.2: Implement series evaluation ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Add `evaluate_series()` function
+**Goal:** Keep series evaluation consistent with other solution types (symbolic + numeric), plus term-by-term numeric evaluation and term-count tracking.
 
-**Implementation pending** - See section draft below for planned approach.
+**Implementation Summary:**
+- Series solutions are evaluated with the existing symbolic and numeric comparison pipeline (same as exact_symbolic).
+- Added term-by-term numeric evaluation with per-term RMSE.
+- Added a lightweight term-count helper to record the number of top-level terms in the predicted series expression.
+- Term count metadata is stored on each evaluation result and summarized in aggregate metrics.
+
+**Files modified:**
+- ✅ `src/llm/evaluate.py`
+    - Added `count_series_terms()` helper
+    - Added `evaluate_series_terms()` for term-by-term numeric RMSE
+    - Added `series_term_count`, `series_term_target`, and `series_term_match` to per-result output when `solution_type == "series"`
+    - Added `series_term_eval` to per-result output
+    - Added `series_term_stats` to `SolutionEvaluator.summary()` for reporting
+- ✅ `src/adaptive_pipeline.py`
+    - Writes `predictions_evaluated_<timestamp>.jsonl` with per-prediction `evaluation` (includes `series_term_eval`)
+- ✅ `tests/test_evaluate.py`
+    - Added tests for series term metadata and summary stats
+
+**Behavior:**
+- **Correctness:** unchanged (still `symbolic` OR `numeric` match)
+- **Extra evaluation:** term-by-term numeric RMSE is recorded in `series_term_eval`
+- **Metadata only:** term-count match does not affect correctness yet
+
+**Tests:**
+```bash
+uv run pytest tests/test_evaluate.py -v
+# ✅ 18/18 passing
+```
 
 ---
 
@@ -1180,13 +1160,13 @@ For SOLUTION_TYPE:
   - approx_coef: Approximate with NUMERIC coefficients (e.g., u(x) = 0.5*sin(x) + 1.2*x)
 - - discrete_points: Solution only at discrete points
 + - discrete_points: Point values only. Format: [(x1, y1), (x2, y2), ...]
-  - series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
+    - series: Truncated series with exactly 4 explicit terms
 ```
 
 #### For `series`:
 ```diff
-- - series: Infinite series solution (e.g., u(x) = Σ aₙxⁿ)
-+ - series: Series expansion. Express as sum: f + λK·f + λ²K²·f + ... (4-6 terms)
+- - series: Truncated series with exactly 4 explicit terms
++ - series: Truncated series with exactly 4 explicit terms
 ```
 
 #### For `family` (already updated):
@@ -1211,7 +1191,7 @@ For SOLUTION_TYPE:
 # ❌ TOO VERBOSE - Will confuse LLMs
 """
 For series solutions:
-  (1) If you can express the series symbolically, provide the first 4-6 terms explicitly
+    (1) If you can express the series symbolically, provide exactly 4 terms
   (2) Use the Neumann series expansion: f(x) + λ∫K·f(t)dt + λ²∫∫K²·f(t)dt + ...
   (3) If truncating, clearly state the truncation order
   (4) Alternatively, if coefficients are easier, provide them as a list: [a_0, a_1, a_2, ...]
@@ -1223,7 +1203,7 @@ For series solutions:
 **Instead:**
 ```python
 # ✅ CONCISE - Single actionable instruction
-- series: Series expansion. Express as sum: f + λK·f + λ²K²·f + ... (4-6 terms)
+- series: Truncated series with exactly 4 explicit terms
 ```
 
 ---
@@ -1239,7 +1219,7 @@ For series solutions:
 
 ✅ **Format Compliance**
 - LLMs know how to output discrete_points: `[(x, y), ...]`
-- LLMs know how to output series: first 4-6 terms explicitly
+- LLMs know how to output series: exactly 4 explicit terms
 - Parser successfully extracts structured formats
 
 ### After Phase 2 (Enhanced Evaluation)
@@ -1252,7 +1232,7 @@ By Solution Type:
   exact_symbolic:   80% (20/25) ✅ Strong
   approx_coef:      75% (15/20) ✅ Good, avg coefficient error: 2.3%
   discrete_points:  67% (10/15) ⚠️  Moderate, avg point error: 12%
-  series:           67% (4/6)   ⚠️  Moderate, avg 4.2 terms predicted
+    series:           67% (4/6)   ⚠️  Moderate, avg 4.0 terms predicted
   family:           80% (8/10)  ✅ Good, naming convention: 85%
   regularized:     100% (5/5)   ✅ Perfect (type classification only)
   none:             90% (9/10)  ✅ Good
@@ -1349,9 +1329,9 @@ By Solution Type:
 
 **Total:** ~13 files to modify, ~15 functions to add/update
 
-**Overall Progress (February 11, 2026):**
-- ✅ Phase 1: 4/7 tasks complete (57%) - discrete_points format + parser done, series format pending
-- ⏳ Phase 2: 0/5 tasks complete (0%)
+**Overall Progress (February 12, 2026):**
+- ✅ Phase 1: 5/7 tasks complete (71%) - discrete_points + series format complete
+- ✅ Phase 2: 1/5 tasks complete (20%) - series evaluation complete
 - ⏳ Phase 3: 0/3 tasks complete (0%)
 - **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, and discrete_points extraction all working
 
@@ -1378,7 +1358,7 @@ By Solution Type:
 
 1. **Dataset regeneration:** ✅ **RESOLVED** - Evaluation points can be generated on-demand via `BaseAugmentation._generate_evaluation_points()`. Future enhancement: Store in output files for faster evaluation.
 2. **Backward compatibility:** Should old predictions still be evaluable?
-3. **Series format preference:** Symbolic sum vs coefficient list?
+3. **Series format preference:** Fixed 4-term sum (resolved)
 4. **Tolerance tuning:** What relative tolerance for approx_coef (currently 10%)?
 
 ### Validation Plan
@@ -1398,8 +1378,7 @@ By Solution Type:
 
 **Pending for Remaining Tasks:**
 
-1. ⏳ **Unit tests** for discrete_points parser (pending Task 1.3)
-2. ⏳ **Unit tests** for each specialized evaluator function (pending Phase 2)
+1. ⏳ **Unit tests** for approx_coef and family evaluators (Phase 2)
 3. ⏳ **Integration tests** on sample dataset (10-20 equations per type)
 4. ⏳ **Full evaluation** on test_100 dataset with known results
 5. ⏳ **Comparison** before/after metrics to verify improvements
@@ -1442,7 +1421,7 @@ By Solution Type:
 - Enables Task 1.3: discrete_points parser implementation
 - Structured format ensures consistent evaluation
 
-**Next Priority:** Complete series format specification, then implement discrete_points parser (Task 1.3)
+**Next Priority:** Implement approx_coef and family evaluators (Phase 2)
 
 ### February 11, 2026 - Phase 1 (Task 1.3) Implementation
 
@@ -1464,7 +1443,7 @@ By Solution Type:
 - Enables specialized evaluation for discrete_points equations (Phase 2)
 - Foundation for point-wise comparison metrics
 
-**Next Priority:** Implement series format specification, then specialized evaluators (Phase 2)
+**Next Priority:** Implement approx_coef and family evaluators (Phase 2)
 
 ---
 

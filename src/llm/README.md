@@ -70,6 +70,10 @@ results = evaluate_solutions(
 
 print(f"Exact match: {results['exact_matches']}/{results['total']}")
 print(f"Mean absolute error: {results['mae']:.4f}")
+
+# When using the adaptive pipeline, evaluated predictions are saved as:
+# predictions_evaluated_<timestamp>.jsonl
+# Each entry includes an `evaluation` field with series term metrics.
 ```
 
 ---

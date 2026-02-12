@@ -180,6 +180,37 @@ class TestSolutionEvaluator:
         assert summary["correct"] == 2
         assert summary["accuracy"] == pytest.approx(2 / 3)
 
+    def test_series_term_count_metadata(self) -> None:
+        """Test series term count metadata is recorded."""
+        x = sp.Symbol("x")
+        evaluator = SolutionEvaluator()
+
+        expr = x + x**2 + x**3 + x**4
+        result = evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="series")
+
+        assert result["series_term_count"] == 4
+        assert result["series_term_target"] == 4
+        assert result["series_term_match"] is True
+        assert result["series_term_eval"]["match"] is True
+        assert result["series_term_eval"]["terms_compared"] == 4
+
+    def test_series_term_stats_in_summary(self) -> None:
+        """Test series term stats are included in summary."""
+        x = sp.Symbol("x")
+        evaluator = SolutionEvaluator()
+
+        expr = x + x**2 + x**3 + x**4
+        evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="series")
+        evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="series")
+
+        summary = evaluator.summary()
+
+        assert "series_term_stats" in summary
+        stats = summary["series_term_stats"]
+        assert stats["total"] == 2
+        assert stats["match"] == 2
+        assert stats["target"] == 4
+
 
 class TestEvaluateSolutions:
     """Tests for evaluate_solutions function."""

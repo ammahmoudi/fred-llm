@@ -170,21 +170,25 @@ SOLUTION_TYPE: discrete_points
 
 ---
 
-### 4. `series` - Infinite Series Solution
+### 4. `series` - Truncated Series Solution
 
-**Definition:** Convergent series expansion (Neumann series, power series, etc.).
+**Definition:** Truncated series expansion (Neumann series, power series, etc.).
 
 **Format:**
-- ✅ `f(x) + λ*K*f(x) + λ**2*K**2*f(x) + ...`
-- ✅ `Σ(n=0 to N) a_n*x**n` with computed a_n
+- ✅ `f(x) + lambda*K*f(x) + lambda**2*K**2*f(x) + lambda**3*K**3*f(x)` (exactly 4 terms)
+- ✅ Explicit expanded terms (no sigma)
 - ❌ NOT just `Σ` without explicit terms
+
+**Evaluation:**
+- Symbolic + numeric evaluation
+- Extra term-by-term numeric RMSE is recorded for analysis
 
 **Example:**
 ```
-SOLUTION: u(x) = -797089.486*x + 1612.841*(x**4) + 0.406*cosh(x) - 0.827*tanh(x) + ...
+SOLUTION: u(x) = f(x) + 0.3*Integral(K(x,t)*f(t), (t, a, b)) + 0.09*Integral(Integral(K(x,s)*K(s,t)*f(t), (t, a, b)), (s, a, b)) + 0.027*Integral(Integral(Integral(K(x,r)*K(r,s)*K(s,t)*f(t), (t, a, b)), (s, a, b)), (r, a, b))
 HAS_SOLUTION: yes
 SOLUTION_TYPE: series
-REASONING: Neumann series converges for |λ| < 1/||K||
+REASONING: Neumann series converges for |lambda| < 1/||K||
 ```
 
 ---

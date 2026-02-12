@@ -197,6 +197,13 @@ This document tracks all features - implemented and planned. Check off items as 
   - evaluate_approx_coeffs(): Compares coefficients per top-level term
   - Metadata: approx_coef_eval, approx_coef_stats
   - Integrated with SolutionEvaluator.evaluate() when solution_type is approx_coef
+- [x] **family numeric evaluation (multi-sample)** ✅ **(February 12, 2026)**
+  - Numeric comparison across multiple constant samples
+  - Evaluation points store constant_samples and u_values_samples
+- [x] **family termwise evaluation** ✅ **(February 12, 2026)**
+  - Term-by-term numeric comparison after constant substitution
+  - Metadata: family_term_eval
+- [x] **family parameter metadata** - Count + naming validation ✅ **(February 12, 2026)**
 - [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)

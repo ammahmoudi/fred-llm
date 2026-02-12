@@ -235,6 +235,22 @@ class TestSolutionEvaluator:
         assert "approx_coef_stats" in summary
         assert summary["approx_coef_stats"]["total"] == 1
 
+    def test_family_term_eval_metadata(self) -> None:
+        """Test family term evaluation metadata is recorded."""
+        x = sp.Symbol("x")
+        C = sp.Symbol("C")
+        evaluator = SolutionEvaluator()
+
+        expr = C * x
+        result = evaluator.evaluate_family(expr, expr, domain=(0, 1))
+
+        assert result["family_term_eval"]["match"] is True
+        assert result["family_term_eval"]["terms_compared"] == 1
+        assert result["family_param_eval"]["param_count_pred"] == 1
+        assert result["family_param_eval"]["param_count_gt"] == 1
+        assert result["family_param_eval"]["param_count_match"] is True
+        assert result["family_param_eval"]["param_naming_valid"] is True
+
 
 class TestEvaluateSolutions:
     """Tests for evaluate_solutions function."""

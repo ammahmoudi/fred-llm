@@ -16,9 +16,11 @@ LLMs should provide symbolic expressions of the solution function, not numeric v
 - ✅ `series` - Must predict correct series form
 - ✅ `family` - Must predict correct parameterized solution
 
+**Discrete Points Category** (point-wise evaluation):
+- ✅ `discrete_points` - Must provide a structured point list and match within tolerance
+
 **Edge Case Categories** (correct type classification is sufficient):
 - ✅ `none` - Just correctly identify "no solution exists"
-- ✅ `discrete_points` - Just correctly identify "solution only at discrete points"
 - ✅ `regularized` - Just correctly identify "requires regularization method"
 
 ---
@@ -158,16 +160,16 @@ SOLUTION_TYPE: approx_coef
 **Definition:** Function values only at specific/discrete points (no continuous formula).
 
 **Format:**
-- ✅ Point list: `u(0) ≈ 1.23, u(0.5) ≈ 2.45, u(1) ≈ 0.89`
+- ✅ Structured list: `[(0.0, 1.234), (0.25, 2.456), (0.5, 1.789)]`
 - ✅ Values from numerical table/grid
 - ❌ NOT continuous function like `x**2`
 
+**Evaluation:**
+- Point-wise comparison with tolerance on x and y values
+
 **Example:**
 ```
-SOLUTION: u(x) defined at points:
-  x=0.0: u ≈ 1.234
-  x=0.25: u ≈ 2.456
-  x=0.5: u ≈ 1.789
+SOLUTION: [(0.0, 1.234), (0.25, 2.456), (0.5, 1.789)]
 HAS_SOLUTION: yes
 SOLUTION_TYPE: discrete_points
 ```
@@ -206,6 +208,9 @@ REASONING: Neumann series converges for |lambda| < 1/||K||
 - ✅ `x - 6130.173 - 8.366*C` (parameterized by C)
 - ✅ `u_p(x) + C*sin(πx)` (particular + homogeneous with arbitrary C)
 - ❌ NOT all numeric like `0.5*sin(x) + 0.3*cos(x)`
+
+**Evaluation:**
+- Structural match + numeric evaluation using multiple constant samples
 
 **Example:**
 ```
@@ -260,7 +265,7 @@ REASONING: Kernel is rank deficient and RHS not in range of integral operator
 |------|--------|--------------|---------|
 | exact_symbolic | Function | Numeric constants | `x**2 + sin(x)` |
 | approx_coef | Numeric params | Values | `-1447.128*x**2 + 0.567*cosh(x)` |
-| discrete_points | Point values | x,y pairs | `(0,1.2), (0.5,2.4)` |
+| discrete_points | Point values | x,y pairs | `[(0,1.2), (0.5,2.4)]` |
 | series | Series terms | Coefficients | `term1 + term2 + term3 + term4` |
 | family | Parameterized | Arbitrary C | `x - 100*C` |
 | regularized | Method description | N/A | "Tikhonov with α=0.01" |

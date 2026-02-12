@@ -1,7 +1,7 @@
 # Evaluation Strategy Comprehensive Review
 
 **Date:** February 12, 2026  
-**Status:** Phase 2 Task 2.1 Complete - discrete_points Evaluation Implemented  
+**Status:** Phase 2 Task 2.3 Complete - family evaluator metadata + termwise + multi-sample numeric  
 **Last Updated:** February 12, 2026
 
 ---
@@ -59,8 +59,10 @@ u_values = u_values[finite_mask]
 - ✅ **Task 1.2**: Standardize discrete_points format in prompts - COMPLETED
 - ✅ **Task 1.3**: Add discrete_points parser - COMPLETED
 - ✅ **Phase 2, Task 2.1**: discrete_points evaluation - COMPLETED (February 12, 2026)
-- ✅ **Phase 2, Task 2.2**: series evaluation (completed)
-- ⏳ **Phase 2, Task 2.3**: family custom evaluator (not started)
+- ✅ **Phase 2, Task 2.2**: series evaluation - COMPLETED
+- ✅ **Phase 2, Task 2.3**: family evaluator enhancements - COMPLETED
+- ⏳ **Phase 2, Task 2.4**: use stored evaluation_points in evaluate.py (pending)
+- ⏳ **Phase 2, Task 2.5**: write evaluation_points into dataset outputs (pending)
 - ⏳ **Phase 3**: Enhanced reporting and metrics (not started)
 
 ---
@@ -163,7 +165,7 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
 | `approx_coef` | ✅ Symbolic + numeric + per-term coeffs | None |
 | `discrete_points` | ✅ Point-wise comparison | None |
 | `series` | ✅ Symbolic + numeric + term-by-term | None |
-| `family` | ⚠️ Structural match only | **No coefficient accuracy check** |
+| `family` | ✅ Structural + numeric + metadata | None (metadata is informational) |
 | `regularized` | ✅ Type classification only | None (no solution to evaluate) |
 | `none` | ✅ Binary check | None |
 
@@ -183,10 +185,10 @@ def evaluate_discrete_points(pred_points, gt_points, x_tolerance=1e-3, y_toleran
     - Ground truth: `-1447.128*x**2 + 0.567*cosh(x)`
     - Evaluation: Symbolic + numeric + per-term coefficient errors
 
-- **`family`**: Insufficient validation
-  - Current: Only checks structural form (ratio test)
-  - Missing: Verify correct number of arbitrary parameters
-  - Missing: Check parameter naming (c_1, c_2 vs random symbols)
+- **`family`**: Validation now includes numeric checks + metadata
+    - Structural match (ratio test)
+    - Multi-sample numeric comparison
+    - Parameter metadata (count + naming) recorded for analysis
 
 #### 2. Format Limitations
 
@@ -250,7 +252,7 @@ def family_compare(solution, ground_truth):
 **Numeric Comparison Issues:**
 - No per-type tolerance adjustment
 - Fixed tolerance doesn't account for solution magnitude
-- Fails on expressions with free symbols (family, series)
+- Fails on expressions with free symbols (family) without constant substitution
 
 ---
 
@@ -262,9 +264,9 @@ def family_compare(solution, ground_truth):
 |---------------|----------------|-----------------|-------------------|------------------------|
 | **`exact_symbolic`** | ✅ Symbolic equivalence | ✅ Numeric RMSE | Natural math expression | ❌ None needed |
 | **`approx_coef`** | ✅ **Per-term coefficient comparison** | ✅ Numeric RMSE | **📝 Standard: numeric values only** | ❌ None |
-| **`discrete_points`** | 🆕 **Point-wise comparison** | ❌ N/A | **📝 Structured: `[(x1,y1), ...]`** | ✅ **Store evaluation points** |
-| **`series`** | 🆕 **Term-by-term comparison** | ✅ Numeric RMSE (truncated) | **📝 Standard: 4 explicit terms in SOLUTION** | ❌ None |
-| **`family`** | ✅ Structural match + 🆕 parameter check | ✅ Numeric (substitute c=1) | **📝 Use `c_1, c_2, ...`** | ❌ Current OK |
+| **`discrete_points`** | ✅ **Point-wise comparison** | ❌ N/A | **📝 Structured: `[(x1,y1), ...]`** | ✅ **Store evaluation points** |
+| **`series`** | ✅ **Term-by-term comparison** | ✅ Numeric RMSE (truncated) | **📝 Standard: 4 explicit terms in SOLUTION** | ❌ None |
+| **`family`** | ✅ Structural + param metadata | ✅ Numeric (multi-sample constants) | **📝 Use `c_1, c_2, ...`** | ✅ **Store points with samples** |
 | **`regularized`** | ✅ Type classification only | ❌ N/A | Text description | ❌ None needed |
 | **`none`** | ✅ `has_solution==False` check | ❌ N/A | Text: "No solution" | ❌ None needed |
 
@@ -330,11 +332,13 @@ class BaseAugmentation:
         x_values = x_values[finite_mask]
         u_values = u_values[finite_mask]
         
-        return {
-            "x_values": x_values.tolist(),
-            "u_values": u_values.tolist(),
-            "n_points": len(x_values)
-        }
+            return {
+                "x_values": x_values.tolist(),
+                "u_values": u_values.tolist(),
+                "n_points": len(x_values),
+                "constant_samples": [-1.0, 1.0, 2.0],  # for family solutions
+                "u_values_samples": ["..."],  # per-sample u(x) values when free constants exist
+            }
 ```
 
 **Status**: ✅ **Implemented and tested** - Available in all augmentation strategies via inheritance
@@ -362,11 +366,12 @@ def numeric_compare_fixed_points(solution, ground_truth_points, tolerance=1e-6):
     }
 ```
 
-**Benefits:**
+- **Benefits:**
 - ✅ Consistent RMSE/MAE across all evaluation runs
 - ✅ Faster evaluation (no re-computation)
 - ✅ Can include challenging points (boundaries, discontinuities, inflection points)
 - ✅ Reproducible research results
+- ✅ Family solutions supported by multi-sample constant substitution during point generation
 
 **Scope:**
 - ✅ Update all 14 augmentation strategies in `src/data/augmentations/` (inherited via BaseAugmentation)
@@ -683,7 +688,7 @@ uv run pytest tests/test_prompting.py tests/test_prompt_generation.py -v
 # ✅ 37/37 tests passing
 ```
 
-**Next:** Proceed to Task 2.3 (family evaluator)
+**Next:** Proceed to Task 2.4 (evaluation_points integration)
 
 ---
 
@@ -779,7 +784,7 @@ uv run pytest tests/test_discrete_points_parser.py -v
 1. ✅ `evaluate_discrete_points()` - Point-wise comparison with tolerance (75 lines)
 2. ✅ `evaluate_series_terms()` - Term-by-term numeric comparison (completed)
 3. ✅ `evaluate_approx_coeffs()` - Per-term coefficient comparison (completed)
-4. ⏳ `evaluate_family_improved()` - Enhanced family validation (pending)
+4. ✅ `evaluate_family_improved()` - Enhanced family validation (completed)
 
 **Integration:**
 ```python
@@ -841,7 +846,7 @@ class SolutionEvaluator:
 - ✅ Production-ready for discrete_points evaluation
 
 **Next Tasks:**
-- ⏳ Task 2.3: Implement family evaluator
+- ⏳ Task 2.4: Use stored evaluation_points in evaluate.py
 
 ---
 
@@ -880,17 +885,22 @@ uv run pytest tests/test_evaluate.py -v
 
 ---
 
-#### Task 2.3: Implement family evaluator
+#### Task 2.3: Implement family evaluator ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Add `evaluate_family_improved()`
+**Files modified:**
+- ✅ `src/llm/evaluate.py` - Added family numeric comparison (multi-sample) + termwise metrics + parameter metadata
+- ✅ `src/data/augmentations/base.py` - Multi-sample constants and per-sample u(x) values in evaluation_points
 
-**Implementation pending** - See section draft below for planned approach.
+**Implementation status:**
+- ✅ Added term-by-term numeric evaluation for family (`family_term_eval`)
+- ✅ Added multi-sample numeric comparison for free constants
+- ✅ Added parameter metadata: count + naming info (`family_param_eval`)
+- ✅ Tests added for family termwise + parameter metadata
 ````
 
 ---
 
-#### Task 2.3: Update evaluate.py to use evaluation_points
+#### Task 2.4: Update evaluate.py to use evaluation_points
 
 **Files to modify:**
 - `src/llm/evaluate.py` - Prioritize stored points over random generation
@@ -1227,9 +1237,11 @@ By Solution Type:
 
 ### Phase 2 Files (Enhanced Evaluation)
 
-8. ⏳ `src/llm/evaluate.py` - Add specialized evaluators (4 functions)
-9. ⏳ Family evaluator implementation
+8. ✅ `src/llm/evaluate.py` - Add specialized evaluators (series, approx_coef, discrete_points, family)
+9. ✅ Family evaluator implementation
 10. ✅ `src/data/augmentations/base.py` - Evaluation points generation available **[COMPLETED - can be integrated]**
+11. ⏳ `src/llm/evaluate.py` - Use stored evaluation_points (pending)
+12. ⏳ Dataset writers - Persist evaluation_points into CSV/JSONL outputs (pending)
 
 ### Phase 3 Files (Reporting)
 
@@ -1237,13 +1249,13 @@ By Solution Type:
 12. ⏳ `src/llm/evaluate.py` - Add confusion matrix tracking
 13. ⏳ Predictions JSONL output - Enhanced per-equation details
 
-**Total:** ~13 files to modify, ~15 functions to add/update
+**Total:** ~15 files to modify, ~17 functions to add/update
 
 **Overall Progress (February 12, 2026):**
 - ✅ Phase 1: 5/7 tasks complete (71%) - discrete_points + series format complete
-- ✅ Phase 2: 1/5 tasks complete (20%) - series evaluation complete
+- ✅ Phase 2: 4/5 tasks complete (80%) - discrete_points, series, approx_coef, family evaluation complete
 - ⏳ Phase 3: 0/3 tasks complete (0%)
-- **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, and discrete_points extraction all working
+- **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, and specialized evaluators are working
 
 ---
 
@@ -1288,10 +1300,9 @@ By Solution Type:
 
 **Pending for Remaining Tasks:**
 
-1. ⏳ **Unit tests** for family evaluator (Phase 2)
-3. ⏳ **Integration tests** on sample dataset (10-20 equations per type)
-4. ⏳ **Full evaluation** on test_100 dataset with known results
-5. ⏳ **Comparison** before/after metrics to verify improvements
+1. ⏳ **Integration tests** on sample dataset (10-20 equations per type)
+2. ⏳ **Full evaluation** on test_100 dataset with known results
+3. ⏳ **Comparison** before/after metrics to verify improvements
 
 ---
 
@@ -1331,7 +1342,7 @@ By Solution Type:
 - Enables Task 1.3: discrete_points parser implementation
 - Structured format ensures consistent evaluation
 
-**Next Priority:** Implement family evaluator (Phase 2)
+**Next Priority:** Integrate evaluation_points into evaluate.py + dataset outputs
 
 ### February 11, 2026 - Phase 1 (Task 1.3) Implementation
 
@@ -1353,7 +1364,7 @@ By Solution Type:
 - Enables specialized evaluation for discrete_points equations (Phase 2)
 - Foundation for point-wise comparison metrics
 
-**Next Priority:** Implement family evaluator (Phase 2)
+**Next Priority:** Integrate evaluation_points into evaluate.py + dataset outputs
 
 ---
 

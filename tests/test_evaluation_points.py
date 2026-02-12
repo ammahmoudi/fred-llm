@@ -187,3 +187,18 @@ class TestEvaluationPointsGeneration:
         u_values = np.array(result["u_values"])
         assert np.all(np.isfinite(u_values))
         assert result["n_points"] > 0
+
+    def test_generate_evaluation_points_substitutes_free_constants(self, mock_augmentation):
+        """Test that free constants are substituted for numeric evaluation."""
+        u_expr = "C*x + 2"
+        a, b = 0.0, 1.0
+
+        result = mock_augmentation._generate_evaluation_points(u_expr, a, b, 10)
+
+        x_values = np.array(result["x_values"])
+        u_values = np.array(result["u_values"])
+        expected_u = x_values + 2  # C is substituted with 1
+        np.testing.assert_allclose(u_values, expected_u, rtol=1e-10)
+
+        assert result["constant_samples"] == [-1.0, 1.0, 2.0]
+        assert len(result["u_values_samples"]) == 3

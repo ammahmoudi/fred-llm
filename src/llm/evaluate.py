@@ -703,6 +703,89 @@ def family_compare(
     return False
 
 
+def _family_numeric_compare_samples(
+    solution: sp.Expr,
+    ground_truth: sp.Expr,
+    domain: tuple[float, float],
+    n_points: int,
+    tolerance: float,
+    constant_samples: list[float],
+) -> dict[str, Any]:
+    """Numeric comparison for family solutions across multiple constant samples."""
+    x = sp.Symbol("x")
+    t = sp.Symbol("t")
+    constants = (solution.free_symbols | ground_truth.free_symbols) - {x, t}
+
+    if not constants:
+        return numeric_compare(solution, ground_truth, domain, n_points, tolerance)
+
+    sample_results = []
+    for sample in constant_samples:
+        subs_map = {sym: sample for sym in constants}
+        sol_sub = solution.subs(subs_map)
+        gt_sub = ground_truth.subs(subs_map)
+        sample_results.append(
+            numeric_compare(sol_sub, gt_sub, domain, n_points, tolerance)
+        )
+
+    max_error = max(r["max_error"] for r in sample_results)
+    mean_error = float(np.mean([r["mean_error"] for r in sample_results]))
+    rmse = float(np.mean([r["rmse"] for r in sample_results]))
+    match = all(r["match"] for r in sample_results)
+
+    return {
+        "match": match,
+        "max_error": max_error,
+        "mean_error": mean_error,
+        "rmse": rmse,
+        "sample_results": sample_results,
+        "constant_samples": constant_samples,
+    }
+
+
+def _substitute_family_constants(expr: sp.Expr, value: float = 1.0) -> sp.Expr:
+    """Substitute free constants in a family expression with a fixed value."""
+    x = sp.Symbol("x")
+    t = sp.Symbol("t")
+    constants = expr.free_symbols - {x, t}
+    if not constants:
+        return expr
+    return expr.subs({sym: value for sym in constants})
+
+
+def _family_param_metadata(
+    solution: sp.Expr,
+    ground_truth: sp.Expr,
+) -> dict[str, Any]:
+    """Collect family parameter count and naming metadata."""
+    x = sp.Symbol("x")
+    t = sp.Symbol("t")
+    standard_vars = {x, t}
+
+    gt_params = sorted(
+        [s for s in ground_truth.free_symbols if s not in standard_vars],
+        key=lambda s: s.name,
+    )
+    pred_params = sorted(
+        [s for s in solution.free_symbols if s not in standard_vars],
+        key=lambda s: s.name,
+    )
+
+    def _name_valid(sym: sp.Symbol) -> bool:
+        return sym.name == "C" or sym.name.startswith("c_")
+
+    naming_valid = all(_name_valid(sym) for sym in pred_params) if pred_params else False
+
+    return {
+        "param_count_pred": len(pred_params),
+        "param_count_gt": len(gt_params),
+        "param_count_match": len(pred_params) == len(gt_params),
+        "param_names_pred": [s.name for s in pred_params],
+        "param_names_gt": [s.name for s in gt_params],
+        "param_naming_valid": naming_valid,
+    }
+
+
 def evaluate_discrete_points(
     pred_points: list[tuple[float, float]],
     gt_points: list[tuple[float, float]],
@@ -905,7 +988,6 @@ class SolutionEvaluator:
         family_match = family_compare(solution, ground_truth)
 
         # For numeric/symbolic fallback, substitute free constants with 1
-        # so expressions can be evaluated numerically
         x = sp.Symbol("x")
         standard_vars = {"x", "t"}
         free_constants = [
@@ -915,17 +997,34 @@ class SolutionEvaluator:
         for c in free_constants:
             gt_concrete = gt_concrete.subs(c, 1)
 
+        sol_concrete = _substitute_family_constants(solution, value=1.0)
+
         # Also try standard comparison as fallback
-        symbolic = symbolic_compare(solution, gt_concrete, self.symbolic_tolerance)
-        numeric = numeric_compare(
-            solution, gt_concrete, domain, self.n_test_points, self.numeric_tolerance
+        symbolic = symbolic_compare(sol_concrete, gt_concrete, self.symbolic_tolerance)
+        numeric = _family_numeric_compare_samples(
+            solution,
+            ground_truth,
+            domain,
+            self.n_test_points,
+            self.numeric_tolerance,
+            constant_samples=[-1.0, 1.0, 2.0],
         )
+        term_eval = evaluate_series_terms(
+            sol_concrete,
+            gt_concrete,
+            domain=domain,
+            n_points=self.n_test_points,
+            tolerance=self.numeric_tolerance,
+        )
+        param_eval = _family_param_metadata(solution, ground_truth)
 
         correct = family_match or symbolic["equivalent"] or numeric["match"]
         result = {
             "symbolic": symbolic,
             "numeric": numeric,
             "family_match": family_match,
+            "family_term_eval": term_eval,
+            "family_param_eval": param_eval,
             "correct": correct,
             "solution_type": "family",
         }

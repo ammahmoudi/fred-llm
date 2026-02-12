@@ -355,9 +355,9 @@ Classification of solution structure. Extracted from `SOLUTION_TYPE:` marker:
 |------|---------|---------|
 | `exact_symbolic` | Closed-form symbolic | `u(x) = sin(x)` |
 | `approx_coef` | Approximate with coefficients | `u(x) ≈ a₀ + a₁x + a₂x²` |
-| `series` | Infinite series | `u(x) = Σ aₙxⁿ` |
+| `series` | Truncated series | `u(x) = term1 + term2 + term3 + term4` |
 | `family` | Family of solutions (non-unique) | `u(x) = C·sin(πx)` |
-| `discrete_points` | Solution at discrete points only | (rare) |
+| `discrete_points` | Solution at discrete points only | `[(0.0, 1.2), (0.5, 2.4)]` |
 | `regularized` | Ill-posed, requires regularization | |
 | `none` | No solution exists | |
 
@@ -447,6 +447,29 @@ def numeric_compare(solution, ground_truth, domain=(-1, 1), n_points=100):
 
 ---
 
+### Type-Specific Evaluators
+
+Additional evaluators run when `solution_type` matches and record metadata in each prediction's `evaluation` field.
+
+#### `discrete_points`
+- Point-wise comparison with x/y tolerances
+- Metrics: `matched_points`, `accuracy`, `max_error`, `mean_error`, `rmse`
+
+#### `series`
+- Term-by-term numeric RMSE over top-level terms
+- Metadata: `series_term_eval` + term count stats
+
+#### `approx_coef`
+- Per-term coefficient comparison
+- Metadata: `approx_coef_eval` + aggregated stats
+
+#### `family`
+- Multi-sample numeric comparison for free constants
+- Term-by-term numeric RMSE after substitution
+- Metadata: `family_param_eval` (parameter count + naming)
+
+---
+
 ### Edge Case Metrics
 
 #### `has_solution_accuracy`
@@ -531,6 +554,27 @@ Each line is one test case (JSON objects separated by newlines):
   "solution_type": "none",
   "reasoning": "This equation...",
   "confidence": 0.8
+}
+```
+
+#### `predictions_evaluated_*.jsonl`
+
+When running the adaptive pipeline, an evaluated file is also emitted with per-case metrics:
+
+```jsonl
+{
+    "equation_id": "test100_series_2",
+    "solution_type": "series",
+    "solution_str": "term1 + term2 + term3 + term4",
+    "ground_truth": "term1 + term2 + term3 + term4",
+    "evaluation": {
+        "correct": true,
+        "symbolic_match": false,
+        "numeric_match": true,
+        "series_term_eval": {
+            "term_rmse": [0.0, 0.01, 0.02, 0.03]
+        }
+    }
 }
 ```
 

@@ -1,0 +1,102 @@
+# Stratified Sample Config - Create balanced test set with N samples per solution type
+#
+# Use this to generate a diverse test set with representative examples from each
+# solution category (exact_symbolic, series, discrete_points, approx_coef, etc.)
+#
+# Pipeline order: Load → Augment → Sample → Split
+#   1. Load 5000 equations
+#   2. Augment (optional) → adds edge cases
+#   3. Stratified sample → select N per type (from augmented data!)
+#   4. Split → divide into train/val/test
+#
+# Benefits:
+#   - Get diverse samples that include BOTH original equations AND edge cases
+#   - Balanced representation across all solution types
+#   - Perfect for testing LLM robustness
+#
+# Strategies:
+#   A) Diverse test with edge cases: augment=true, samples_per_type=1, split=false
+#   B) Balanced train+test: samples_per_type=5+, split=true
+#
+# Usage:
+#   python -m src.cli run --config configs/stratified_sample.yaml
+
+dataset:
+  # Option 1: From raw data
+  raw:
+    path: data/raw/Fredholm_Dataset.csv
+    output_dir: data/processed/stratified_sample
+    
+    # Stratified sampling: Get N samples from each solution type
+    stratified_sample: true
+    samples_per_type: 1  # 1 per type = 7 diverse equations
+    
+    # Augmentation: Add edge cases before sampling
+    # augment=true means sample from augmented data (includes edge cases!)
+    augment: false  # Set to true to include edge cases in diverse sample
+    
+    # Convert to formats needed
+    convert_formats: [latex]
+    
+    # Split into train/test
+    # With samples_per_type=1 (7 total), split=false keeps all in one test file
+    # With samples_per_type=5+ (35 total), split=true distributes across train/test
+    split: false  # false = all 7 in one file (recommended for samples_per_type=1)
+    
+  # Option 2: From prepared data (already split)
+  # prepared:
+  #   train_path: data/processed/train_latex.json
+  #   test_path: data/processed/test_latex.json
+  #   stratified_sample: true
+  #   samples_per_type: 2  # Get 2 samples per type from existing data
+  
+  # Examples of different strategies:
+  # 
+  # Strategy A - Diverse test-only (original equations):
+  #   samples_per_type: 1
+  #   augment: false
+  #   split: false
+  #   Result: 7 equations (one of each type, original data only)
+  # 
+  # Strategy B - Diverse test with edge cases:
+  #   samples_per_type: 1
+  #   augment: true
+  #   augment_multiplier: 1.15
+  #   split: false
+  #   Result: 7 equations (may include edge cases like regularized, near_resonance)
+  # 
+  # Strategy C - Balanced train+test:
+  #   samples_per_type: 5
+  #   augment: false
+  #   split: true
+  #   split_ratios: [0.7, 0.0, 0.3]
+  #   Result: ~25 train, ~10 test (all types in each split)
+  # 
+  # Strategy D - Large balanced with edge cases:
+  #   samples_per_type: 20
+  #   augment: true
+  #   split: true
+  #   Result: ~100 train, ~40 test (original + edge cases, well-represented)
+
+  # Prompt generation settings
+  prompting:
+    style: basic
+    output_dir: data/prompts/stratified_sample
+
+model:
+  provider: openrouter
+  name: openai/gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+
+output:
+  dir: outputs/stratified_sample
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

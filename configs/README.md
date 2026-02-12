@@ -9,10 +9,24 @@ This directory contains YAML configuration files for the Fred-LLM pipeline.
 | [template.yaml](template.yaml) | Complete reference | View all available options and defaults |
 | [prepare_data.yaml](prepare_data.yaml) | Data preparation | Prepare dataset without running inference |
 | [run_inference.yaml](run_inference.yaml) | LLM inference | Run inference on prepared prompts |
+| [eval_only.yaml](eval_only.yaml) | Evaluation only | Evaluate existing LLM predictions |
+| [stratified_sample.yaml](stratified_sample.yaml) | Stratified sampling | Create balanced test sets with N samples per solution type |
 
 ## Usage
 
-### 1. Prepare Dataset
+### 1. Evaluate Existing Predictions (Eval-Only Mode)
+
+```bash
+python -m src.cli run --config configs/eval_only.yaml
+```
+
+**Use case:** Analyze predictions from external sources or re-evaluate with different tolerances.
+
+**Output:**
+- Evaluated predictions: `outputs/eval_only/evaluated_predictions_<timestamp>.jsonl`
+- Metrics: `outputs/eval_only/metrics_<timestamp>.json`
+
+### 2. Prepare Dataset
 
 ```bash
 uv run python -m src.cli run --config configs/prepare_data.yaml
@@ -22,7 +36,36 @@ uv run python -m src.cli run --config configs/prepare_data.yaml
 - Prepared data in `data/processed/run_<timestamp>/`
 - Prompts in `data/prompts/few-shot/`
 
-### 2. Run Inference
+### 3. Create Stratified Sample (Balanced Test Sets)
+
+```bash
+# Create diverse test set: 1 sample per solution type (includes edge cases!)
+uv run python -m src.cli run --config configs/stratified_sample.yaml
+
+# Or with augmentation for maximum diversity
+uv run python -m src.cli run --config configs/stratified_sample.yaml \
+  --set dataset.raw.augment=true
+
+# Or balanced train+test: 5 samples per type
+uv run python -m src.cli run --config configs/stratified_sample.yaml \
+  --set dataset.raw.samples_per_type=5 \
+  --set dataset.raw.split=true
+```
+
+**Use case:** Testing LLM performance across all solution types.
+
+✅ **Pipeline order:** Load → Augment → Sample → Split
+- Augmentation (optional) adds edge cases to original data
+- Stratified sampling selects N equations per type **from augmented data**
+- Result: Diverse samples that include both original and edge case equations!
+- Perfect for testing LLM robustness across all solution categories
+
+**Output:**
+- Balanced dataset: `data/processed/stratified_sample/`
+- Predictions: `outputs/stratified_sample/predictions.json`
+- Metrics by solution type
+
+### 4. Run Inference
 
 ```bash
 export OPENAI_API_KEY=your_key_here

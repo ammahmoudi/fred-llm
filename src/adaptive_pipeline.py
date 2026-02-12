@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
-from src.adaptive_config import AdaptivePipelineConfig
+from src.adaptive_config import AdaptivePipelineConfig, EvaluationConfig
 from src.llm.evaluate import SolutionEvaluator
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.llm.model_runner import ModelRunner
@@ -60,6 +60,13 @@ class AdaptivePipeline:
             return self._show_execution_plan()
 
         results = {}
+
+        # Special case: Evaluation-only mode
+        if self.automation_level == "eval-only":
+            console.print(
+                Panel("[bold]Evaluation-Only Mode[/bold]", style="blue")
+            )
+            return self._run_evaluation_only()
 
         # Step 1: Prepare dataset (if needed)
         if self.automation_level == "full":
@@ -125,7 +132,19 @@ class AdaptivePipeline:
 
         plan = []
 
-        if self.automation_level == "full":
+        if self.automation_level == "eval-only":
+            eval_config = self.config.dataset.evaluation_only
+            plan.extend(
+                [
+                    "1. Load predictions from file",
+                    f"   • File: {eval_config.predictions_path}",
+                    "2. Run evaluation",
+                    f"   • Mode: {self.config.evaluation.mode if self.config.evaluation else 'both'}",
+                    f"   • Symbolic tolerance: {self.config.evaluation.symbolic_tolerance if self.config.evaluation else 1e-10}",
+                    f"   • Numeric tolerance: {self.config.evaluation.numeric_tolerance if self.config.evaluation else 1e-6}",
+                ]
+            )
+        elif self.automation_level == "full":
             raw_config = self.config.dataset.raw
             output_dir = self.paths.get("prepared_data", "auto-generated")
             plan.extend(
@@ -260,6 +279,10 @@ class AdaptivePipeline:
         if raw_config.max_samples:
             runner_args.extend(["--max-samples", str(raw_config.max_samples)])
 
+        if raw_config.stratified_sample:
+            runner_args.append("--stratified-sample")
+            runner_args.extend(["--samples-per-type", str(raw_config.samples_per_type)])
+
         if raw_config.augment:
             runner_args.append("--augment")
             runner_args.extend(
@@ -327,6 +350,64 @@ class AdaptivePipeline:
 
             detected_format = auto_detect_format(prep_config.train_path)
             console.print(f"[green]OK[/green] Auto-detected format: {detected_format}")
+
+        # Handle stratified sampling if requested
+        if prep_config.stratified_sample:
+            console.print(
+                f"[cyan]> Applying stratified sampling: {prep_config.samples_per_type} per type[/cyan]"
+            )
+            from src.data.splitter import stratified_sample
+            import pandas as pd
+
+            # Create output directory for sampled data
+            output_dir = self.paths.get("prepared_data")
+            if not output_dir:
+                output_dir = prep_config.train_path.parent / "sampled"
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            sampled_paths = {}
+            for split_name, split_path in [
+                ("train", prep_config.train_path),
+                ("val", prep_config.val_path),
+                ("test", prep_config.test_path),
+            ]:
+                if split_path and split_path.exists():
+                    # Load data
+                    if split_path.suffix == ".json":
+                        with open(split_path) as f:
+                            data = json.load(f)
+                    elif split_path.suffix == ".csv":
+                        df = pd.read_csv(split_path)
+                        data = df.to_dict("records")
+                    else:
+                        console.print(f"[yellow]⚠ Skipping unsupported format: {split_path}[/yellow]")
+                        sampled_paths[split_name] = split_path
+                        continue
+
+                    # Apply stratified sampling
+                    sampled_data = stratified_sample(
+                        data,
+                        samples_per_type=prep_config.samples_per_type,
+                        seed=42
+                    )
+
+                    # Save sampled data
+                    sampled_path = output_dir / f"{split_name}_{split_path.stem.split('_')[-1]}{split_path.suffix}"
+                    if split_path.suffix == ".json":
+                        with open(sampled_path, "w") as f:
+                            json.dump(sampled_data, f, indent=2)
+                    elif split_path.suffix == ".csv":
+                        sampled_df = pd.DataFrame(sampled_data)
+                        sampled_df.to_csv(sampled_path, index=False)
+
+                    sampled_paths[split_name] = sampled_path
+                    console.print(
+                        f"[green]OK[/green] Sampled {len(sampled_data)} from {len(data)} in {split_name}"
+                    )
+                else:
+                    sampled_paths[split_name] = split_path
+
+            return sampled_paths
 
         return {
             "train": prep_config.train_path,
@@ -823,6 +904,77 @@ class AdaptivePipeline:
 
         return metrics
 
+    def _run_evaluation_only(self) -> dict[str, Any]:
+        """
+        Run evaluation-only mode: evaluate existing LLM predictions.
+        
+        Reads predictions from a file and runs evaluation without any inference.
+        """
+        from pathlib import Path
+        
+        eval_config = self.config.dataset.evaluation_only
+        predictions_path = Path(eval_config.predictions_path)
+        
+        if not predictions_path.exists():
+            console.print(f"[red]✗ Predictions file not found: {predictions_path}[/red]")
+            return {"error": f"File not found: {predictions_path}"}
+        
+        console.print(f"[cyan]Loading predictions from {predictions_path}[/cyan]")
+        
+        # Load predictions
+        import json
+        predictions = []
+        if predictions_path.suffix == ".jsonl":
+            with open(predictions_path) as f:
+                for line in f:
+                    if line.strip():
+                        predictions.append(json.loads(line))
+        elif predictions_path.suffix == ".json":
+            with open(predictions_path) as f:
+                data = json.load(f)
+                predictions = data if isinstance(data, list) else [data]
+        else:
+            console.print(f"[red]✗ Unsupported file format: {predictions_path.suffix}[/red]")
+            return {"error": f"Unsupported format: {predictions_path.suffix}"}
+        
+        console.print(f"[cyan]Loaded {len(predictions)} predictions[/cyan]")
+        
+        # Run evaluation with configured settings
+        eval_config_obj = self.config.evaluation or EvaluationConfig()
+        
+        from src.llm.evaluate import evaluate_solutions
+        
+        metrics = evaluate_solutions(
+            predictions_path,
+            mode=eval_config_obj.mode,
+            symbolic_tolerance=eval_config_obj.symbolic_tolerance,
+            numeric_tolerance=eval_config_obj.numeric_tolerance,
+            n_test_points=eval_config_obj.num_test_points,
+            type_tolerances=eval_config_obj.type_tolerances,
+            include_points=False,
+        )
+        
+        # Save metrics
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = self.config.output.dir
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        metrics_file = output_dir / f"eval_metrics_{timestamp}.json"
+        with open(metrics_file, "w") as f:
+            json.dump(metrics, f, indent=2)
+        
+        console.print(f"\n[bold green]✓ Evaluation Complete![/bold green]")
+        console.print(f"[cyan]Accuracy: {metrics.get('accuracy', 0):.2%}[/cyan]")
+        console.print(f"[cyan]Symbolic: {metrics.get('symbolic_accuracy', 0):.2%}[/cyan]")
+        console.print(f"[cyan]Numeric: {metrics.get('numeric_accuracy', 0):.2%}[/cyan]")
+        console.print(f"[cyan]Metrics saved to {metrics_file}[/cyan]")
+        
+        return {
+            "metrics": metrics,
+            "metrics_file": str(metrics_file),
+        }
+
 
 def load_adaptive_config(config_path: Path) -> AdaptivePipelineConfig:
     """Load and validate adaptive configuration."""
@@ -832,3 +984,4 @@ def load_adaptive_config(config_path: Path) -> AdaptivePipelineConfig:
         config_dict = yaml.safe_load(f)
 
     return AdaptivePipelineConfig(**config_dict)
+

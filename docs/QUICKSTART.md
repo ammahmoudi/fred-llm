@@ -242,11 +242,30 @@ SOLUTION_TYPE: exact_symbolic/approx_coef/discrete_points/series/family/regulari
 
 This enables automated evaluation of solution correctness and edge case recognition accuracy.
 
+## Evaluation-Only Mode (Quick Testing)
+
+If you already have LLM predictions and want to evaluate them without running inference:
+
+```bash
+# Evaluate using sample predictions
+python -m src.cli run --config configs/eval_only.yaml
+
+# Or evaluate your own predictions
+python -m src.cli evaluate your_predictions.jsonl \
+  --mode both \
+  --numeric-tolerance 1e-6 \
+  --output metrics.json
+```
+
+This computes RMSE, MAE, and symbolic/numeric accuracy metrics.
+
+→ See [Evaluation-Only Mode Guide](EVAL_MODE_GUIDE.md) for details
+
 ## Next Steps
 
 - **Configure your LLM**: Edit `config.yaml` to set your API keys and model preferences
 - **Train/Fine-tune**: Use generated prompts for fine-tuning or in-context learning
-- **Evaluate**: Run evaluation metrics on model outputs
+- **Evaluate**: Run evaluation metrics on model outputs with [eval-only mode](EVAL_MODE_GUIDE.md)
 - **Explore**: Check out the notebooks in `notebooks/` for data exploration
 
 ## Common Issues

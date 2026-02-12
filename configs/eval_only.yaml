@@ -1,0 +1,35 @@
+# Evaluation-Only Mode Configuration
+# 
+# Use this config to evaluate existing LLM predictions without running inference.
+# This is useful for:
+# - Re-evaluating predictions with different tolerance settings
+# - Analyzing predictions from external LLM sources
+# - Batch evaluation of multiple prediction files
+#
+# Example usage:
+#   python -m src.cli run --config configs/eval_only.yaml
+#
+# Or use the CLI directly:
+#   python -m src.cli evaluate predictions.jsonl --output metrics.json
+
+dataset:
+  evaluation_only:
+    # Path to predictions file (JSON or JSONL)
+    # Required fields: equation_id, ground_truth, solution_str
+    predictions_path: data/samples/sample_predictions.jsonl
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  use_math_verify: true
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
+
+output:
+  dir: outputs/eval_only
+  save_metrics: true
+  log_level: INFO

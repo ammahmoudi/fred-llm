@@ -10,7 +10,7 @@ from src.data.fredholm_loader import (
     load_fredholm_dataset,
 )
 from src.data.loader import DataLoader, load_dataset
-from src.data.splitter import get_split_statistics, split_dataset
+from src.data.splitter import get_split_statistics, split_dataset, stratified_sample
 from src.data.validator import validate_dataset, validate_equation
 
 __all__ = [
@@ -31,5 +31,6 @@ __all__ = [
     "validate_equation",
     "validate_dataset",
     "split_dataset",
+    "stratified_sample",
     "get_split_statistics",
 ]

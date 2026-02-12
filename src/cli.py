@@ -82,19 +82,85 @@ def evaluate(
         "-o",
         help="Output file for evaluation results",
     ),
+    symbolic_tolerance: float = typer.Option(
+        1e-10,
+        "--symbolic-tolerance",
+        "-st",
+        help="Tolerance for symbolic comparison",
+    ),
+    numeric_tolerance: float = typer.Option(
+        1e-6,
+        "--numeric-tolerance",
+        "-nt",
+        help="Tolerance for numeric comparison",
+    ),
+    num_test_points: int = typer.Option(
+        100,
+        "--test-points",
+        "-tp",
+        help="Number of test points for numeric evaluation",
+    ),
 ) -> None:
     """Evaluate LLM-generated solutions against ground truth."""
+    import json
+    from pathlib import Path
     from src.llm.evaluate import evaluate_solutions
+
+    input_file = Path(input_file)
+    
+    if not input_file.exists():
+        console.print(f"[red]✗ Input file not found: {input_file}[/red]")
+        raise typer.Exit(code=1)
 
     console.print(f"[bold blue]Evaluating solutions from {input_file}[/bold blue]")
 
-    # TODO: Implement evaluation logic
-    results = evaluate_solutions(input_file, mode=mode)
+    # Run evaluation
+    try:
+        results = evaluate_solutions(
+            input_file,
+            mode=mode,
+            symbolic_tolerance=symbolic_tolerance,
+            numeric_tolerance=numeric_tolerance,
+            n_test_points=num_test_points,
+        )
+    except Exception as e:
+        console.print(f"[red]✗ Evaluation failed: {e}[/red]")
+        raise typer.Exit(code=1)
 
+    # Display results
+    console.print("\n[bold]Evaluation Results:[/bold]")
+    console.print(f"  Total predictions: {results.get('total_results', 0)}")
+    console.print(f"  Evaluated: {results.get('evaluated_count', 0)}")
+    if results.get('total', 0) > 0:
+        console.print(f"  Accuracy: {results.get('accuracy', 0):.2%}")
+        console.print(f"  Symbolic accuracy: {results.get('symbolic_accuracy', 0):.2%}")
+        console.print(f"  Numeric accuracy: {results.get('numeric_accuracy', 0):.2%}")
+    
+    if results.get('has_solution_accuracy') is not None:
+        console.print(f"  Has solution accuracy: {results.get('has_solution_accuracy', 0):.2%}")
+    
+    if results.get('solution_type_accuracy') is not None:
+        console.print(f"  Solution type accuracy: {results.get('solution_type_accuracy', 0):.2%}")
+    
+    # Display per-type breakdown
+    per_type = results.get('per_type', {})
+    if per_type:
+        console.print(f"\n  [bold]Per-type breakdown:[/bold]")
+        for stype, counts in sorted(per_type.items()):
+            accuracy = counts['correct'] / counts['total'] if counts['total'] > 0 else 0
+            console.print(
+                f"    {stype}: {counts['correct']}/{counts['total']} ({accuracy:.0%})"
+            )
+    
+    # Save results if output specified
     if output:
-        console.print(f"[green]Results saved to {output}[/green]")
+        output = Path(output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with open(output, "w") as f:
+            json.dump(results, f, indent=2)
+        console.print(f"\n[green]✓ Results saved to {output}[/green]")
     else:
-        console.print(results)
+        console.print("\n[yellow]Use --output to save results to a file[/yellow]")
 
 
 @app.command()

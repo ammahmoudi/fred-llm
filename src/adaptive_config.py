@@ -27,6 +27,13 @@ class RawDatasetConfig(BaseModel):
     max_samples: Optional[int] = None
     """Limit number of samples to process (None = all)"""
 
+    # Stratified sampling settings
+    stratified_sample: bool = False
+    """Whether to use stratified sampling (balanced samples per solution type)"""
+
+    samples_per_type: int = 1
+    """Number of samples to take from each solution type (default: 1 for diverse testing)"""
+
     # Augmentation settings
     augment: bool = False
     """Whether to apply augmentation"""
@@ -85,6 +92,13 @@ class PreparedDatasetConfig(BaseModel):
     max_samples: Optional[int] = None
     """Limit number of samples (for testing)"""
 
+    # Stratified sampling settings
+    stratified_sample: bool = False
+    """Whether to use stratified sampling (balanced samples per solution type)"""
+
+    samples_per_type: int = 1
+    """Number of samples to take from each solution type (default: 1 for diverse testing)"""
+
 
 class PromptGenerationConfig(BaseModel):
     """Configuration for prompt generation."""
@@ -126,6 +140,17 @@ class PreparedPromptsConfig(BaseModel):
     """Prompt style name (must match directory name)"""
 
 
+class EvaluationDataConfig(BaseModel):
+    """Configuration for evaluation-only mode.
+    
+    Used when you have LLM predictions and only want to run evaluation.
+    No data preparation, prompting, or inference needed.
+    """
+
+    predictions_path: Path
+    """Path to predictions file (JSON or JSONL) with LLM outputs"""
+
+
 class AdaptiveDatasetConfig(BaseModel):
     """Adaptive dataset configuration - supports multiple automation levels."""
 
@@ -145,14 +170,27 @@ class AdaptiveDatasetConfig(BaseModel):
     prompts: Optional[PreparedPromptsConfig] = None
     """Pre-generated prompts. Pipeline will use directly."""
 
+    # Option 4: Evaluation only (no model inference needed)
+    evaluation_only: Optional[EvaluationDataConfig] = None
+    """Evaluation-only mode: evaluate existing LLM predictions without running inference."""
+
     @model_validator(mode="after")
     def validate_dataset_config(self):
         """Validate dataset configuration for conflicts and requirements."""
         # Check: At least one input method
-        if not any([self.raw, self.prepared, self.prompts]):
+        if not any([self.raw, self.prepared, self.prompts, self.evaluation_only]):
             raise ValueError(
-                "Must specify at least one of: dataset.raw, dataset.prepared, or dataset.prompts"
+                "Must specify at least one of: dataset.raw, dataset.prepared, "
+                "dataset.prompts, or dataset.evaluation_only"
             )
+
+        # Eval-only mode: cannot have other options
+        if self.evaluation_only:
+            if any([self.raw, self.prepared, self.prompts]):
+                raise ValueError(
+                    "Conflict: dataset.evaluation_only mode cannot be combined with "
+                    "raw, prepared, or prompts. Use evaluation_only exclusively."
+                )
 
         # Check: Conflict if both prepared data path and raw output are same
         if self.raw and self.prepared:
@@ -232,9 +270,11 @@ class AdaptivePipelineConfig(BaseModel):
     evaluation: Optional[EvaluationConfig] = None
     output: OutputConfig = Field(default_factory=OutputConfig)
 
-    def get_automation_level(self) -> Literal["full", "partial", "manual"]:
+    def get_automation_level(self) -> Literal["full", "partial", "manual", "eval-only"]:
         """Determine the automation level based on configuration."""
-        if self.dataset.prompts:
+        if self.dataset.evaluation_only:
+            return "eval-only"  # Evaluation only
+        elif self.dataset.prompts:
             return "manual"  # Pre-generated prompts
         elif self.dataset.prepared:
             return "partial"  # Pre-split data

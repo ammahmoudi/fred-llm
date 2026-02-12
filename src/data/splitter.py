@@ -209,6 +209,87 @@ def split_dataset(
     return train, val, test
 
 
+def stratified_sample(
+    data: list[dict],
+    samples_per_type: int = 1,
+    solution_type_key: str = "solution_type",
+    seed: int = 42,
+) -> list[dict]:
+    """
+    Create a stratified sample with N samples from each solution type.
+
+    Useful for creating small balanced test sets with representative examples
+    from each solution category (exact_symbolic, series, discrete_points, etc.).
+
+    Args:
+        data: List of equation dictionaries to sample from.
+        samples_per_type: Number of samples to take from each solution type (default: 1).
+        solution_type_key: Key to use for solution type stratification (default: "solution_type").
+        seed: Random seed for reproducibility (default: 42).
+
+    Returns:
+        List of sampled equations, balanced across solution types.
+
+    Example:
+        >>> # Get 1 sample from each solution type (diverse test set)
+        >>> diverse_sample = stratified_sample(data, samples_per_type=1)
+        >>> # Get 5 samples from each solution type
+        >>> balanced_sample = stratified_sample(data, samples_per_type=5)
+    """
+    if len(data) == 0:
+        logger.info("Stratified sample: empty dataset")
+        return []
+
+    df = pd.DataFrame(data)
+
+    # Fill missing solution_type with default
+    if solution_type_key not in df.columns:
+        logger.warning(
+            f"'{solution_type_key}' column not found. Using 'exact_symbolic' as default."
+        )
+        df[solution_type_key] = "exact_symbolic"
+
+    # Group by solution type
+    type_counts = df[solution_type_key].value_counts()
+    logger.info(
+        f"Found {len(type_counts)} solution types: {dict(type_counts)}"
+    )
+
+    # Sample from each group
+    sampled_dfs = []
+    for solution_type, group_df in df.groupby(solution_type_key):
+        group_size = len(group_df)
+        n_samples = min(samples_per_type, group_size)
+
+        if n_samples < samples_per_type:
+            logger.warning(
+                f"Solution type '{solution_type}' has only {group_size} sample(s), "
+                f"requested {samples_per_type}. Taking all {group_size}."
+            )
+
+        sampled = group_df.sample(n=n_samples, random_state=seed)
+        sampled_dfs.append(sampled)
+        logger.info(
+            f"  Sampled {n_samples}/{group_size} from '{solution_type}'"
+        )
+
+    # Combine all samples
+    result_df = pd.concat(sampled_dfs, ignore_index=True)
+
+    # Shuffle to mix solution types
+    result_df = result_df.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+
+    # Convert back to list of dicts
+    result = result_df.to_dict("records")
+
+    logger.info(
+        f"Stratified sample complete: {len(result)} equations "
+        f"({samples_per_type} per type × {len(type_counts)} types)"
+    )
+
+    return result
+
+
 def get_split_statistics(
     train: list[dict], val: list[dict], test: list[dict]
 ) -> dict[str, dict]:

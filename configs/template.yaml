@@ -9,6 +9,29 @@ dataset:
     output_dir: null  # Optional: defaults to data/processed/run_<timestamp>
     max_samples: null  # Optional: limit samples (null = all)
     
+    # Stratified sampling: Create balanced test sets with N samples per solution type
+    # Order: Load → Augment → Sample → Split
+    # - Augmentation adds edge cases to original data
+    # - Sampling selects N equations per solution type (from augmented data)
+    # - Splitting divides sampled data into train/val/test
+    # 
+    # Example: 5000 original → augment 1.15x → 5750 total
+    #          → sample 1 per type → 7 equations (includes edge cases!)
+    #          → split → distribute those 7
+    # 
+    # Recommended strategies:
+    # A) Diverse test-only: samples_per_type=1, split=false → All types in one file
+    # B) Balanced train+test: samples_per_type=5+, split=true → All types per split
+    # C) With augmentation: augment=true + samples_per_type=1 → Diverse with edge cases
+    # 
+    # Solution types: exact_symbolic, series, discrete_points, 
+    #   approx_coef, family, regularized, none
+    stratified_sample: false  # true = enable balanced sampling
+    samples_per_type: 1  # Number to sample from each solution type
+    
+    # Note: Sampling happens AFTER augmentation, so you get diverse edge cases too!
+    #       7 types × 1 sample = 7 equations (may include augmented edge cases)
+    
     # Augmentation
     augment: false
     augment_multiplier: 1.15
@@ -34,6 +57,12 @@ dataset:
     test_path: null
     format: null  # null = auto-detect, or specify: infix|latex|rpn|tokenized|python
     max_samples: null
+    
+    # Stratified sampling: Sample from already-prepared data
+    # Useful for quickly testing on a balanced subset without re-preparing
+    # Applied after loading files, creates new sampled files in output directory
+    stratified_sample: false  # true = sample N from each solution type
+    samples_per_type: 1  # Number per type (1=diverse, 5=small balanced, 10+=large)
   
   # Prompt generation (on-the-fly)
   prompting:

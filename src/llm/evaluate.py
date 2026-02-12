@@ -1328,8 +1328,12 @@ class SolutionEvaluator:
             if r.get("solution_type") == "family" and r.get("family_param_eval")
         ]
         if family_params:
-            naming_rates = [1.0 if e.get("param_naming_valid") else 0.0 for e in family_params]
-            count_match = [1.0 if e.get("param_count_match") else 0.0 for e in family_params]
+            naming_rates = [
+                1.0 if e.get("param_naming_valid") else 0.0 for e in family_params
+            ]
+            count_match = [
+                1.0 if e.get("param_count_match") else 0.0 for e in family_params
+            ]
             summary["family_param_stats"] = {
                 "total": len(family_params),
                 "naming_convention_rate": float(np.mean(naming_rates)),

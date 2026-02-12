@@ -6,9 +6,23 @@ Simple runner script that orchestrates the data processing pipeline.
 All logic is in the src.data modules.
 
 Usage:
+    # Basic: Load and save data
     python scripts/prepare_dataset.py --input data/raw/Fredholm_Dataset_Sample.csv --output data/processed/
+    
+    # Process with all steps
     python scripts/prepare_dataset.py --max-samples 100 --augment --convert --validate
+    
+    # Augment and split into train/test
     python scripts/prepare_dataset.py --max-samples 200 --augment --split
+    
+    # Create stratified sample (1 equation per solution type for diverse testing)
+    python scripts/prepare_dataset.py --stratified-sample --samples-per-type 1 --convert
+    
+    # Create balanced sample with edge cases (augment first, then sample)
+    python scripts/prepare_dataset.py --augment --stratified-sample --samples-per-type 1 --convert
+    
+    # Create large balanced sample (5 equations per solution type)
+    python scripts/prepare_dataset.py --stratified-sample --samples-per-type 5 --convert --split
 """
 
 import argparse
@@ -118,6 +132,17 @@ def parse_args() -> argparse.Namespace:
         "--split",
         action="store_true",
         help="Split into train/val/test sets",
+    )
+    parser.add_argument(
+        "--stratified-sample",
+        action="store_true",
+        help="Create stratified sample with N samples per solution type",
+    )
+    parser.add_argument(
+        "--samples-per-type",
+        type=int,
+        default=1,
+        help="Number of samples to take from each solution type (default: 1 for diverse test set)",
     )
     parser.add_argument(
         "--train-ratio",
@@ -263,7 +288,11 @@ def main() -> None:
     from src.data.augmentation import DataAugmenter
     from src.data.format_converter import FormatConverter
     from src.data.fredholm_loader import FredholmDatasetLoader
-    from src.data.splitter import get_split_statistics, split_dataset
+    from src.data.splitter import (
+        get_split_statistics,
+        split_dataset,
+        stratified_sample,
+    )
     from src.data.validator import validate_dataset
 
     console.print("[bold blue]Fred-LLM Dataset Preparation[/bold blue]\n")
@@ -333,6 +362,29 @@ def main() -> None:
                 args.output_format,
             )
         )
+
+    # Step 2.5: Create stratified sample if requested (AFTER augmentation)
+    if args.stratified_sample:
+        console.print(
+            f"[bold]Step 2.5: Creating stratified sample ({args.samples_per_type} per type)[/bold]"
+        )
+        # Sample from augmented data if available, otherwise from original
+        sample_source = augmented_data if augmented_data else data
+        original_count = len(sample_source)
+        
+        sampled_data = stratified_sample(
+            sample_source, samples_per_type=args.samples_per_type, seed=42
+        )
+        console.print(
+            f"  ✓ Sampled {len(sampled_data)} equations from {original_count} "
+            f"({args.samples_per_type} per solution type)\n"
+        )
+        
+        # Replace data/augmented_data with sampled version
+        if augmented_data:
+            augmented_data = sampled_data
+        else:
+            data = sampled_data
 
     # Step 3: Validate if requested (before splitting)
     if args.validate:

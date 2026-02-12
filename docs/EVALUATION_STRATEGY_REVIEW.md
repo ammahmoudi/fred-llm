@@ -896,7 +896,6 @@ uv run pytest tests/test_evaluate.py -v
 - ✅ Added multi-sample numeric comparison for free constants
 - ✅ Added parameter metadata: count + naming info (`family_param_eval`)
 - ✅ Tests added for family termwise + parameter metadata
-````
 
 ---
 

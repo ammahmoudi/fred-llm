@@ -445,6 +445,8 @@ def numeric_compare(solution, ground_truth, domain=(-1, 1), n_points=100):
 
 **Metric**: `numeric_accuracy` – % of sampled points within tolerance
 
+**Numeric outputs:** `max_error`, `mean_error`, `mae`, `rmse`, plus optional per-point arrays when enabled.
+
 **Note:** If `evaluation_points` are present in the prediction metadata, numeric comparison uses those stored points instead of generating new samples.
 
 ---
@@ -469,6 +471,7 @@ Additional evaluators run when `solution_type` matches and record metadata in ea
 - Multi-sample numeric comparison for free constants
 - Term-by-term numeric RMSE after substitution
 - Metadata: `family_param_eval` (parameter count + naming)
+- Includes std for max/mean/rmse across samples (`*_std`)
 
 ---
 
@@ -527,6 +530,11 @@ Aggregated evaluation results across all predictions:
   
   "has_solution_accuracy": 0.66,        // Edge case: YES/NO correctness
   "solution_type_accuracy": 0.07,       // Edge case: type classification
+
+    "confusion_matrix": {                 // NEW
+        "approx_coef_predicted_as_family": 3,
+        "series_predicted_as_exact_symbolic": 2
+    },
   
   "api_errors": 0,                      // Failed API calls
   "parse_errors": 10,                   // Failed extractions
@@ -577,6 +585,7 @@ When running the adaptive pipeline, an evaluated file is also emitted with per-c
             "term_rmse": [0.0, 0.01, 0.02, 0.03]
         },
         "numeric": {
+            "mae": 0.0,
             "x_values": [0.0, 0.1],
             "y_pred": [0.0, 0.1],
             "y_true": [0.0, 0.1],

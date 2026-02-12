@@ -217,7 +217,9 @@ class TestSolutionEvaluator:
         evaluator = SolutionEvaluator()
 
         expr = 2 * x + 3 * sp.sin(x)
-        result = evaluator.evaluate(expr, expr, domain=(0, 1), solution_type="approx_coef")
+        result = evaluator.evaluate(
+            expr, expr, domain=(0, 1), solution_type="approx_coef"
+        )
 
         assert result["approx_coef_eval"]["match"] is True
         assert result["approx_coef_eval"]["terms_compared"] == 2
@@ -296,9 +298,7 @@ class TestEvaluateSolutions:
             },
         ]
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".jsonl", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             for r in results:
                 f.write(json.dumps(r) + "\n")
             temp_path = f.name
@@ -323,9 +323,7 @@ class TestEvaluateSolutions:
             }
         ]
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(results, f)
             temp_path = f.name
 
@@ -352,9 +350,7 @@ class TestEvaluateSolutions:
             },
         ]
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".jsonl", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             for r in results:
                 f.write(json.dumps(r) + "\n")
             temp_path = f.name

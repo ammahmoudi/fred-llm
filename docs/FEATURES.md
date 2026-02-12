@@ -199,9 +199,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - evaluate_approx_coeffs(): Compares coefficients per top-level term
   - Metadata: approx_coef_eval, approx_coef_stats
   - Integrated with SolutionEvaluator.evaluate() when solution_type is approx_coef
+- [x] **Per-equation evaluation details** ✅ **(February 12, 2026)**
+  - Evaluated predictions include symbolic/numeric match flags and per-point arrays
 - [x] **family numeric evaluation (multi-sample)** ✅ **(February 12, 2026)**
   - Numeric comparison across multiple constant samples
   - Evaluation points store constant_samples and u_values_samples
+  - Includes std for max/mean/rmse across samples
 - [x] **family termwise evaluation** ✅ **(February 12, 2026)**
   - Term-by-term numeric comparison after constant substitution
   - Metadata: family_term_eval
@@ -209,6 +212,7 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] **Edge case evaluation metrics** - has_solution + solution_type accuracy ✅ **(February 6, 2026)**
   - [x] has_solution accuracy (binary classification: TP/TN/FP/FN)
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
+  - [x] confusion_matrix for solution_type misclassifications ✅ **(February 12, 2026)**
   - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**
 - [ ] BLEU / TeX-BLEU - Token-level similarity metrics ❌ **Not started**
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**

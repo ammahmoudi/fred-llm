@@ -622,6 +622,7 @@ class AdaptivePipeline:
         has_solution_total = 0
         solution_type_correct = 0
         solution_type_total = 0
+        confusion_matrix: dict[str, int] = {}
         evaluated_count = 0
         api_error_count = 0
         errors: list[str] = []
@@ -661,6 +662,9 @@ class AdaptivePipeline:
                 solution_type_total += 1
                 if gt_solution_type == pred_solution_type:
                     solution_type_correct += 1
+                else:
+                    key = f"{gt_solution_type}_predicted_as_{pred_solution_type}"
+                    confusion_matrix[key] = confusion_matrix.get(key, 0) + 1
 
             # Extract domain from metadata
             domain = tuple(pred.get("ground_truth_domain") or [0, 1])
@@ -753,6 +757,8 @@ class AdaptivePipeline:
                 solution_type_correct / solution_type_total
             )
             metrics["solution_type_total"] = solution_type_total
+        if confusion_matrix:
+            metrics["confusion_matrix"] = confusion_matrix
 
         # Display results
         console.print(f"\n[bold]Evaluation Results:[/bold]")

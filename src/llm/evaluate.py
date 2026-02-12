@@ -295,6 +295,7 @@ def evaluate_solutions(
     has_solution_total = 0
     solution_type_correct = 0
     solution_type_total = 0
+    confusion_matrix: dict[str, int] = {}
     evaluated_count = 0
     errors: list[str] = []
 
@@ -313,6 +314,9 @@ def evaluate_solutions(
             solution_type_total += 1
             if gt_solution_type == pred_solution_type:
                 solution_type_correct += 1
+            else:
+                key = f"{gt_solution_type}_predicted_as_{pred_solution_type}"
+                confusion_matrix[key] = confusion_matrix.get(key, 0) + 1
 
         # Extract domain from metadata
         domain = tuple(result.get("ground_truth_domain") or [0, 1])
@@ -379,6 +383,9 @@ def evaluate_solutions(
         "total_results": len(results),
         "parse_errors": len(errors),
     }
+
+    if confusion_matrix:
+        metrics["confusion_matrix"] = confusion_matrix
 
     if has_solution_total > 0:
         metrics["has_solution_accuracy"] = has_solution_correct / has_solution_total
@@ -487,8 +494,11 @@ def numeric_compare(
         "match": False,
         "max_error": float("inf"),
         "mean_error": float("inf"),
+        "mae": float("inf"),
         "rmse": float("inf"),
     }
+
+    points_source: str | None = None
 
     try:
         x = sp.Symbol("x")
@@ -567,16 +577,21 @@ def numeric_compare(
         errors = np.abs(y_solution - y_truth)
         result["max_error"] = float(np.max(errors))
         result["mean_error"] = float(np.mean(errors))
+        result["mae"] = result["mean_error"]
         result["rmse"] = float(np.sqrt(np.mean(errors**2)))
 
         # Check if within tolerance
         result["match"] = result["max_error"] < tolerance
 
+        if points_source is None:
+            points_source = "generated"
+        result["evaluation_points_used"] = int(len(test_points))
+        result["points_source"] = points_source
+
         if include_points:
             result["x_values"] = test_points.tolist()
             result["y_pred"] = y_solution.tolist()
             result["y_true"] = y_truth.tolist()
-            result["points_source"] = points_source
 
     except Exception as e:
         logger.warning(f"Numeric comparison failed: {e}")
@@ -810,6 +825,7 @@ def _family_numeric_compare_samples(
                     "match": float(np.max(errors)) < tolerance,
                     "max_error": float(np.max(errors)),
                     "mean_error": float(np.mean(errors)),
+                    "mae": float(np.mean(errors)),
                     "rmse": float(np.sqrt(np.mean(errors**2))),
                 }
                 if include_points:
@@ -819,16 +835,24 @@ def _family_numeric_compare_samples(
                     sample_result["points_source"] = "evaluation_points"
                 sample_results.append(sample_result)
 
-            max_error = max(r["max_error"] for r in sample_results)
-            mean_error = float(np.mean([r["mean_error"] for r in sample_results]))
-            rmse = float(np.mean([r["rmse"] for r in sample_results]))
+            max_errors = [r["max_error"] for r in sample_results]
+            mean_errors = [r["mean_error"] for r in sample_results]
+            rmses = [r["rmse"] for r in sample_results]
+
+            max_error = max(max_errors)
+            mean_error = float(np.mean(mean_errors))
+            rmse = float(np.mean(rmses))
             match = all(r["match"] for r in sample_results)
 
             return {
                 "match": match,
                 "max_error": max_error,
                 "mean_error": mean_error,
+                "mae": mean_error,
                 "rmse": rmse,
+                "max_error_std": float(np.std(max_errors)),
+                "mean_error_std": float(np.std(mean_errors)),
+                "rmse_std": float(np.std(rmses)),
                 "sample_results": sample_results,
                 "constant_samples": sample_constants,
             }
@@ -842,16 +866,24 @@ def _family_numeric_compare_samples(
             numeric_compare(sol_sub, gt_sub, domain, n_points, tolerance)
         )
 
-    max_error = max(r["max_error"] for r in sample_results)
-    mean_error = float(np.mean([r["mean_error"] for r in sample_results]))
-    rmse = float(np.mean([r["rmse"] for r in sample_results]))
+    max_errors = [r["max_error"] for r in sample_results]
+    mean_errors = [r["mean_error"] for r in sample_results]
+    rmses = [r["rmse"] for r in sample_results]
+
+    max_error = max(max_errors)
+    mean_error = float(np.mean(mean_errors))
+    rmse = float(np.mean(rmses))
     match = all(r["match"] for r in sample_results)
 
     return {
         "match": match,
         "max_error": max_error,
         "mean_error": mean_error,
+        "mae": mean_error,
         "rmse": rmse,
+        "max_error_std": float(np.std(max_errors)),
+        "mean_error_std": float(np.std(mean_errors)),
+        "rmse_std": float(np.std(rmses)),
         "sample_results": sample_results,
         "constant_samples": constant_samples,
     }
@@ -934,6 +966,7 @@ def evaluate_discrete_points(
             "accuracy": 0.0,
             "max_error": float("inf"),
             "mean_error": float("inf"),
+            "mae": float("inf"),
             "rmse": float("inf"),
         }
 
@@ -969,6 +1002,7 @@ def evaluate_discrete_points(
         "accuracy": matched / len(pred_points) if pred_points else 0.0,
         "max_error": float(np.max(errors)) if errors else float("inf"),
         "mean_error": float(np.mean(errors)) if errors else float("inf"),
+        "mae": float(np.mean(errors)) if errors else float("inf"),
         "rmse": float(np.sqrt(np.mean(np.array(errors) ** 2)))
         if errors
         else float("inf"),
@@ -1040,6 +1074,8 @@ class SolutionEvaluator:
         result = {
             "symbolic": symbolic,
             "numeric": numeric,
+            "symbolic_match": symbolic.get("equivalent", False),
+            "numeric_match": numeric.get("match", False),
             "correct": symbolic["equivalent"] or numeric["match"],
             "solution_type": solution_type,
         }
@@ -1092,6 +1128,8 @@ class SolutionEvaluator:
                 "mean_error": 0.0 if correct else float("inf"),
                 "rmse": 0.0 if correct else float("inf"),
             },
+            "symbolic_match": correct,
+            "numeric_match": correct,
             "correct": correct,
             "solution_type": "none",
         }
@@ -1159,6 +1197,8 @@ class SolutionEvaluator:
         result = {
             "symbolic": symbolic,
             "numeric": numeric,
+            "symbolic_match": symbolic.get("equivalent", False),
+            "numeric_match": numeric.get("match", False),
             "family_match": family_match,
             "family_term_eval": term_eval,
             "family_param_eval": param_eval,
@@ -1196,6 +1236,8 @@ class SolutionEvaluator:
         result = {
             "symbolic": {"equivalent": False},  # Not applicable for discrete points
             "numeric": result_dict,
+            "symbolic_match": False,
+            "numeric_match": result_dict.get("match", False),
             "correct": result_dict["match"],
             "solution_type": solution_type,
         }
@@ -1261,6 +1303,37 @@ class SolutionEvaluator:
                 "mean_match_rate": float(np.mean(match_rates)),
                 "mean_abs_error": float(np.mean(mean_abs)),
                 "mean_rel_error": float(np.mean(mean_rel)),
+            }
+
+        discrete_eval = [
+            r.get("numeric")
+            for r in self.results
+            if r.get("solution_type") == "discrete_points" and r.get("numeric")
+        ]
+        if discrete_eval:
+            matched = sum(e.get("matched_points", 0) for e in discrete_eval)
+            total_gt = sum(e.get("total_points_gt", 0) for e in discrete_eval)
+            accuracies = [e.get("accuracy", 0.0) for e in discrete_eval]
+            rmses = [e.get("rmse", float("inf")) for e in discrete_eval]
+            summary["discrete_points_stats"] = {
+                "total": len(discrete_eval),
+                "matched_point_rate": matched / total_gt if total_gt else 0.0,
+                "mean_accuracy": float(np.mean(accuracies)),
+                "mean_rmse": float(np.mean(rmses)),
+            }
+
+        family_params = [
+            r.get("family_param_eval")
+            for r in self.results
+            if r.get("solution_type") == "family" and r.get("family_param_eval")
+        ]
+        if family_params:
+            naming_rates = [1.0 if e.get("param_naming_valid") else 0.0 for e in family_params]
+            count_match = [1.0 if e.get("param_count_match") else 0.0 for e in family_params]
+            summary["family_param_stats"] = {
+                "total": len(family_params),
+                "naming_convention_rate": float(np.mean(naming_rates)),
+                "param_count_match_rate": float(np.mean(count_match)),
             }
 
         # Per-type breakdown

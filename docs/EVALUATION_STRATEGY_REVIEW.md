@@ -1,7 +1,7 @@
 # Evaluation Strategy Comprehensive Review
 
 **Date:** February 12, 2026  
-**Status:** Phase 2 Task 2.3 Complete - family evaluator metadata + termwise + multi-sample numeric  
+**Status:** Phase 3 Complete - reporting + confusion matrix + per-equation details  
 **Last Updated:** February 12, 2026
 
 ---
@@ -63,7 +63,7 @@ u_values = u_values[finite_mask]
 - ✅ **Phase 2, Task 2.3**: family evaluator enhancements - COMPLETED
 - ✅ **Phase 2, Task 2.4**: use stored evaluation_points in evaluate.py - COMPLETED
 - ✅ **Phase 2, Task 2.5**: write evaluation_points into dataset outputs - COMPLETED
-- ⏳ **Phase 3**: Enhanced reporting and metrics (not started)
+- ✅ **Phase 3**: Enhanced reporting and metrics (completed)
 
 ---
 
@@ -78,7 +78,8 @@ u_values = u_values[finite_mask]
   - `matched_points`: Count of ground truth points found in predictions (within tolerance)
   - `accuracy`: Percentage of ground truth points matched (%)
   - `max_error`: Maximum y-value difference across all matches
-  - `mean_error`: Average y-value difference across all matches
+    - `mean_error`: Average y-value difference across all matches
+    - `mae`: Mean absolute error (same as mean_error)
   - `rmse`: Root mean squared error for matched points
 - ✅ **Match classification**: 80% threshold for "match" status (matched_points / total_points >= 0.80)
 - ✅ **Integration**: Works with SolutionEvaluator tracking and summary statistics
@@ -361,6 +362,7 @@ def numeric_compare_fixed_points(solution, ground_truth_points, tolerance=1e-6):
     return {
         "max_error": float(np.max(errors)),
         "mean_error": float(np.mean(errors)),
+        "mae": float(np.mean(errors)),
         "rmse": float(np.sqrt(np.mean(errors**2))),
         "match": np.max(errors) < tolerance
     }
@@ -894,6 +896,7 @@ uv run pytest tests/test_evaluate.py -v
 **Implementation status:**
 - ✅ Added term-by-term numeric evaluation for family (`family_term_eval`)
 - ✅ Added multi-sample numeric comparison for free constants
+- ✅ Added per-sample std for max/mean/rmse across constant samples
 - ✅ Added parameter metadata: count + naming info (`family_param_eval`)
 - ✅ Tests added for family termwise + parameter metadata
 
@@ -914,12 +917,12 @@ uv run pytest tests/test_evaluate.py -v
 
 ### Phase 3: Reporting & Analysis (1 day) 📊
 
-**Priority: Insights and debugging**
+**Priority: Insights and debugging (completed)**
 
-#### Task 3.1: Enhanced metrics output
+#### Task 3.1: Enhanced metrics output ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Expand metrics dictionary
+**Files modified:**
+- ✅ `src/llm/evaluate.py` - Expanded metrics dictionary with per-type stats
 
 **New metrics structure:**
 ```python
@@ -983,10 +986,11 @@ uv run pytest tests/test_evaluate.py -v
 
 ---
 
-#### Task 3.2: Per-equation detailed output
+#### Task 3.2: Per-equation detailed output ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Add detailed evaluation breakdown to predictions JSONL
+**Files modified:**
+- ✅ `src/llm/evaluate.py` - Per-equation symbolic/numeric match fields
+- ✅ `src/adaptive_pipeline.py` - Persist per-point arrays in evaluated predictions
 
 **Enhanced predictions output:**
 ```jsonl
@@ -1023,10 +1027,11 @@ uv run pytest tests/test_evaluate.py -v
 
 ---
 
-#### Task 3.3: Confusion matrix for solution_type
+#### Task 3.3: Confusion matrix for solution_type ✅ **COMPLETED (February 12, 2026)**
 
-**Files to modify:**
-- `src/llm/evaluate.py` - Track misclassifications
+**Files modified:**
+- ✅ `src/llm/evaluate.py` - Track misclassifications in offline evaluation
+- ✅ `src/adaptive_pipeline.py` - Track misclassifications in pipeline metrics
 
 **Implementation:**
 ```python
@@ -1234,17 +1239,17 @@ By Solution Type:
 
 ### Phase 3 Files (Reporting)
 
-11. ⏳ `src/llm/evaluate.py` - Expand metrics output
-12. ⏳ `src/llm/evaluate.py` - Add confusion matrix tracking
-13. ⏳ Predictions JSONL output - Enhanced per-equation details
+11. ✅ `src/llm/evaluate.py` - Expand metrics output
+12. ✅ `src/llm/evaluate.py` - Add confusion matrix tracking
+13. ✅ Predictions JSONL output - Enhanced per-equation details
 
 **Total:** ~15 files to modify, ~17 functions to add/update
 
 **Overall Progress (February 12, 2026):**
 - ✅ Phase 1: 5/7 tasks complete (71%) - discrete_points + series format complete
 - ✅ Phase 2: 5/5 tasks complete (100%) - discrete_points, series, approx_coef, family evaluation complete + evaluation_points integration
-- ⏳ Phase 3: 0/3 tasks complete (0%)
-- **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, and specialized evaluators are working
+- ✅ Phase 3: 3/3 tasks complete (100%) - reporting metrics, confusion matrix, per-equation details
+- **Infrastructure Foundation: SOLID** - Evaluation points, expression parsing, specialized evaluators, and reporting are working
 
 ---
 

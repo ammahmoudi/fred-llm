@@ -3,8 +3,8 @@
 This document covers how raw LLM responses are parsed into structured fields.
 
 Related docs:
-- [docs/EVALUATION_PIPELINE.md](docs/EVALUATION_PIPELINE.md)
-- [docs/METRICS_REFERENCE.md](docs/METRICS_REFERENCE.md)
+- [EVALUATION_PIPELINE.md](EVALUATION_PIPELINE.md)
+- [METRICS_REFERENCE.md](METRICS_REFERENCE.md)
 
 ## Overview
 
@@ -172,8 +172,8 @@ confidence = 0.7]
 
 ## Location
 
-- Main module: [src/llm/postprocess.py](src/llm/postprocess.py)
-- Math-Verify adapter: [src/llm/math_verify_adapter.py](src/llm/math_verify_adapter.py)
+- Main module: [../src/llm/postprocess.py](../src/llm/postprocess.py)
+- Math-Verify adapter: [../src/llm/math_verify_adapter.py](../src/llm/math_verify_adapter.py)
 
 ## Function: parse_llm_output()
 

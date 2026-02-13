@@ -3,8 +3,8 @@
 This document covers how predictions are evaluated and scored.
 
 Related docs:
-- [docs/POSTPROCESSING_FLOW.md](docs/POSTPROCESSING_FLOW.md)
-- [docs/METRICS_REFERENCE.md](docs/METRICS_REFERENCE.md)
+- [POSTPROCESSING_FLOW.md](POSTPROCESSING_FLOW.md)
+- [METRICS_REFERENCE.md](METRICS_REFERENCE.md)
 
 ## Overview
 
@@ -28,7 +28,7 @@ flowchart TD
 
 ## Location
 
-- Main module: [src/llm/evaluate.py](src/llm/evaluate.py)
+- Main module: [../src/llm/evaluate.py](../src/llm/evaluate.py)
 
 ## Function: evaluate_solutions()
 
@@ -121,6 +121,7 @@ Compares solution_type against ground_truth_solution_type.
 ```python
 if predicted["solution_type"] == ground_truth["solution_type"]:
     correct += 1
+```
 
 ---
 

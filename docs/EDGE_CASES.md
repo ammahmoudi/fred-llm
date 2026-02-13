@@ -21,7 +21,7 @@ Edge cases are augmented variants of Fredholm integral equations that represent 
 - `family/` → 1 strategy → 3 variants per equation
 - `regularized/` → 1 strategy → 3 variants per equation
 
-**Total: 18 strategies (4 basic + 14 edge) × various variants = 42 edge case types**
+**Total: 14 edge case strategies × 3 variants each = 42 edge case types**
 
 ## Solution Type Taxonomy (7 Types)
 
@@ -63,7 +63,7 @@ Training exclusively on well-posed equations with exact solutions can lead to mo
 All augmented equations maintain **consistent key-value pairs** for reliable training:
 
 **Standard Fields** (present in all entries):
-- `u`, `f`, `kernel`, `lambda`, `lambda_val`, `a`, `b`
+- `u`, `f`, `kernel`, `lambda_val`, `a`, `b`
 - `has_solution`, `solution_type`, `augmented`, `augmentation_type`, `augmentation_variant`
 - `source_file`, `source_path`
 
@@ -97,7 +97,7 @@ src/data/augmentations/
 | **Regularization Required** | ill_posed | "Ill-posed, needs Tikhonov/TSVD..." |
 | **Non-Unique** | resonance | "Solution family: u = C*φ(x) + u_p" |
 
-**Total: 13 strategies × 3 variants each = 39 edge case types**
+**Total: 14 strategies × 3 variants each = 42 edge case types**
 
 ---
 
@@ -192,10 +192,10 @@ Transform equations to have complex kernels without known closed-form solutions:
   ```
 
 **Metadata Added**:
-- `has_solution: true` (numerical solution exists)
-- `solution_type: "numerical"`
-- `numerical_method: ["nystrom", "collocation", "quadrature"]`
-- `edge_case: "approximate_only"`
+- `has_solution: true`
+- `solution_type: "discrete_points"`
+- `recommended_methods: ["nystrom", "collocation", "quadrature"]`
+- `edge_case: "complex_kernels"`
 
 ---
 
@@ -267,7 +267,7 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Key Features**: Exponentially graded mesh, gradient scale estimation
 
-### 6. Resonance Caxact eigenvalue → infinite solution families.
+### 6. Resonance (`resonance`) - exact eigenvalue → infinite solution families
 
 - **Variant 1**: Separable at eigenvalue (λ=2, K=sin(πx)sin(πt))
 - **Variant 2**: Constant kernel at critical value (λ=1, K=1)
@@ -292,7 +292,7 @@ Modify equations to exhibit sensitivity to perturbations:
 **Key Features**: Large amplitude solutions, high condition numbers, sensitivity to perturbations
 
 **Metadata**:
-- `solution_type: "numerical"`
+- `solution_type: "discrete_points"`
 - `has_solution: true`
 - `u: ""` (empty - no simple closed form)
 - `near_critical_value`, `distance_to_resonance`, `condition_number_estimate`
@@ -366,21 +366,9 @@ Modify equations to exhibit sensitivity to perturbations:
 
 **Purpose**: Kernels with disconnected support regions → rank-deficient operators → no solution.
 
-- **Variant 1**: Two 3 edge case strategies (conservative multiplier recommended)
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
-  --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment \
-  --augment-multiplier 1.15 \
-  --augment-strategies none approx_coef discrete_points series family regularized \
-  --no-convert
-
-# Or use folder names to run all strategies in each folder:
-# none = eigenvalue_cases, range_violation, divergent_kernel, disconnected_support
-# approx_coef = boundary_layer, oscillatory_solution, weakly_singular, mixed_type, compact_support
-# discrete_points = complex_kernels, near_resonance
-# series = neumann_series
-# family = resonance
-# regularized = ill_posed
+- **Variant 1**: Two disjoint support intervals for x and t
+- **Variant 2**: Asymmetric disconnected regions (different gaps for x vs t)
+- **Variant 3**: Narrow window supports separated by zero regions
 
 **Mathematical Background**: When kernel support is split into disconnected regions, the integral operator loses rank and may not be invertible, leading to equations with no solution.
 
@@ -394,138 +382,60 @@ This distinction teaches models to recognize structural causes of non-existence 
 
 ## Usage
 
-### Generating Edge Cases
+### Generate Edge Cases
+
+Use the preparation script for flag-based runs:
 
 ```bash
-# Generate with ALL 11 edge case strategies (conservative multiplier recommended)
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
-  --augment \3 Strategies (39 variants total)
-
-| Multiplier | Original (Exact) | Edge Cases | Use Case |
-|-----------|------------------|------------|----------|
-| **1.1-1.2** | **83-91%** | **9-17%** | **Recommended for 13 strategies** |
-| 1.3 | 77% | 23% | More aggressive (use selectively) |
-| 1.5 | 67% | 33% | Maximum diversity |
-
-**Example for 5,000 equation dataset with multiplier 1.15 (13 strategies)**:
-- Original equations (exact solutions): 5,000 (87%)
-- Edge case variants: 750 (13%, ~58 per strategy)
-- **Total**: 5,75
-  --augment-multiplier 1.33 \
-  --augment-strategies no_solution approximate_only ill_posed \
-  --no-convert
-
-# Generate advanced edge cases only
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
-  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --output data/processed/training_data \
   --augment \
-  --augment-multiplier 1.25 \
-  --augment-strategies weakly_singular boundary_layer resonance \
+  --augment-multiplier 1.15 \
+  --augment-strategies approx_coef discrete_points series family regularized none_solution \
   --no-convert
 ```
+
+Folder names map to strategy groups:
+
+- `none_solution`: eigenvalue_cases, range_violation, divergent_kernel, disconnected_support
+- `approx_coef`: boundary_layer, oscillatory_solution, weakly_singular, mixed_type, compact_support
+- `discrete_points`: complex_kernels, near_resonance
+- `series`: neumann_series
+- `family`: resonance
+- `regularized`: ill_posed
 
 ### Dataset Balance Recommendations
 
-For a **balanced dataset** suitable for training robust models:
-
-#### Using All 11 Strategies (33 variants total)
-
 | Multiplier | Original (Exact) | Edge Cases | Use Case |
 |-----------|------------------|------------|----------|
-| **1.1-1.2** | **83-91%** | **9-17%** | **Recommended for 11 strategies** |
+| **1.1-1.2** | **83-91%** | **9-17%** | **Recommended for 14 strategies** |
 | 1.3 | 77% | 23% | More aggressive (use selectively) |
 | 1.5 | 67% | 33% | Maximum diversity |
 
-**Example for 5,000 equation dataset with multiplier 1.2 (11 strategies)**:
-- Original equations (exact solutions): 5,000 (83%)
-- Edge case variants: 1,000 (17%, ~91 per strategy)
-- **Total**: 6,000 equations
-
-#### Using Original 3 Strategies Only (9 variants)
-
-| Multiplier | Original (Exact) | Edge Cases | Use Case |
-|-----------|-----------------3 edge case strategies are fully tested (21/21 tests passing):
-
-**Original Edge Cases (7 tests)**:
-- `test_no_solution_augmentation` - Verifies no-solution cases
-- `test_approximate_only_augmentation` - Confirms numerical methods  
-- `test_ill_posed_augmentation` - Validates regularization (has_solution=True)
-- Plus 4 integration tests for edge case strategies
-
-**Advanced Edge Cases (8 tests)**:
-- `test_weakly_singular_augmentation` - Singularity handling
-- `test_boundary_layer_augmentation` - Sharp gradient detection
-- `test_resonance_augmentation` - Critical point recognition (family solutions)
-- `test_range_violation_augmentation` - Range space analysis
-- `test_divergent_kernel_augmentation` - Non-integrable singularities
-- `test_mixed_type_augmentation` - Hybrid equation types
-- `test_oscillatory_solution_augmentation` - Nyquist sampling
-- `test_compact_support_augmentation` - Sparse structure handling
-
-**New Strategies (January 2, 2026)**:
-- `near_resonance` - Ill-conditioned near-eigenvalue equations ✅
-- `disconnected_support` - Rank-deficient operators ✅
-
-**Validation Script**:
-- Integrated validation - Comprehensive checks with u pattern analysis ✅
-- Characteristics of each edge case category
-- Sample equations from each type
-
-```python
-# In notebook, configure path to augmented dataset
-AUGMENTED_DATASET_PATH = "processed/augmented/augmented_equations.json"
-```
-
----
+**Example (5,000 base, multiplier 1.15):**
+- Original equations: 5,000 (87%)
+- Edge cases: 750 (13%, ~54 per strategy)
+- **Total**: 5,750
 
 ## Testing Status
 
-✅ **Production Ready** - All 11 edge case strategies are fully tested (21/21 tests passing):
+- Tests live in `tests/test_augmentation.py`.
+- Run all augmentation tests:
 
-**Original Edge Cases (7 tests)**:
-- `test_no_solution_augmentation` - Verifies no-solution cases
-- `test_approximate_only_augmentation` - Confirms numerical methods
-- `test_ill_posed_augmentation` - Validates regularization
-- Plus 4 integration tests for edge case strategies
-
-**Advanced Edge Cases (8 tests)**:
-- `test_weakly_singular_augmentation` - Singularity handling
-- `test_boundary_layer_augmentation` - Sharp gradient detection
-- `test_resonance_augmentation` - Critical point recognition
-- `test_range_violation_augmentation` - Range space analysis
-- `test_divergent_kernel_augmentation` - Non-integrable singularities
-- `test_mixed_type_augmentation` - Hybrid equation types
-- `test_oscillatory_solution_augmentation` - Nyquist sampling
-- `test_compact_support_augmentation` - Sparse structure handling
-
-**Test Commands**:
 ```bash
-# Run all augmentation tests (21 tests)
 pytest tests/test_augmentation.py -v
-
-# Run only edge case tests
-pytest tests/test_augmentation.py::TestEdgeCaseAugmentations -v
-pytest tests/test_augmentation.py::TestAdvancedEdgeCases -v
-3 edge case strategies):
-  - **no_solution/**: `eigenvalue_cases.py`, `range_violation.py`, `divergent_kernel.py`, `disconnected_support.py`
-  - **numerical_only/**: `complex_kernels.py`, `weakly_singular.py`, `boundary_layer.py`, `oscillatory_solution.py`, `mixed_type.py`, `compact_support.py`, `near_resonance.py`
-  - **regularization_required/**: `ill_posed.py`
-  - **non_unique_solution/**: `resonance.py`
-- **Integration**: `src/data/augmentation.py` (main augmentation loop)
-- **Tests**: `tests/test_augmentation.py` (21 edge case tests)
-- **Validation**: Integrated into pipeline (comprehensive check
+```
 
 ## Implementation Details
 
 ### Code Location
-- **Strategy Implementations** (11 edge case strategies):
-  - Original: `src/data/augmentations/{no_solution,approximate_only,ill_posed}.py`
-  - Advanced: `src/data/augmentations/{weakly_singular,boundary_layer,resonance}.py`
-  - Extended: `src/data/augmentations/{range_violation,divergent_kernel,mixed_type,oscillatory_solution,compact_support}.py`
-- **Integration**: `src/data/augmentation.py` (main augmentation loop)
-- **Tests**: `tests/test_augmentation.py` (21 edge case tests)
-- **Documentation**: `docs/EDGE_CASES.md` and `src/data/augmentations/README.md`
+
+- Strategy implementations: `src/data/augmentations/<solution_type>/`
+- Integration: `src/data/augmentation.py`
+- Validation: `src/data/validator.py`
+- Tests: `tests/test_augmentation.py`
+- Docs: `docs/EDGE_CASES.md`, `src/data/augmentations/README.md`
 
 ### Metadata Schema
 
@@ -534,29 +444,27 @@ Edge case equations include additional fields:
 ```json
 {
   "u": "solution_expression",
-  "f": "rhs_expression", 
+  "f": "rhs_expression",
   "kernel": "kernel_expression",
   "lambda_val": 1.0,
   "a": 0,
   "b": 1,
-  
-  "augmentation_type": "no_solution|approximate_only|ill_posed",
-  "edge_case": "no_solution|approximate_only|ill_posed",
-  "has_solution": true|false,
-  "solution_type": "symbolic|numerical|none",
-  
-  // No-solution specific
-  "reason": "contradictory_kernel|invalid_domain|incompatible_lambda",
-  
-  // Approximate-only specific  
-  "numerical_method": ["nystrom", "collocation", "quadrature"],
-  "sample_points": [[x1, t1], [x2, t2], ...],
-  
-  // Ill-posed specific
-  "is_ill_posed": true,
-  "requires_regularization": true,
-  "recommended_methods": ["tikhonov", "truncated_svd"],
-  "condition_estimate": 1e8
+
+  "augmented": true,
+  "augmentation_type": "boundary_layer",
+  "augmentation_variant": "v1",
+  "edge_case": "boundary_layer",
+  "has_solution": true,
+  "solution_type": "approx_coef",
+  "reason": "boundary layer at x=a",
+  "recommended_methods": ["collocation", "least_squares"],
+  "numerical_challenge": "stiff boundary layer",
+
+  "evaluation_points": {
+    "x_values": [0.0, 0.1],
+    "u_values": [1.0, 0.9],
+    "n_points": 50
+  }
 }
 ```
 

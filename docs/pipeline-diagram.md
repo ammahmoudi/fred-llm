@@ -20,8 +20,8 @@ flowchart LR
     direction TB
     DP1["Data Augmentation"]
     DP1a(["Add no-solution"])
-    DP1b(["Add special function"])
-    DP1c(["Generate numeric ground truth"])
+    DP1b(["Add special function (planned)"])
+    DP1c(["Generate numeric ground truth (planned)"])
     DP2["Format Conversion"]
     DP2a(["To LaTeX"])
     DP2b(["To RPN"])
@@ -36,7 +36,7 @@ flowchart LR
     PR1["Prompt Design"]
     PR1a(["Direct prompts"])
     PR1b(["Chain of thought"])
-    PR1c(["Approximation prompts"])
+    PR1c(["Approximation prompts (planned)"])
     PR2["Output Format"]
     PR2a(["Symbolic"])
     PR2b(["Series"])
@@ -134,8 +134,8 @@ flowchart LR
 |-----------|-------------|----------------|
 | **Data Augmentation** | Expand dataset with variations | `src/data/augmentation.py` |
 | - Add no-solution cases | Include equations without closed-form solutions | Synthetic generation |
-| - Add special functions | Include Bessel, Legendre, etc. | SymPy special functions |
-| - Numeric ground truth | Generate numerical solutions for evaluation | SciPy integration |
+| - Add special functions | Include Bessel, Legendre, etc. | Planned |
+| - Numeric ground truth | Generate numerical solutions for evaluation | Planned |
 | **Format Conversion** | Convert equations to different representations | `src/data/format_converter.py` |
 | - To LaTeX | Standard mathematical notation | SymPy latex() |
 | - To RPN | Reverse Polish Notation for parsing | Custom tokenizer |
@@ -147,10 +147,10 @@ flowchart LR
 
 | Component | Description | Implementation |
 |-----------|-------------|----------------|
-| **Prompt Design** | Create effective prompts | `src/llm/prompt_templates.py` |
+| **Prompt Design** | Create effective prompts | `src/prompts/` |
 | - Direct prompts | Simple question-answer format | `basic` style |
 | - Chain of thought | Step-by-step reasoning | `chain-of-thought` style |
-| - Approximation prompts | Guide to series/numeric solutions | `approximation` style |
+| - Approximation prompts | Guide to series/numeric solutions | Planned |
 | **Output Format** | Specify expected response format | Template configuration |
 | - Symbolic | Closed-form expression | SymPy-parseable |
 | - Series | Taylor/Fourier expansions | Coefficient lists |
@@ -199,11 +199,14 @@ src/
 │   ├── format_converter.py         # LaTeX/RPN conversion
 │   ├── loader.py                   # Data loading
 │   └── validator.py                # Data validation
-├── llm/                            # Modules 2 & 3: Prompting & LLM Methods
-│   ├── prompt_templates.py         # Prompt engineering
+├── llm/                            # Module 3: LLM Methods
 │   ├── model_runner.py             # LLM inference
 │   ├── postprocess.py              # Output parsing
 │   └── evaluate.py                 # Module 4: Evaluation
+├── prompts/                        # Module 2: Prompt engineering
+│   ├── base.py
+│   ├── factory.py
+│   └── styles/
 └── utils/
     └── math_utils.py               # Numeric evaluation helpers
 ```
@@ -211,14 +214,16 @@ src/
 ## Workflow Example
 
 ```python
-from src.main import FredLLMPipeline
-from src.config import load_config
+from pathlib import Path
+
+from src.adaptive_config import AdaptivePipelineConfig
+from src.adaptive_pipeline import AdaptivePipeline
 
 # Load configuration
-config = load_config("config.yaml")
+config = AdaptivePipelineConfig.from_yaml(Path("config.yaml"))
 
 # Initialize pipeline (all modules)
-pipeline = FredLLMPipeline(config)
+pipeline = AdaptivePipeline(config)
 
 # Run full pipeline
 # 1. Load & prepare data (Module 1)

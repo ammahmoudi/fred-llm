@@ -8,7 +8,7 @@ The main CLI automatically orchestrates all steps based on your config:
 
 ```bash
 # Prepare dataset with augmentation and prompts
-uv run python -m src.cli run --config configs/prepare_data.yaml
+uv run python -m src.cli run --config configs/prepare_data.yaml 
 
 # Run LLM inference on prepared prompts
 export OPENAI_API_KEY=your_key_here
@@ -35,7 +35,7 @@ python scripts/prepare_dataset.py \
   --output data/processed/my_data \
   --augment --validate --split --convert
 
-# Prompt generation
+# Prompt generation (legacy helper)
 python scripts/run_prompt_generation.py \
   --input data/processed/my_data \
   --output data/prompts/my_prompts \
@@ -102,7 +102,7 @@ uv run python -m src.cli dataset download --variant full
 # This generates edge cases organized by solution type
 
 # Windows PowerShell:
-# Use main CLI: uv run python -m src.cli run `
+python scripts/prepare_dataset.py `
   --input data/raw/Fredholm_Dataset_Sample.csv `
   --output data/processed/training_data `
   --max-samples 5000 `
@@ -115,7 +115,7 @@ uv run python -m src.cli dataset download --variant full
   --convert-formats infix latex rpn
 
 # Linux/macOS:
-# Use main CLI: uv run python -m src.cli run \
+python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --output data/processed/training_data \
   --max-samples 5000 \
@@ -150,7 +150,7 @@ uv run python -m src.cli dataset download --variant full
 
 **Default behavior (no `--augment-strategies`):**
 ```bash
-# Use main CLI: uv run python -m src.cli run --augment
+python scripts/prepare_dataset.py --augment
 # Applies ONLY 3 basic transformations: substitute, scale, shift
 ```
 
@@ -181,31 +181,31 @@ uv run python -m src.cli dataset download --variant full
 ```bash
 # Generate prompts with all styles for the formatted datasets
 # Windows PowerShell:
-# Use main CLI for prompts `
-  --input data/processed/training_data/formatted/ `
+uv run python -m src.cli prompt batch `
+  data/processed/training_data/formatted `
   --output data/prompts `
   --styles all `
   --pattern "*_infix.csv"
 
 # Linux/macOS:
-# Use main CLI for prompts \
-  --input data/processed/training_data/formatted/ \
+uv run python -m src.cli prompt batch \
+  data/processed/training_data/formatted \
   --output data/prompts \
   --styles all \
   --pattern "*_infix.csv"
 
 # Or generate for specific format (LaTeX, RPN, etc.):
-# Use main CLI for prompts \
-  --input data/processed/training_data/formatted/ \
+uv run python -m src.cli prompt batch \
+  data/processed/training_data/formatted \
   --pattern "*_latex.csv"  # LLM will output in LaTeX format
 
-# Use main CLI for prompts \
-  --input data/processed/training_data/formatted/ \
+uv run python -m src.cli prompt batch \
+  data/processed/training_data/formatted \
   --pattern "*_rpn.csv"  # LLM will output in RPN format
 
 # Or generate specific styles only:
-# Use main CLI for prompts \
-  --input data/processed/training_data/formatted/ \
+uv run python -m src.cli prompt batch \
+  data/processed/training_data/formatted \
   --styles basic,chain-of-thought,few-shot \
   --output data/prompts
 ```
@@ -277,7 +277,7 @@ This computes RMSE, MAE, and symbolic/numeric accuracy metrics.
 - **Solution**: Reduce `--max-samples` or `--augment-multiplier`
 
 **Problem**: Validation fails
-- **Solution**: Check input CSV format matches expected schema (u, f, kernel, lambda, a, b columns)
+- **Solution**: Check input CSV format matches expected schema (u, f, kernel, lambda_val, a, b columns)
 
 ## See Also
 

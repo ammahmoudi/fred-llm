@@ -3,8 +3,8 @@
 This document describes each evaluation metric and its inputs.
 
 Related docs:
-- [docs/POSTPROCESSING_FLOW.md](docs/POSTPROCESSING_FLOW.md)
-- [docs/EVALUATION_PIPELINE.md](docs/EVALUATION_PIPELINE.md)
+- [POSTPROCESSING_FLOW.md](POSTPROCESSING_FLOW.md)
+- [EVALUATION_PIPELINE.md](EVALUATION_PIPELINE.md)
 
 ## Quick Reference: Metric Inputs
 

@@ -81,7 +81,7 @@ This document tracks all features - implemented and planned. Check off items as 
       - [x] NEW: exact_symbolic/, approx_coef/, discrete_points/, series/, family/, regularized/, none_solution/
       - [x] Updated: All __init__.py files, augmentation.py strategy groups, README.md
       - [x] Distribution: 18 strategies across 7 folders (4+5+2+1+1+1+4)
-  - [x] Validation - Comprehensive checks for all 14 strategies and 8 solution types ✅ **Integrated in pipeline**
+  - [x] Validation - Comprehensive checks for all 14 strategies and 7 solution types ✅ **Integrated in pipeline**
   - [x] Empty string handling - `u=""` for equations without analytical solutions ✅ **Fixed: all augmentation files**
   - [x] **Edge case metadata management** ✅ **January 3, 2026**
     - [x] Default: Essential fields only (u, f, kernel, augmentation_type, solution_type, edge_case, reason, recommended_methods)
@@ -164,8 +164,8 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] **Structured output format** - Standardized LLM response format for evaluation ✅ **(January 3, 2026)**
     - All 4 prompt styles specify SOLUTION:/HAS_SOLUTION:/SOLUTION_TYPE: format
     - Enables reliable extraction of solution correctness and edge case recognition
-    - Postprocessor with regex patterns for has_solution (yes/no) and solution_type (8 types)
-    - Evaluation metrics: solution correctness, has_solution accuracy, solution_type classification (8-class)
+    - Postprocessor with regex patterns for has_solution (yes/no) and solution_type (7 types)
+    - Evaluation metrics: solution correctness, has_solution accuracy, solution_type classification (7-class)
   - [x] **Format-specific prompt generation** - Prompts tailored to dataset format ✅ **(January 3, 2026)**
     - System detects format from filename (*_infix.csv, *_latex.csv, *_rpn.csv)
     - Each prompt includes targeted instructions for that specific format only
@@ -205,7 +205,7 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Postprocessing - Math-Verify extraction with regex fallback ✅ **Multi-strategy u(x)/SOLUTION parsing**
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
   - _extract_has_solution(): Regex patterns for yes/no classification with validation
-  - _extract_solution_type(): Regex patterns for 8-class solution type recognition
+  - _extract_solution_type(): Regex patterns for 7-class solution type recognition
   - Return format: {"solution_str", "solution_sympy", "has_solution", "solution_type", "reasoning", "confidence", "raw_response"}
 - [x] **discrete_points parser** - Extract point lists from LLM responses ✅ **(February 11, 2026)**
   - extract_discrete_points(): Parses [(x1, y1), (x2, y2), ...] format
@@ -295,7 +295,7 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Solution type classification - Trivial, constant, linear, polynomial, etc. ✅
 - [x] Augmented dataset analysis - Original vs augmented balance, edge case distribution ✅ **Section 7: 5 subsections**
 - [x] Edge case type breakdown - 12 edge case types with examples ✅ **Deep dive into no_solution, ill_posed, etc.**
-- [x] Sample equations viewer - Display examples from each category ✅ **Shows originals + 8 edge case types**
+- [x] Sample equations viewer - Display examples from each category ✅ **Shows originals + edge case types**
 - [x] Dataset summary statistics - Quick overview with validation checks ✅ **Balance, solution types, quality metrics**
 - [ ] Kernel complexity analysis - Nested function depth, term count ❌
 - [ ] Solvability assessment - Existence of closed-form solutions ❌
@@ -320,10 +320,10 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
   - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
   - [x] **Unified 18-field schema** - ALL augmentations output identical keys
-  - [x] 13 edge case strategies organized in 4 solution-type folders
+  - [x] 14 edge case strategies organized in 6 solution-type folders
   - [x] 8 advanced edge case tests (weakly_singular through compact_support)
   - [x] Schema validation tests - Verify all 18 required fields present
-  - [x] Strategy separation - resonance (family) vs near_resonance (numerical) ✅ **January 2, 2026**
+  - [x] Strategy separation - resonance (family) vs near_resonance (discrete_points) ✅ **January 2, 2026**
   - [x] Validation tooling - validator.py with augmented data validation ✅ **January 3, 2026**
     - Basic equation validation (kernel, f, lambda, domain, solution)
     - Augmented data validation (edge cases, solution types, pattern consistency)

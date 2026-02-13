@@ -24,21 +24,25 @@ Raw Data → Prepared Data → Prompts → Predictions → Metrics
   "equations": [
     {
       "id": "eq_0",
-      "f_latex": "\\sin(x)",
-      "K_latex": "e^{x*t}",
-      "u_latex": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
-      "domain": [0, 1],
+      "u": "sin(x)",
+      "f": "sin(x)",
+      "kernel": "exp(x*t)",
+      "lambda_val": 0.5,
+      "a": 0,
+      "b": 1,
       "has_solution": true,
-      "solution_type": "elementary"
+      "solution_type": "exact_symbolic"
     },
     {
       "id": "eq_1",
-      "f_latex": "x",
-      "K_latex": "2*(x-t)",
-      "u_latex": "x + 2*\\sin(x)",
-      "domain": [0, 1],
+      "u": "x + 2*sin(x)",
+      "f": "x",
+      "kernel": "2*(x-t)",
+      "lambda_val": 1.0,
+      "a": 0,
+      "b": 1,
       "has_solution": true,
-      "solution_type": "elementary"
+      "solution_type": "exact_symbolic"
     }
   ]
 }
@@ -47,30 +51,29 @@ Raw Data → Prepared Data → Prompts → Predictions → Metrics
 ### CSV Format
 
 ```csv
-id,f_latex,K_latex,u_latex,domain_start,domain_end,has_solution,solution_type
-eq_0,\sin(x),e^{x*t},\sin(x)/(1-0.5*∫₀¹ e^{xt} dt),0,1,true,elementary
-eq_1,x,2*(x-t),x + 2*\sin(x),0,1,true,elementary
+id,u,f,kernel,lambda_val,a,b,has_solution,solution_type
+eq_0,sin(x),sin(x),exp(x*t),0.5,0,1,true,exact_symbolic
+eq_1,x + 2*sin(x),x,2*(x-t),1.0,0,1,true,exact_symbolic
 ```
 
 ## Stage 2: Prepared Data
 
-**File Format:** CSV (train/val/test splits)
+**File Format:** CSV or JSON (train/val/test splits)
 
 **Location:** `data/processed/run_<timestamp>/`
 
 ### Training Data Format
 
 ```csv
-id,equation_id,f_latex,K_latex,u_latex,u_infix,u_rpn,domain,has_solution,solution_type,evaluation_points
-eq_0_train,eq_0,\sin(x),e^{x*t},\sin(x)/(1-0.5),sin(x)/(1-0.5),x sin / 0.5 1 - /,...,{"x_values":[0.0,0.1],"u_values":[0.0,0.109]}
+id,equation_id,u,f,kernel,lambda_val,a,b,has_solution,solution_type,augmentation_type,augmentation_variant,evaluation_points
+eq_0_train,eq_0,sin(x),sin(x),exp(x*t),0.5,0,1,true,exact_symbolic,original,fredholm_dataset,{"x_values":[0.0,0.1],"u_values":[0.0,0.109]}
 ```
 
 **Key Columns:**
 - `id`: Unique identifier for this training sample
 - `equation_id`: Original equation ID (may be augmented)
-- `f_latex`, `K_latex`: Kernel and forcing function
-- `u_latex`: Ground truth solution (LaTeX)
-- `u_infix`, `u_rpn`: Alternative formats
+- `u`, `f`, `kernel`: Core equation fields
+- `lambda_val`, `a`, `b`: Fredholm parameters
 - `has_solution`, `solution_type`: Metadata
 - `evaluation_points`: Optional JSON with x_values/u_values
 
@@ -82,6 +85,14 @@ data/processed/run_20260212_140310/
 ├── val.csv           # ~15% of samples
 ├── test.csv          # ~15% of samples
 └── metadata.json     # Split statistics
+
+# If format conversion is enabled
+data/processed/run_20260212_140310/formatted/
+├── train_infix.csv
+├── train_latex.csv
+├── train_rpn.csv
+├── val_infix.csv
+└── test_infix.csv
 ```
 
 ## Stage 3: Prompts
@@ -157,11 +168,11 @@ data/prompts/chain-of-thought/
   "ground_truth": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
   "ground_truth_domain": [0, 1],
   "ground_truth_has_solution": true,
-  "ground_truth_solution_type": "elementary",
+  "ground_truth_solution_type": "exact_symbolic",
   "solution_str": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
   "solution_sympy": "sin(x) / (1 - 0.5*integrate(exp(x*t), (t, 0, 1)))",
   "has_solution": true,
-  "solution_type": "elementary",
+  "solution_type": "exact_symbolic",
   "raw_response": "Looking at this Fredholm equation of the second kind...",
   "reasoning": "The kernel structure suggests...",
   "confidence": 0.92,
@@ -183,7 +194,7 @@ data/prompts/chain-of-thought/
     "n_points": 50
   },
   "has_solution": true,
-  "solution_type": "elementary"
+  "solution_type": "exact_symbolic"
 }
 ```
 
@@ -219,7 +230,7 @@ This file is created when evaluation runs. It takes the predictions from Stage 4
   "solution_str": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
   "solution_sympy": "sin(x) / (1 - 0.5*integrate(exp(x*t), (t, 0, 1)))",
   "has_solution": true,
-  "solution_type": "elementary",
+  "solution_type": "exact_symbolic",
   "evaluation": {
     "symbolic": {
       "equivalent": true,
@@ -240,7 +251,7 @@ This file is created when evaluation runs. It takes the predictions from Stage 4
     "symbolic_match": true,
     "numeric_match": true,
     "correct": true,
-    "solution_type": "elementary"
+    "solution_type": "exact_symbolic"
   }
 }
 ```
@@ -289,14 +300,7 @@ This file contains aggregate statistics computed from all evaluated predictions:
   "api_errors": 0,
   
   "per_type": {
-    "scalar": {
-      "total": 20,
-      "correct": 20,
-      "accuracy": 1.0,
-      "symbolic": 20,
-      "numeric": 20
-    },
-    "elementary": {
+    "exact_symbolic": {
       "total": 40,
       "correct": 35,
       "accuracy": 0.875,
@@ -325,9 +329,8 @@ This file contains aggregate statistics computed from all evaluated predictions:
   "solution_type_total": 98,
   
   "confusion_matrix": {
-    "scalar_predicted_as_elementary": 1,
-    "elementary_predicted_as_scalar": 2,
-    "series_predicted_as_elementary": 5
+    "exact_symbolic_predicted_as_approx_coef": 1,
+    "series_predicted_as_exact_symbolic": 5
   }
 }
 ```
@@ -404,7 +407,7 @@ expr = parse_latex_to_sympy("\\sin(x) * e^{-x}")
 | 1 | Raw Data | User data | `raw/` | Original equations |
 | 2 | Prepare | Raw equations | train.csv, val.csv, test.csv | Split, formatted data |
 | 3 | Prompts | Prepared data | `train.jsonl`, `val.jsonl`, `test.jsonl` | Prompts + ground truth |
-| 4 | **LLM Inference** | Prompts | `predictions_*.jsonl`, `cost_*.json` | **LLM outputs only (NO evaluation)** |
+| 4 | **LLM Inference** | Prompts | `predictions_*.jsonl`, `cost_summary_*.json`, `cost_details_*.jsonl` | **LLM outputs only (NO evaluation)** |
 | 4b | **Evaluation** | Predictions | `predictions_evaluated_*.jsonl`, `metrics_*.json` | **Symbolic/Numeric metrics added** |
 
 ## Critical Clarification: When Are Evaluation Metrics Added?
@@ -418,8 +421,9 @@ python -m src.cli run --config inference_only_config.yaml
 ❌ **NO evaluation happens**
 ❌ `predictions_*.jsonl` has **NO** RMSE, MAE, or symbolic/numeric comparison results
 ❌ Only these files are created:
-   - `predictions_*.jsonl` - LLM outputs only
-   - `cost_*.json` - Token/cost tracking
+  - `predictions_*.jsonl` - LLM outputs only
+  - `cost_summary_*.json` - Token/cost summary
+  - `cost_details_*.jsonl` - Per-call cost details
 
 **To get RMSE, MAE, and symbolic/numeric evaluation**, you must run evaluation:
 
@@ -444,7 +448,7 @@ Predictions File (Stage 4)          Evaluation Process          Output Files (St
 │ equation_id             │                                    │ equation_id      │
 │ ground_truth            │    ┌─────────────────────────┐    │ ground_truth     │
 │ solution_str            │───>│ Parse & Compare         │───>│ solution_str     │
-│ solution_type           │    │ - Symbolic (SAT solver) │    │ evaluation:      │
+│ solution_type           │    │ - Symbolic (SymPy/Math-Verify) │    │ evaluation:      │
 │ confidence              │    │ - Numeric (100 points)  │    │   symbolic: {...}│
 │ (NO metrics)            │    │ - Compute RMSE, MAE     │    │   numeric: {     │
 │                         │    └─────────────────────────┘    │     rmse: 1e-6   │

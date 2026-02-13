@@ -7,12 +7,12 @@ Guide for contributing to and developing Fred-LLM.
 ```
 fred-llm/
 ├── src/
+│   ├── adaptive_config.py   # Adaptive config schema (current)
+│   ├── adaptive_pipeline.py # Adaptive pipeline orchestrator
 │   ├── cli.py               # Command-line interface
-│   ├── config.py            # Configuration loader
-│   ├── main.py              # Pipeline orchestrator
+│   ├── config.py            # Legacy config loader
 │   ├── llm/                 # LLM-related modules
 │   │   ├── model_runner.py  # Model inference
-│   │   ├── prompt_templates.py
 │   │   ├── postprocess.py   # Output parsing
 │   │   └── evaluate.py      # Evaluation metrics
 │   ├── data/                # Data handling
@@ -32,7 +32,6 @@ fred-llm/
 ├── scripts/                 # Internal pipeline scripts (called by CLI)
 │   ├── prepare_dataset.py
 │   ├── run_prompt_generation.py
-│   └── validate_augmented_data.py
 ├── notebooks/               # Jupyter notebooks
 │   ├── explore_data.ipynb
 │   ├── prompt_design.ipynb
@@ -105,7 +104,7 @@ start htmlcov/index.html  # Windows
 - `test_prompting.py` - Prompt generation (30 tests)
 - `test_model_runner.py` - LLM integration (scaffolded)
 
-**Total**: 134 tests (all passing)
+**Total**: See tests/ for current coverage (run pytest for an accurate count)
 
 ## Code Style
 
@@ -160,34 +159,42 @@ def augment_equation(
 Edit `config.yaml` or use presets in `configs/`:
 
 ```yaml
-model:
-  provider: openai  # openai, openrouter, local
-  name: gpt-4
-  temperature: 0.1
-  max_tokens: 2048
+dataset:
+    raw:
+        path: data/raw/Fredholm_Dataset_Sample.csv
+        max_samples: 5000
+        augment: true
+        augment_multiplier: 1.15
+        augment_strategies:
+            - approx_coef
+            - discrete_points
+            - series
+            - family
+            - regularized
+            - none_solution
+        split: true
+        convert_formats: [infix, latex, rpn]
 
-prompting:
-  style: chain-of-thought  # basic, chain-of-thought, few-shot, tool-assisted
-  include_examples: true
-  num_examples: 3
-  edge_case_mode: none  # none, guardrails, hints
+    prompting:
+        style: chain-of-thought  # basic, chain-of-thought, few-shot, tool-assisted
+        edge_case_mode: none     # none, guardrails, hints
+        include_examples: true
+        num_examples: 3
+
+model:
+    provider: openai  # openai, openrouter, local
+    name: gpt-4o-mini
+    temperature: 0.1
+    max_tokens: 2048
 
 evaluation:
-  mode: both  # symbolic, numeric, or both
-  symbolic_tolerance: 1e-10
-  numeric_tolerance: 1e-6
-  num_test_points: 100
+    mode: both  # symbolic, numeric, or both
+    symbolic_tolerance: 1e-10
+    numeric_tolerance: 1e-6
+    num_test_points: 100
 
-data:
-  max_samples: 5000
-  augment_multiplier: 1.15
-  augment_strategies: 
-    - approx_coef
-    - discrete_points
-    - series
-    - family
-    - regularized
-    - none_solution
+output:
+    dir: outputs
 ```
 
 ### Configuration Presets
@@ -364,27 +371,29 @@ Before submitting a PR:
 
 ```bash
 # Full rebuild with all edge cases
-# Use main CLI: uv run python -m src.cli run \
-  --input data/raw/Fredholm_Dataset_Sample.csv \
-  --output data/processed/training_data \
-  --augment --validate --split --convert
+python scripts/prepare_dataset.py \
+    --input data/raw/Fredholm_Dataset_Sample.csv \
+    --output data/processed/training_data \
+    --augment --validate --split --convert
 ```
 
 ### Regenerate Prompts
 
 ```bash
-# Use main CLI \
-  --input data/processed/training_data/formatted/ \
-  --output data/prompts \
-  --styles all
+uv run python -m src.cli prompt batch \
+    data/processed/training_data/formatted \
+    --output data/prompts \
+    --styles all
 ```
 
 ### Validate Data Quality
 
 ```bash
-# Validation integrated \
-  data/processed/training_data/augmented/*.csv \
-  --strategies all --verbose
+# Validation integrated
+python scripts/prepare_dataset.py \
+    --input data/raw/Fredholm_Dataset_Sample.csv \
+    --output data/processed/training_data \
+    --augment --validate
 ```
 
 ### Run Pipeline

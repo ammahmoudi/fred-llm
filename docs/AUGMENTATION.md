@@ -216,7 +216,7 @@ Notes:
 ### All Edge Cases (Recommended)
 
 ```bash
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --input data/raw/Fredholm_Dataset_Sample.csv \
   --output data/processed/training_data \
   --augment \
@@ -228,17 +228,17 @@ Notes:
 
 ```bash
 # Only approximate coefficient cases
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.2 \
   --augment-strategies approx_coef
 
 # Only no-solution cases
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.3 \
   --augment-strategies none_solution
 
 # Combination: numerical-only + no-solution
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.25 \
   --augment-strategies approx_coef discrete_points none_solution
 ```
@@ -247,12 +247,12 @@ Notes:
 
 ```bash
 # Only weakly singular kernels
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.1 \
   --augment-strategies weakly_singular
 
 # Only boundary layer problems
-# Use main CLI: uv run python -m src.cli run --config <yaml> \
+python scripts/prepare_dataset.py \
   --augment --augment-multiplier 1.15 \
   --augment-strategies boundary_layer
 ```
@@ -262,12 +262,12 @@ Notes:
 Validate augmented data quality:
 
 ```bash
-# Validation integrated in pipeline \
-  data/processed/training_data/augmented/Fredholm_Dataset_augmented.csv \
-  --strategies all \
-  --check-schema \
-  --check-balance \
-  --verbose
+# Validation integrated in the preparation script
+python scripts/prepare_dataset.py \
+  --input data/raw/Fredholm_Dataset_Sample.csv \
+  --output data/processed/training_data \
+  --augment \
+  --validate
 ```
 
 **Validation checks**:

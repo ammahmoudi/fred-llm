@@ -148,6 +148,11 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Basic/direct prompts - Simple equation-to-solution prompts ✅ **Implemented via src/prompts/styles/basic.py**
 - [x] Chain-of-thought prompts - Step-by-step reasoning ✅ **Implemented via src/prompts/styles/chain_of_thought.py**
 - [x] Few-shot prompts - Include worked examples ✅ **Implemented via src/prompts/styles/few_shot.py**
+- [x] **Refactored prompt_templates.py** ✅ **February 13, 2026**
+  - [x] Moved from src/llm/prompt_templates.py to src/prompts/prompt_templates.py
+  - [x] Legacy support with note to use OOP-based styles
+  - [x] Updated imports in src/cli.py and tests/test_prompting.py
+  - [x] Removed duplicate FEW_SHOT_EXAMPLES definitions
 - [x] Tool-assisted prompts - Enable tool use for computation ✅ **Template defined in src/prompts/styles/tool_assisted.py**
 - [x] **Prompt generation system** ✅ **Complete modular architecture (January 1, 2026)**
   - [x] PromptStyle ABC - Base class with 4 implementations (basic, CoT, few-shot, tool-assisted) ✅

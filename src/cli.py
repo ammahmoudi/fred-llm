@@ -256,7 +256,7 @@ def prompt_single(
     ),
 ) -> None:
     """Generate a prompt for a single equation."""
-    from src.llm.prompt_templates import generate_prompt
+    from src.prompts.prompt_templates import generate_prompt
 
     prompt_text = generate_prompt(equation, style=style)
     console.print(prompt_text)

@@ -11,7 +11,7 @@ class TestPromptTemplates:
     def test_basic_prompt_generation(self) -> None:
         """Test basic prompt style."""
         # TODO: Import and test actual module
-        # from src.llm.prompt_templates import generate_prompt
+        # from src.prompts.prompt_templates import generate_prompt
         #
         # equation = {
         #     "kernel": "x*t",
@@ -31,7 +31,7 @@ class TestPromptTemplates:
     def test_chain_of_thought_prompt(self) -> None:
         """Test chain-of-thought prompt style."""
         # TODO: Test actual module
-        # from src.llm.prompt_templates import generate_prompt
+        # from src.prompts.prompt_templates import generate_prompt
         #
         # equation = {"kernel": "exp(x+t)", "f": "1", "lambda_val": 0.5}
         # prompt = generate_prompt(equation, style="chain-of-thought")
@@ -44,7 +44,7 @@ class TestPromptTemplates:
     def test_few_shot_prompt_includes_examples(self) -> None:
         """Test few-shot prompt includes examples."""
         # TODO: Test actual module
-        # from src.llm.prompt_templates import generate_prompt
+        # from src.prompts.prompt_templates import generate_prompt
         #
         # equation = {"kernel": "x*t", "f": "x", "lambda_val": 1.0}
         # prompt = generate_prompt(equation, style="few-shot", num_examples=2)
@@ -57,7 +57,7 @@ class TestPromptTemplates:
     def test_get_template(self) -> None:
         """Test getting template by style."""
         # TODO: Test actual module
-        # from src.llm.prompt_templates import get_template
+        # from src.prompts.prompt_templates import get_template
         #
         # template = get_template("chain-of-thought")
         # assert template.style == "chain-of-thought"
@@ -69,7 +69,7 @@ class TestPromptTemplates:
     def test_invalid_style_raises_error(self) -> None:
         """Test that invalid style raises ValueError."""
         # TODO: Test actual module
-        # from src.llm.prompt_templates import get_template
+        # from src.prompts.prompt_templates import get_template
         #
         # with pytest.raises(ValueError):
         #     get_template("invalid-style")
@@ -83,7 +83,7 @@ class TestPromptFormatting:
     def test_equation_substitution(self) -> None:
         """Test that equation components are substituted correctly."""
         # TODO: Test actual substitution
-        # from src.llm.prompt_templates import generate_prompt
+        # from src.prompts.prompt_templates import generate_prompt
         #
         # equation = {
         #     "kernel": "sin(x)*cos(t)",
@@ -104,7 +104,7 @@ class TestPromptFormatting:
     def test_prompt_string_output(self) -> None:
         """Test that prompt output is a string."""
         # TODO: Test actual module
-        # from src.llm.prompt_templates import generate_prompt
+        # from src.prompts.prompt_templates import generate_prompt
         #
         # equation = {"kernel": "x*t", "f": "x", "lambda_val": 1.0}
         # prompt = generate_prompt(equation, style="basic")

@@ -20,14 +20,20 @@ from src.evaluation.types import (
     family_compare,
     verify_solution,
 )
-from src.evaluation.types.family import (_family_numeric_compare_samples,
-                                         _family_param_metadata,
-                                         _substitute_family_constants)
+from src.evaluation.types.family import (
+    _family_numeric_compare_samples,
+    _family_param_metadata,
+    _substitute_family_constants,
+)
 from src.evaluation.types.series import count_series_terms
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.utils.logging_utils import get_logger
 
-logger = get_logger(__name__)
+from src.evaluation.types.family import (
+    _family_numeric_compare_samples,
+    _family_param_metadata,
+    _substitute_family_constants,
+)
 
 
 def evaluate_solutions(
@@ -195,8 +201,11 @@ def evaluate_solutions(
                     kernel_expr = parse_latex_to_sympy(kernel_str)
                     f_expr = parse_latex_to_sympy(f_str)
                     residual = verify_solution(
-                        pred_expr, kernel_expr, f_expr,
-                        float(lambda_val), domain=domain,
+                        pred_expr,
+                        kernel_expr,
+                        f_expr,
+                        float(lambda_val),
+                        domain=domain,
                         x_values=(eval_points or {}).get("x_values"),
                     )
                     residual_results.append(residual)
@@ -238,7 +247,8 @@ def evaluate_solutions(
         none_rec = none_tp / (none_tp + none_fn) if (none_tp + none_fn) > 0 else 0.0
         none_f1 = (
             2 * none_prec * none_rec / (none_prec + none_rec)
-            if (none_prec + none_rec) > 0 else 0.0
+            if (none_prec + none_rec) > 0
+            else 0.0
         )
         metrics["none_detection"] = {
             "precision": none_prec,
@@ -257,21 +267,23 @@ def evaluate_solutions(
             "verified_count": verified,
             "total": len(residuals_valid),
             "verified_rate": verified / len(residuals_valid),
-            "mean_residual_max": float(np.mean(
-                [r["residual_max"] for r in residuals_valid]
-            )),
-            "mean_residual_mean": float(np.mean(
-                [r["residual_mean"] for r in residuals_valid]
-            )),
-            "mean_residual_mae": float(np.mean(
-                [r["residual_mae"] for r in residuals_valid]
-            )),
-            "mean_residual_rmse": float(np.mean(
-                [r["residual_rmse"] for r in residuals_valid]
-            )),
+            "mean_residual_max": float(
+                np.mean([r["residual_max"] for r in residuals_valid])
+            ),
+            "mean_residual_mean": float(
+                np.mean([r["residual_mean"] for r in residuals_valid])
+            ),
+            "mean_residual_mae": float(
+                np.mean([r["residual_mae"] for r in residuals_valid])
+            ),
+            "mean_residual_rmse": float(
+                np.mean([r["residual_rmse"] for r in residuals_valid])
+            ),
         }
 
-    logger.info(f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}")
+    logger.info(
+        f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}"
+    )
 
     return metrics
 
@@ -628,13 +640,14 @@ class SolutionEvaluator:
             summary["mean_operator_recall"] = sum(
                 r["recall"] for r in op_f1_results
             ) / len(op_f1_results)
-            summary["mean_operator_f1"] = sum(
-                r["f1"] for r in op_f1_results
-            ) / len(op_f1_results)
+            summary["mean_operator_f1"] = sum(r["f1"] for r in op_f1_results) / len(
+                op_f1_results
+            )
 
         # Aggregate relative L2 error
         rel_l2_values = [
-            r["numeric"]["rel_l2"] for r in self.results
+            r["numeric"]["rel_l2"]
+            for r in self.results
             if r.get("numeric", {}).get("rel_l2") is not None
             and r["numeric"]["rel_l2"] != float("inf")
         ]

@@ -141,8 +141,15 @@ def numeric_compare(
 
         if include_points:
             result["x_values"] = test_points.tolist()
-            result["y_pred"] = y_solution.tolist()
-            result["y_true"] = y_truth.tolist()
+            # Convert complex numbers to strings for JSON serialization
+            result["y_pred"] = [
+                str(val) if isinstance(val, complex) else val 
+                for val in y_solution.tolist()
+            ]
+            result["y_true"] = [
+                str(val) if isinstance(val, complex) else val 
+                for val in y_truth.tolist()
+            ]
 
     except Exception as e:
         logger.warning(f"Numeric comparison failed: {e}")

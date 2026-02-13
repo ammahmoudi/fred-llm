@@ -106,7 +106,9 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
             transformations=TRANSFORMATIONS,
         )
     except Exception as exc:
-        raise ParseError(f"Failed to parse expression: {expr_str}. Error: {exc}")
+        # Return None instead of raising - let caller handle gracefully
+        logger.debug(f"All parsing strategies failed for '{expr_str[:50]}...': {exc}")
+        return None
 
 
 def _try_math_verify_parse(expr_str: str) -> Optional[sp.Expr]:

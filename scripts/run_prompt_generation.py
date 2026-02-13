@@ -57,7 +57,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--pattern",
         type=str,
-        default="*.{csv,json}",
+        default="*",
         help="File pattern to match (default: *.csv and *.json)",
     )
     parser.add_argument(
@@ -95,16 +95,44 @@ def parse_args() -> argparse.Namespace:
 
 
 def get_data_files(input_path: Path, pattern: str = None) -> list[Path]:
-    """Get list of CSV or JSON files from input path."""
+    """Get list of CSV and JSON files from input path.
+    
+    Both formats are supported:
+    - CSV files with required columns (u, f, kernel, lambda_val, a, b)
+    - JSON files with array of equation objects
+    
+    Priority order when multiple files exist:
+    1. Formatted files (formatted/*)
+    2. CSV/JSON files in root
+    3. Exclude validation reports and metadata
+    """
     if input_path.is_file():
-        return [input_path]
-    elif input_path.is_dir():
-        if pattern is None or pattern == "*.{csv,json}":
-            # Get both CSV and JSON files
-            files = sorted(input_path.glob("*.csv")) + sorted(input_path.glob("*.json"))
-            return sorted(set(files))  # Remove duplicates and sort
+        # If a specific file is provided, process it if it's CSV or JSON
+        suffix = input_path.suffix.lower()
+        if suffix in [".csv", ".json"]:
+            return [input_path]
         else:
-            return sorted(input_path.glob(pattern))
+            console.print(f"[yellow]⚠ File must be CSV or JSON format: {input_path}[/yellow]")
+            return []
+    elif input_path.is_dir():
+        # First check for formatted files (highest priority)
+        formatted_dir = input_path / "formatted"
+        if formatted_dir.exists() and formatted_dir.is_dir():
+            formatted_files = sorted(formatted_dir.glob("*.csv")) + sorted(formatted_dir.glob("*.json"))
+            formatted_files = [f for f in formatted_files if "validation_report" not in f.name.lower()]
+            if formatted_files:
+                return sorted(set(formatted_files))
+        
+        # Fall back to root directory files
+        root_files = sorted(input_path.glob("*.csv")) + sorted(input_path.glob("*.json"))
+        # Filter out validation_report.json and base/augmented files if formatted data exists
+        root_files = [f for f in root_files if "validation_report" not in f.name.lower()]
+        
+        # If we have formatted files, skip base and augmented
+        if formatted_dir.exists():
+            root_files = [f for f in root_files if "base" not in f.name and "augmented" not in f.name]
+        
+        return sorted(set(root_files))
     else:
         console.print(f"[red]✗ Input path not found: {input_path}[/red]")
         return []
@@ -153,7 +181,7 @@ def main() -> None:
     # Get data files (CSV or JSON)
     data_files = get_data_files(args.input, args.pattern)
     if not data_files:
-        console.print("[yellow]⚠ No CSV or JSON files found[/yellow]")
+        console.print(f"[yellow]⚠ No CSV or JSON files found in {args.input}[/yellow]")
         return
 
     # Expand styles

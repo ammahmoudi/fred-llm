@@ -635,6 +635,19 @@ def dataset(
 
 def main() -> None:
     """Main entry point."""
+    # Configure multiprocessing for Windows compatibility
+    # This prevents "The handle is invalid" errors on Windows
+    import multiprocessing
+    import sys
+    
+    if sys.platform == "win32":
+        # On Windows, use 'spawn' method to avoid handle inheritance issues
+        try:
+            multiprocessing.set_start_method("spawn", force=True)
+        except RuntimeError:
+            # Already set, ignore
+            pass
+    
     app()
 
 

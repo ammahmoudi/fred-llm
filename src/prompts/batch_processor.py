@@ -130,6 +130,98 @@ class BatchPromptProcessor:
         logger.info(f"Loaded {len(equations)} equations")
         return equations
 
+    def load_equations_from_json(self, json_path: Path | str) -> list[EquationData]:
+        """
+        Load equations from JSON file.
+
+        Args:
+            json_path: Path to JSON file containing list of equation objects.
+                      Required fields: u, f, kernel, lambda_val, a, b.
+                      Optional fields: has_solution, solution_type, evaluation_points.
+
+        Returns:
+            List of EquationData objects.
+        """
+        json_path = Path(json_path)
+        logger.info(f"Loading equations from {json_path}")
+
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, list):
+            raise ValueError(f"JSON must contain a list of equation objects, got {type(data)}")
+
+        # Validate required columns
+        required_cols = ["u", "f", "kernel", "lambda_val", "a", "b"]
+        
+        # Check first item for required columns
+        if data and isinstance(data[0], dict):
+            missing = [col for col in required_cols if col not in data[0]]
+            if missing:
+                raise ValueError(f"JSON missing required columns: {missing}")
+
+        # Optional edge case columns
+        edge_case_cols = ["has_solution", "solution_type"]
+
+        def _parse_evaluation_points(raw_value: object) -> dict | None:
+            if isinstance(raw_value, dict):
+                return raw_value
+            if isinstance(raw_value, str):
+                text = raw_value.strip()
+                if not text:
+                    return None
+                try:
+                    return json.loads(text)
+                except json.JSONDecodeError:
+                    try:
+                        return ast.literal_eval(text)
+                    except (ValueError, SyntaxError):
+                        return None
+            return None
+
+        # Convert to EquationData objects
+        equations = []
+        for idx, item in enumerate(data):
+            if not isinstance(item, dict):
+                logger.warning(f"Skipping non-dict item at index {idx}")
+                continue
+
+            # Build base equation data
+            eq_kwargs = {
+                "u": str(item.get("u", "")),
+                "f": str(item.get("f", "")),
+                "kernel": str(item.get("kernel", "")),
+                "lambda_val": float(item.get("lambda_val", 0.0)),
+                "a": float(item.get("a", 0.0)),
+                "b": float(item.get("b", 1.0)),
+                "equation_id": item.get("equation_id", f"eq_{idx}"),
+            }
+
+            # Handle evaluation_points if present
+            if "evaluation_points" in item:
+                eval_points = _parse_evaluation_points(item["evaluation_points"])
+                if eval_points is not None:
+                    eq_kwargs["evaluation_points"] = eval_points
+
+            # Add optional edge case fields if present
+            for col in edge_case_cols:
+                if col in item and item[col] is not None:
+                    value = item[col]
+                    if col == "has_solution":
+                        eq_kwargs[col] = (
+                            bool(value)
+                            if isinstance(value, (bool, int))
+                            else str(value).lower() == "true"
+                        )
+                    else:
+                        eq_kwargs[col] = str(value)
+
+            eq = EquationData(**eq_kwargs)
+            equations.append(eq)
+
+        logger.info(f"Loaded {len(equations)} equations from JSON")
+        return equations
+
     def save_prompts_jsonl(
         self,
         prompts: list[GeneratedPrompt],
@@ -172,10 +264,12 @@ class BatchPromptProcessor:
         show_progress: bool = True,
     ) -> Path:
         """
-        Process a complete dataset: load CSV → generate prompts → save JSONL.
+        Process a complete dataset: load data → generate prompts → save JSONL.
+
+        Supports both CSV and JSON input files.
 
         Args:
-            input_csv: Input CSV file path.
+            input_csv: Input CSV or JSON file path.
             output_name: Output filename (without extension). Auto-generated if None.
             format_type: Format type (infix, latex, rpn).
             show_progress: Whether to show progress bar.
@@ -183,17 +277,20 @@ class BatchPromptProcessor:
         Returns:
             Path to saved JSONL file.
         """
-        input_csv = Path(input_csv)
+        input_file = Path(input_csv)
 
         # Auto-generate output name
         if output_name is None:
-            base_name = input_csv.stem
+            base_name = input_file.stem
             output_name = f"{base_name}_{self.prompt_style.style_name}"
 
         output_file = self.output_dir / f"{output_name}.jsonl"
 
-        # Load equations
-        equations = self.load_equations_from_csv(input_csv)
+        # Load equations from CSV or JSON based on file extension
+        if input_file.suffix.lower() == ".json":
+            equations = self.load_equations_from_json(input_file)
+        else:
+            equations = self.load_equations_from_csv(input_file)
 
         # Generate prompts with progress bar
         logger.info(f"Generating prompts in {self.prompt_style.style_name} style")

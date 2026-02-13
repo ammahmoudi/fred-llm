@@ -100,10 +100,14 @@ def parse_llm_output(
 
             if solution_str and validate:
                 try:
-                    result["solution_sympy"] = _parse_to_sympy(solution_str)
-                    result["confidence"] = 0.7
+                    parsed_sympy = _parse_to_sympy(solution_str)
+                    if parsed_sympy is not None:
+                        result["solution_sympy"] = parsed_sympy
+                        result["confidence"] = 0.7
+                    else:
+                        result["confidence"] = 0.3
                 except Exception as e:
-                    logger.warning(f"Failed to parse solution to SymPy: {e}")
+                    logger.debug(f"Optional parsing error (non-fatal): {e}")
                     result["confidence"] = 0.3
 
     # Infer has_solution=False when solution is empty and response says "no solution"
@@ -459,14 +463,22 @@ def _parse_to_sympy(expr_str: str) -> sp.Expr:
         expr_str: Mathematical expression string.
 
     Returns:
-        SymPy expression.
+        SymPy expression, or None if parsing fails completely.
 
-    Raises:
-        ParseError: If parsing fails.
+    Note:
+        Returns None instead of raising exceptions to allow pipeline to continue.
     """
-    from src.llm.math_verify_adapter import parse_latex_to_sympy
+    if not expr_str or not isinstance(expr_str, str):
+        return None
+    
+    try:
+        from src.llm.math_verify_adapter import parse_latex_to_sympy
 
-    return parse_latex_to_sympy(expr_str)
+        return parse_latex_to_sympy(expr_str)
+    except Exception as e:
+        # Log the error but don't raise - let pipeline continue
+        logger.debug(f"Failed to parse '{expr_str[:50]}...': {e}")
+        return None
 
 
 def _preprocess_for_sympy(expr: str) -> str:

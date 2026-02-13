@@ -326,17 +326,40 @@ class AdaptivePipeline:
         finally:
             sys.argv = original_argv
 
-        # Return paths using first format
+        # Determine output format extension
+        output_ext = ".json" if raw_config.output_format == "json" else ".csv"
+        
+        # Get the input filename stem for constructing output paths
+        input_stem = raw_config.path.stem  # e.g., "Fredholm_Dataset_Sample"
         base_format = (
             raw_config.convert_formats[0] if raw_config.convert_formats else "infix"
         )
-        return {
-            "train": output_dir / f"train_{base_format}.csv",
-            "val": output_dir / f"val_{base_format}.csv" if raw_config.split else None,
-            "test": output_dir / f"test_{base_format}.csv"
-            if raw_config.split
-            else None,
-        }
+
+        # Return appropriate paths based on configuration
+        if raw_config.split:
+            # When splitting: files are in root as train_format.ext, test_format.ext
+            return {
+                "train": output_dir / f"train_{base_format}{output_ext}",
+                "val": output_dir / f"val_{base_format}{output_ext}",
+                "test": output_dir / f"test_{base_format}{output_ext}",
+            }
+        elif raw_config.convert_formats:
+            # When converting but not splitting: files are in formatted/ subdirectory
+            # Use the formatted/stratified data if available
+            formatted_file = output_dir / "formatted" / f"{input_stem}_{base_format}{output_ext}"
+            return {
+                "train": formatted_file,
+                "val": None,
+                "test": None,
+            }
+        else:
+            # No conversion: use base data file
+            base_file = output_dir / f"{input_stem}_base{output_ext}"
+            return {
+                "train": base_file,
+                "val": None,
+                "test": None,
+            }
 
     def _load_prepared_data(self) -> dict[str, Path]:
         """Load pre-split dataset."""
@@ -456,8 +479,17 @@ class AdaptivePipeline:
         console.print(f"[cyan]> Input: {input_dir}[/cyan]")
         console.print(f"[cyan]> Output: {output_dir}[/cyan]")
 
-        # Create output directory
+        # Create output directory and clean old prompt files
         output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Remove old .jsonl files to avoid mixing with new data
+        if output_dir.exists():
+            for jsonl_file in output_dir.glob("**/*.jsonl"):
+                try:
+                    jsonl_file.unlink()
+                    logger.info(f"Cleaned up old prompt file: {jsonl_file}")
+                except Exception as e:
+                    logger.warning(f"Could not delete {jsonl_file}: {e}")
 
         # Import the tested runner function
         import importlib.util
@@ -635,10 +667,19 @@ class AdaptivePipeline:
                         "solution_sympy": None,
                         "has_solution": None,
                         "solution_type": None,
+                        "discrete_points": None,
                         "reasoning": None,
                         "confidence": 0.0,
                     }
                     parse_failures += 1
+                    # Continue to next response instead of crashing
+                    
+                # Safely extract parsed values with defaults
+                try:
+                    solution_sympy_str = str(parsed.get("solution_sympy")) \
+                        if parsed.get("solution_sympy") is not None else None
+                except Exception:
+                    solution_sympy_str = None
 
                 metadata = prompt_data.get("metadata", {})
                 prediction = {
@@ -652,9 +693,7 @@ class AdaptivePipeline:
                     "raw_response": response,
                     "api_error": response == "",
                     "solution_str": parsed.get("solution_str"),
-                    "solution_sympy": str(parsed.get("solution_sympy"))
-                    if parsed.get("solution_sympy") is not None
-                    else None,
+                    "solution_sympy": solution_sympy_str,
                     "has_solution": parsed.get("has_solution"),
                     "solution_type": parsed.get("solution_type"),
                     "reasoning": parsed.get("reasoning"),

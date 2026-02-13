@@ -42,105 +42,15 @@ def data_augmenter() -> DataAugmenter:
 class TestDataAugmentation:
     """Test data augmentation strategies."""
 
-    @pytest.mark.skipif(
-        not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
-        reason="Sample dataset not found",
-    )
-    def test_substitute_augmentation(
-        self,
-        sample_dataset_path: Path,
-        fredholm_loader: FredholmDatasetLoader,
-        data_augmenter: DataAugmenter,
-    ) -> None:
-        """Test variable substitution augmentation."""
-        fredholm_loader.max_samples = 2
-        equations = fredholm_loader.load()
-        eq_dicts = [eq.to_dict() for eq in equations]
-        augmenter = DataAugmenter(strategies=["substitute"])
-        augmented = augmenter.augment(eq_dicts, multiplier=3)
 
-        # Should have more equations
-        assert len(augmented) > len(eq_dicts)
 
-    @pytest.mark.skipif(
-        not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
-        reason="Sample dataset not found",
-    )
-    def test_scale_augmentation(
-        self,
-        sample_dataset_path: Path,
-        fredholm_loader: FredholmDatasetLoader,
-        data_augmenter: DataAugmenter,
-    ) -> None:
-        """Test lambda coefficient scaling augmentation."""
-        fredholm_loader.max_samples = 2
-        equations = fredholm_loader.load()
-        eq_dicts = [eq.to_dict() for eq in equations]
-        augmenter = DataAugmenter(strategies=["scale"])
-        augmented = augmenter.augment(eq_dicts, multiplier=2)
 
-        assert len(augmented) > len(eq_dicts)
 
-    @pytest.mark.skipif(
-        not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
-        reason="Sample dataset not found",
-    )
-    def test_shift_augmentation(
-        self,
-        sample_dataset_path: Path,
-        fredholm_loader: FredholmDatasetLoader,
-        data_augmenter: DataAugmenter,
-    ) -> None:
-        """Test domain shift augmentation."""
-        fredholm_loader.max_samples = 2
-        equations = fredholm_loader.load()
-        eq_dicts = [eq.to_dict() for eq in equations]
-        augmenter = DataAugmenter(strategies=["shift"])
-        augmented = augmenter.augment(eq_dicts, multiplier=2)
 
-        assert len(augmented) > len(eq_dicts)
 
-    @pytest.mark.skipif(
-        not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
-        reason="Sample dataset not found",
-    )
-    def test_compose_augmentation(
-        self,
-        sample_dataset_path: Path,
-        fredholm_loader: FredholmDatasetLoader,
-        data_augmenter: DataAugmenter,
-    ) -> None:
-        """Test kernel composition augmentation."""
-        fredholm_loader.max_samples = 2
-        equations = fredholm_loader.load()
-        eq_dicts = [eq.to_dict() for eq in equations]
-        augmenter = DataAugmenter(strategies=["compose"])
-        augmented = augmenter.augment(eq_dicts, multiplier=2)
 
-        assert len(augmented) > len(eq_dicts)
 
-    @pytest.mark.skipif(
-        not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
-        reason="Sample dataset not found",
-    )
-    def test_combined_augmentation(
-        self,
-        sample_dataset_path: Path,
-        fredholm_loader: FredholmDatasetLoader,
-        data_augmenter: DataAugmenter,
-    ) -> None:
-        """Test combining multiple augmentation strategies."""
-        fredholm_loader.max_samples = 3
-        equations = fredholm_loader.load()
-        eq_dicts = [eq.to_dict() for eq in equations]
 
-        # Apply multiple strategies
-        augmenter = DataAugmenter(strategies=["substitute", "scale"])
-        augmented = augmenter.augment(eq_dicts, multiplier=3)
-
-        # Should have significantly more equations
-        expansion_ratio = len(augmented) / len(equations)
-        assert expansion_ratio >= 2.0
 
     @pytest.mark.skipif(
         not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
@@ -206,46 +116,7 @@ class TestDataAugmentation:
                 assert entry["augmentation_type"] == "original"
                 assert entry["augmentation_variant"] == "fredholm_dataset"
 
-    def test_unified_schema_basic_augmentations(self) -> None:
-        """Test that basic augmentations output unified 16-field schema."""
-        from src.data.augmentations import (
-            ComposeAugmentation,
-            ScaleAugmentation,
-            ShiftAugmentation,
-            SubstituteAugmentation,
-        )
 
-        sample_eq = {
-            "u": "x",
-            "f": "x",
-            "kernel": "x*t",
-            "lambda": "1",
-            "lambda_val": "1",
-            "a": "0",
-            "b": "1",
-        }
-
-        strategies = [
-            SubstituteAugmentation(),
-            ScaleAugmentation(),
-            ShiftAugmentation(),
-            ComposeAugmentation(),
-        ]
-
-        for strategy in strategies:
-            results = strategy.augment(sample_eq)
-            assert len(results) > 0, f"{strategy.strategy_name} produced no results"
-
-            for result in results:
-                # Check all 16 fields present
-                assert result["has_solution"] is True
-                assert result["solution_type"] == "exact_symbolic"
-                assert result["edge_case"] is None
-                assert isinstance(result["reason"], str)
-                assert isinstance(result["recommended_methods"], list)
-                assert result["recommended_methods"] == []
-                assert result["numerical_challenge"] is None
-                assert "augmentation_variant" in result
 
 
 class TestEdgeCaseAugmentations:

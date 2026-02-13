@@ -12,7 +12,6 @@ from src.data.augmentations import (
     ApproximateOnlyAugmentation,
     BoundaryLayerAugmentation,
     CompactSupportAugmentation,
-    ComposeAugmentation,
     DisconnectedSupportAugmentation,
     DivergentKernelAugmentation,
     IllPosedAugmentation,
@@ -23,9 +22,6 @@ from src.data.augmentations import (
     OscillatorySolutionAugmentation,
     RangeViolationAugmentation,
     ResonanceAugmentation,
-    ScaleAugmentation,
-    ShiftAugmentation,
-    SubstituteAugmentation,
     WeaklySingularAugmentation,
 )
 from src.utils.logging_utils import get_logger
@@ -51,7 +47,7 @@ def augment_dataset(
         Augmented dataset.
     """
     if strategies is None:
-        strategies = ["substitute", "scale", "shift"]
+        strategies = ["none_solution", "approx_coef", "discrete_points"]
 
     # Keep originals with metadata marking them as original
     augmented = []
@@ -91,22 +87,8 @@ def _apply_augmentation(
     strategy: str,
 ) -> list[dict[str, Any]]:
     """Apply a single augmentation strategy or strategy group."""
-    # Basic transformations
-    if strategy == "substitute":
-        augmenter = SubstituteAugmentation()
-        return augmenter.augment(item)
-    elif strategy == "scale":
-        augmenter = ScaleAugmentation()
-        return augmenter.augment(item)
-    elif strategy == "shift":
-        augmenter = ShiftAugmentation()
-        return augmenter.augment(item)
-    elif strategy == "compose":
-        augmenter = ComposeAugmentation()
-        return augmenter.augment(item)
-
     # Solution-type based strategies (run all in folder)
-    elif strategy == "none_solution":
+    if strategy == "none_solution":
         # Run all none-solution strategies
         results = []
         results.extend(NoSolutionAugmentation().augment(item))
@@ -173,25 +155,22 @@ class DataAugmenter:
         Args:
             strategies: Augmentation strategies to use:
 
-                Basic transformations (exact_symbolic):
-                - substitute, scale, shift, compose (4 strategies)
-
                 Solution-type groups (each runs all strategies with that solution type):
                 - none_solution: No solution (eigenvalue_cases, range_violation, divergent_kernel,
-                        disconnected_support) - 12 variants
+                        disconnected_support) - 4 strategies
                 - approx_coef: Functional form with numerical params (weakly_singular,
                               boundary_layer, oscillatory_solution, mixed_type,
-                              compact_support) - 15 variants
-                - discrete_points: Pure sample arrays (complex_kernels, near_resonance) - 6 variants
-                - series: Truncated series (neumann_series) - 3 variants
-                - regularized: Ill-posed equations (ill_posed) - 3 variants
-                - family: Non-unique solutions (resonance) - 3 variants
+                              compact_support) - 5 strategies
+                - discrete_points: Pure sample arrays (approximate_only, near_resonance) - 2 strategies
+                - series: Truncated series (neumann_series) - 1 strategy
+                - regularized: Ill-posed equations (ill_posed) - 1 strategy
+                - family: Non-unique solutions (resonance) - 1 strategy
 
-                Total: 18 strategies, 42 variants
+                Total: 14 edge case strategies
 
             seed: Random seed for reproducibility.
         """
-        self.strategies = strategies or ["substitute", "scale", "shift"]
+        self.strategies = strategies or ["none_solution", "approx_coef", "discrete_points"]
         self.seed = seed
 
     def augment(

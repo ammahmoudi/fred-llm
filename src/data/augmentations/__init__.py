@@ -40,12 +40,6 @@ from src.data.augmentations.discrete_points import (
     ApproximateOnlyAugmentation,
     NearResonanceAugmentation,
 )
-from src.data.augmentations.exact_symbolic import (
-    ComposeAugmentation,
-    ScaleAugmentation,
-    ShiftAugmentation,
-    SubstituteAugmentation,
-)
 from src.data.augmentations.family import ResonanceAugmentation
 from src.data.augmentations.none_solution import (
     DisconnectedSupportAugmentation,
@@ -58,11 +52,6 @@ from src.data.augmentations.series import NeumannSeriesAugmentation
 
 __all__ = [
     "BaseAugmentation",
-    # Exact symbolic (4)
-    "SubstituteAugmentation",
-    "ScaleAugmentation",
-    "ShiftAugmentation",
-    "ComposeAugmentation",
     # Approx coef (5)
     "BoundaryLayerAugmentation",
     "OscillatorySolutionAugmentation",

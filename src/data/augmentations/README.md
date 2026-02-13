@@ -51,12 +51,7 @@ Every single dataset entry (original from Fredholm-LLM and all augmented variant
 
 ### Value Patterns by Strategy Type
 
-**Basic Transformations** (substitute, scale, shift, compose):
-- `solution_type`: `"exact"`
-- `edge_case`: `null`
-- `has_solution`: `true`
-- `recommended_methods`: `[]`
-- `numerical_challenge`: `null`
+
 
 **None Solution Cases** (none_solution folder):
 - `solution_type`: `"none"`

@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 import sympy as sp
 
-from src.llm.evaluate import numeric_compare
+from src.evaluation.metrics import numeric_compare
 
 
 class TestNumericCompareWithEvaluationPoints:

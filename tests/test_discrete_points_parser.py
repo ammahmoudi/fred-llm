@@ -1,8 +1,8 @@
-"""Tests for discrete_points parser in postprocess.py."""
+"""Tests for discrete_points parser in postprocessing.py."""
 
 import pytest
 
-from src.llm.postprocess import extract_discrete_points, parse_llm_output
+from src.postprocessing import extract_discrete_points, parse_llm_output
 
 
 class TestExtractDiscretePoints:

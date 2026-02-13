@@ -16,10 +16,10 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.adaptive_config import AdaptivePipelineConfig, EvaluationConfig
-from src.llm.evaluate import SolutionEvaluator
+from src.evaluation import SolutionEvaluator
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.llm.model_runner import ModelRunner
-from src.llm.postprocess import parse_llm_output
+from src.postprocessing import parse_llm_output
 from src.utils.logging_utils import get_logger
 
 console = Console()
@@ -1007,7 +1007,7 @@ class AdaptivePipeline:
         # Run evaluation with configured settings
         eval_config_obj = self.config.evaluation or EvaluationConfig()
 
-        from src.llm.evaluate import evaluate_solutions
+        from src.evaluation import evaluate_solutions
 
         metrics = evaluate_solutions(
             predictions_path,

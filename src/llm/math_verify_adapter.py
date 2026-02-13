@@ -62,7 +62,7 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
     Raises:
         ParseError: If all parsing strategies fail.
     """
-    from src.llm.postprocess import ParseError, _latex_to_infix, _preprocess_for_sympy
+    from src.postprocessing.parse import ParseError, _latex_to_infix, _preprocess_for_sympy
 
     # --- Strategy 1: Math-Verify parse ---
     if HAS_MATH_VERIFY:

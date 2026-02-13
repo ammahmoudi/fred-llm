@@ -2,7 +2,8 @@
 
 import pytest
 
-from src.llm.evaluate import SolutionEvaluator, evaluate_discrete_points
+from src.evaluation import SolutionEvaluator
+from src.evaluation.types import evaluate_discrete_points
 
 
 class TestEvaluateDiscretePoints:

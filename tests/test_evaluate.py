@@ -9,16 +9,15 @@ from pathlib import Path
 import pytest
 import sympy as sp
 
-from src.llm.evaluate import (
-    SolutionEvaluator,
+from src.evaluation import SolutionEvaluator, evaluate_solutions
+from src.evaluation.metrics import (
     bleu_score,
-    evaluate_solutions,
-    extract_operators,
     numeric_compare,
     operator_f1,
     symbolic_compare,
-    verify_solution,
 )
+from src.evaluation.metrics.operator_f1 import extract_operators
+from src.evaluation.types import verify_solution
 
 
 class TestSymbolicCompare:

@@ -105,7 +105,7 @@ def evaluate(
     import json
     from pathlib import Path
 
-    from src.llm.evaluate import evaluate_solutions
+    from src.evaluation import evaluate_solutions
 
     input_file = Path(input_file)
 

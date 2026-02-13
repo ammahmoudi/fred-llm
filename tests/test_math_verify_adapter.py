@@ -62,7 +62,7 @@ class TestParseLatexToSympy:
         assert expr.equals(sp.Rational(3, 2) * x)
 
     def test_raises_on_garbage(self) -> None:
-        from src.llm.postprocess import ParseError
+        from src.postprocessing import ParseError
 
         with pytest.raises(ParseError):
             parse_latex_to_sympy("@@@totally_not_math!!!")
@@ -168,7 +168,7 @@ class TestExtractAnswerFromResponse:
 
     def test_parse_llm_output_uses_mv_fallback(self) -> None:
         """parse_llm_output should recover via MV when regex extraction fails."""
-        from src.llm.postprocess import parse_llm_output
+        from src.postprocessing import parse_llm_output
 
         # A response where regex extraction will grab garbage but MV can find the math
         response = (
@@ -246,7 +246,7 @@ class TestExtractSolutionFromResponse:
 
     def test_parse_llm_output_uses_mv_primary(self) -> None:
         """parse_llm_output should use MV as primary extraction path."""
-        from src.llm.postprocess import parse_llm_output
+        from src.postprocessing import parse_llm_output
 
         response = (
             "The solution is:\n"
@@ -265,7 +265,7 @@ class TestIntegrationWithExistingCode:
 
     def test_postprocess_parse_to_sympy_uses_adapter(self) -> None:
         """_parse_to_sympy should delegate to the adapter."""
-        from src.llm.postprocess import _parse_to_sympy
+        from src.postprocessing.parse import _parse_to_sympy
 
         expr = _parse_to_sympy("x**2 + 1")
         x = sp.Symbol("x")
@@ -273,7 +273,7 @@ class TestIntegrationWithExistingCode:
 
     def test_symbolic_compare_with_math_verify(self) -> None:
         """symbolic_compare should use the fast-path when available."""
-        from src.llm.evaluate import symbolic_compare
+        from src.evaluation.metrics import symbolic_compare
 
         x = sp.Symbol("x")
         result = symbolic_compare((x + 1) ** 2, x**2 + 2 * x + 1)

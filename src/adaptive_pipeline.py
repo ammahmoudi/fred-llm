@@ -864,11 +864,14 @@ class AdaptivePipeline:
 
         # None-type detection precision / recall / F1
         if none_tp + none_fp + none_fn > 0:
-            none_prec = none_tp / (none_tp + none_fp) if (none_tp + none_fp) > 0 else 0.0
+            none_prec = (
+                none_tp / (none_tp + none_fp) if (none_tp + none_fp) > 0 else 0.0
+            )
             none_rec = none_tp / (none_tp + none_fn) if (none_tp + none_fn) > 0 else 0.0
             none_f1 = (
                 2 * none_prec * none_rec / (none_prec + none_rec)
-                if (none_prec + none_rec) > 0 else 0.0
+                if (none_prec + none_rec) > 0
+                else 0.0
             )
             metrics["none_detection"] = {
                 "precision": none_prec,
@@ -892,19 +895,13 @@ class AdaptivePipeline:
                 f"  Numeric accuracy: {summary.get('numeric_accuracy', 0):.2%}"
             )
         if "mean_operator_f1" in summary:
-            console.print(
-                f"  Operator F1: {summary['mean_operator_f1']:.2%}"
-            )
+            console.print(f"  Operator F1: {summary['mean_operator_f1']:.2%}")
             console.print(
                 f"  Operator Precision: {summary['mean_operator_precision']:.2%}"
             )
-            console.print(
-                f"  Operator Recall: {summary['mean_operator_recall']:.2%}"
-            )
+            console.print(f"  Operator Recall: {summary['mean_operator_recall']:.2%}")
         if "mean_rel_l2" in summary:
-            console.print(
-                f"  Relative L2: {summary['mean_rel_l2']:.6f}"
-            )
+            console.print(f"  Relative L2: {summary['mean_rel_l2']:.6f}")
         if "mean_bleu" in summary:
             console.print(f"  BLEU: {summary['mean_bleu']:.4f}")
         if "none_detection" in metrics:

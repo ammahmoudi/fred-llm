@@ -220,10 +220,7 @@ class TestExtractSolutionFromResponse:
 
     def test_full_response_eq_unwrap(self) -> None:
         """Should unwrap Eq(u(x), rhs) from full response parse."""
-        response = (
-            "After solving the Fredholm equation:\n"
-            "$$u(x) = e^{x}$$\n"
-        )
+        response = "After solving the Fredholm equation:\n$$u(x) = e^{x}$$\n"
         if HAS_MATH_VERIFY:
             result = extract_solution_from_response(response)
             assert result is not None
@@ -248,10 +245,7 @@ class TestExtractSolutionFromResponse:
         """parse_llm_output should use MV as primary extraction path."""
         from src.postprocessing import parse_llm_output
 
-        response = (
-            "The solution is:\n"
-            "$$u(x) = \\frac{x^2}{2} + 1$$\n"
-        )
+        response = "The solution is:\n$$u(x) = \\frac{x^2}{2} + 1$$\n"
         result = parse_llm_output(response)
         if HAS_MATH_VERIFY:
             assert result["solution_sympy"] is not None

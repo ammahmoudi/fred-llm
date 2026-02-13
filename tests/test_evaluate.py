@@ -551,9 +551,7 @@ class TestNoneDetectionPRF1:
 
     def _write_jsonl(self, results: list[dict]) -> str:
         """Helper to write results to a temp JSONL file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".jsonl", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             for r in results:
                 f.write(json.dumps(r) + "\n")
             return f.name
@@ -692,9 +690,7 @@ class TestResidualVerificationWiring:
     """Tests that verify_solution is called when equation components are present."""
 
     def _write_jsonl(self, results: list[dict]) -> str:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".jsonl", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
             for r in results:
                 f.write(json.dumps(r) + "\n")
             return f.name

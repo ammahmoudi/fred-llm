@@ -141,8 +141,7 @@ class TestNumericCompareWithEvaluationPoints:
 
         # Run multiple times
         results = [
-            numeric_compare(solution, ground_truth, domain=(0, 1))
-            for _ in range(5)
+            numeric_compare(solution, ground_truth, domain=(0, 1)) for _ in range(5)
         ]
 
         # All results should be identical
@@ -157,9 +156,7 @@ class TestNumericCompareWithEvaluationPoints:
 
         # Generate evaluation points
         x_values = np.linspace(-1, 1, 30)
-        u_values = [
-            np.exp(x) * np.cos(2 * x) + np.sin(x) for x in x_values
-        ]
+        u_values = [np.exp(x) * np.cos(2 * x) + np.sin(x) for x in x_values]
 
         ground_truth = {
             "u": "exp(x) * cos(2*x) + sin(x)",

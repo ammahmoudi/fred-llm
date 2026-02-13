@@ -10,18 +10,36 @@ logger = get_logger(__name__)
 
 # Operators we track, matching article Appendix C
 _TRACKED_OPERATORS: set[type] = {
-    sp.sin, sp.cos, sp.tan, sp.exp, sp.log, sp.sqrt,
-    sp.sinh, sp.cosh, sp.tanh, sp.Abs,
-    sp.Add, sp.Mul, sp.Pow,
+    sp.sin,
+    sp.cos,
+    sp.tan,
+    sp.exp,
+    sp.log,
+    sp.sqrt,
+    sp.sinh,
+    sp.cosh,
+    sp.tanh,
+    sp.Abs,
+    sp.Add,
+    sp.Mul,
+    sp.Pow,
     sp.Integral,
 }
 
 _OPERATOR_NAMES: dict[type, str] = {
-    sp.sin: "sin", sp.cos: "cos", sp.tan: "tan",
-    sp.exp: "exp", sp.log: "log", sp.sqrt: "sqrt",
-    sp.sinh: "sinh", sp.cosh: "cosh", sp.tanh: "tanh",
+    sp.sin: "sin",
+    sp.cos: "cos",
+    sp.tan: "tan",
+    sp.exp: "exp",
+    sp.log: "log",
+    sp.sqrt: "sqrt",
+    sp.sinh: "sinh",
+    sp.cosh: "cosh",
+    sp.tanh: "tanh",
     sp.Abs: "Abs",
-    sp.Add: "Add", sp.Mul: "Mul", sp.Pow: "Pow",
+    sp.Add: "Add",
+    sp.Mul: "Mul",
+    sp.Pow: "Pow",
     sp.Integral: "Integral",
 }
 
@@ -50,9 +68,7 @@ def extract_operators(expr: sp.Expr) -> set[str]:
     return ops
 
 
-def operator_f1(
-    pred_expr: sp.Expr, gt_expr: sp.Expr
-) -> dict[str, Any]:
+def operator_f1(pred_expr: sp.Expr, gt_expr: sp.Expr) -> dict[str, Any]:
     """
     Compute Operator F1 (precision, recall, F1) between predicted and
     ground-truth expressions based on the set of operators each contains.
@@ -69,8 +85,11 @@ def operator_f1(
 
     if not pred_ops and not gt_ops:
         return {
-            "precision": 1.0, "recall": 1.0, "f1": 1.0,
-            "pred_ops": [], "gt_ops": [],
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "pred_ops": [],
+            "gt_ops": [],
         }
 
     tp = len(pred_ops & gt_ops)

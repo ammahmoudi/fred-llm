@@ -7,19 +7,20 @@ from typing import Any, Optional
 import numpy as np
 import sympy as sp
 
-from src.evaluation.metrics import bleu_score, numeric_compare, operator_f1, symbolic_compare
-from src.evaluation.types import (
-    evaluate_approx_coeffs,
-    evaluate_discrete_points,
-    evaluate_series_terms,
-    family_compare,
-    verify_solution,
+from src.evaluation.metrics import (
+    bleu_score,
+    numeric_compare,
+    operator_f1,
+    symbolic_compare,
 )
-from src.evaluation.types.family import (
-    _family_numeric_compare_samples,
-    _family_param_metadata,
-    _substitute_family_constants,
-)
+                                    symbolic_compare)
+from src.evaluation.types import (evaluate_approx_coeffs,
+                                  evaluate_discrete_points,
+                                  evaluate_series_terms, family_compare,
+                                  verify_solution)
+from src.evaluation.types.family import (_family_numeric_compare_samples,
+                                         _family_param_metadata,
+                                         _substitute_family_constants)
 from src.evaluation.types.series import count_series_terms
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.utils.logging_utils import get_logger

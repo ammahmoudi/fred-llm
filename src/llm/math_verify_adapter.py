@@ -35,10 +35,17 @@ _C_1, _C_2 = sp.symbols("C_1 C_2")
 _n, _k = sp.symbols("n k")
 
 FREDHOLM_LOCAL_DICT: dict[str, sp.Basic] = {
-    "x": _x, "t": _t, "e": sp.E, "pi": sp.pi,
-    "C": _C, "c_1": _c_1, "c_2": _c_2,
-    "C_1": _C_1, "C_2": _C_2,
-    "n": _n, "k": _k,
+    "x": _x,
+    "t": _t,
+    "e": sp.E,
+    "pi": sp.pi,
+    "C": _C,
+    "c_1": _c_1,
+    "c_2": _c_2,
+    "C_1": _C_1,
+    "C_2": _C_2,
+    "n": _n,
+    "k": _k,
     "Integral": sp.Integral,
     "oo": sp.oo,
 }
@@ -62,9 +69,18 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
     Raises:
         ParseError: If all parsing strategies fail.
     """
-    from src.postprocessing.parse import ParseError, _latex_to_infix, _preprocess_for_sympy
+    from src.postprocessing.parse import (
+        ParseError,
+        _latex_to_infix,
+        _preprocess_for_sympy,
+    )
 
-    # --- Strategy 1: Math-Verify parse ---
+    from src.postprocessing.parse import (
+        ParseError,
+        _latex_to_infix,
+        _preprocess_for_sympy,
+    )
+
     if HAS_MATH_VERIFY:
         mv_expr = _try_math_verify_parse(expr_str)
         if mv_expr is not None:
@@ -228,7 +244,9 @@ def _is_scrambled_text(expr: sp.Basic) -> bool:
         return False
     # If every factor is a single-letter symbol, it's likely scrambled text
     atoms = expr.as_ordered_factors()
-    symbol_count = sum(1 for a in atoms if isinstance(a, sp.Symbol) and len(a.name) == 1)
+    symbol_count = sum(
+        1 for a in atoms if isinstance(a, sp.Symbol) and len(a.name) == 1
+    )
     return symbol_count >= 4 and symbol_count == len(atoms)
 
 
@@ -278,17 +296,23 @@ def _clean_mv_content(text: str) -> str:
     # Strip \) followed by optional punctuation and/or "where ..." text
     text = re.sub(
         r"\s*\\\)\s*[,;.]?\s*(?:where|with|for|if|when)\b.*$",
-        "", text, flags=re.IGNORECASE,
+        "",
+        text,
+        flags=re.IGNORECASE,
     )
     text = re.sub(r"\s*\\\)\s*[,;.]*\s*$", "", text)
     # Strip trailing "where ..." without preceding \)
     text = re.sub(
         r"\s*[,;]\s+(?:where|with|for|if|when)\s+.*$",
-        "", text, flags=re.IGNORECASE,
+        "",
+        text,
+        flags=re.IGNORECASE,
     )
     text = re.sub(
         r"\s+(?:where|with|for|if|when)\s+.*$",
-        "", text, flags=re.IGNORECASE,
+        "",
+        text,
+        flags=re.IGNORECASE,
     )
     # Strip trailing punctuation
     text = re.sub(r"[,;.]+$", "", text.strip())

@@ -38,6 +38,4 @@ def bleu_score(pred_str: str, gt_str: str) -> float:
         return 0.0
 
     smoothing = SmoothingFunction().method1
-    return float(
-        sentence_bleu([ref_tokens], hyp_tokens, smoothing_function=smoothing)
-    )
+    return float(sentence_bleu([ref_tokens], hyp_tokens, smoothing_function=smoothing))

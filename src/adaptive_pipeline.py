@@ -678,9 +678,7 @@ class AdaptivePipeline:
         with open(predictions_file, "w") as f:
             for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
                 try:
-                    parsed = parse_llm_output(
-                        response, use_math_verify=use_math_verify
-                    )
+                    parsed = parse_llm_output(response, use_math_verify=use_math_verify)
                 except Exception as e:
                     logger.warning(f"Failed to parse response {i}: {e}")
                     parsed = {

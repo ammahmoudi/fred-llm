@@ -7,12 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.llm.model_runner import (
-    LocalModelRunner,
-    ModelRunner,
-    OpenAIModelRunner,
-    OpenRouterModelRunner,
-)
+from src.llm.model_runner import (LocalModelRunner, ModelRunner,
+                                  OpenAIModelRunner, OpenRouterModelRunner)
 
 
 class TestOpenAIModelRunner:

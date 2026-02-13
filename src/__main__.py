@@ -25,4 +25,5 @@ def _setup_multiprocessing():
 if __name__ == "__main__":
     _setup_multiprocessing()
     from src.cli import main
+
     main()

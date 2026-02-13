@@ -143,11 +143,11 @@ def numeric_compare(
             result["x_values"] = test_points.tolist()
             # Convert complex numbers to strings for JSON serialization
             result["y_pred"] = [
-                str(val) if isinstance(val, complex) else val 
+                str(val) if isinstance(val, complex) else val
                 for val in y_solution.tolist()
             ]
             result["y_true"] = [
-                str(val) if isinstance(val, complex) else val 
+                str(val) if isinstance(val, complex) else val
                 for val in y_truth.tolist()
             ]
 

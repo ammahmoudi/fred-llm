@@ -639,7 +639,7 @@ def main() -> None:
     # This prevents "The handle is invalid" errors on Windows
     import multiprocessing
     import sys
-    
+
     if sys.platform == "win32":
         # On Windows, use 'spawn' method to avoid handle inheritance issues
         try:
@@ -647,7 +647,7 @@ def main() -> None:
         except RuntimeError:
             # Already set, ignore
             pass
-    
+
     app()
 
 

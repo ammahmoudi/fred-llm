@@ -328,7 +328,7 @@ class AdaptivePipeline:
 
         # Determine output format extension
         output_ext = ".json" if raw_config.output_format == "json" else ".csv"
-        
+
         # Get the input filename stem for constructing output paths
         input_stem = raw_config.path.stem  # e.g., "Fredholm_Dataset_Sample"
         base_format = (
@@ -346,7 +346,9 @@ class AdaptivePipeline:
         elif raw_config.convert_formats:
             # When converting but not splitting: files are in formatted/ subdirectory
             # Use the formatted/stratified data if available
-            formatted_file = output_dir / "formatted" / f"{input_stem}_{base_format}{output_ext}"
+            formatted_file = (
+                output_dir / "formatted" / f"{input_stem}_{base_format}{output_ext}"
+            )
             return {
                 "train": formatted_file,
                 "val": None,
@@ -481,7 +483,7 @@ class AdaptivePipeline:
 
         # Create output directory and clean old prompt files
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Remove old .jsonl files to avoid mixing with new data
         if output_dir.exists():
             for jsonl_file in output_dir.glob("**/*.jsonl"):
@@ -673,11 +675,14 @@ class AdaptivePipeline:
                     }
                     parse_failures += 1
                     # Continue to next response instead of crashing
-                    
+
                 # Safely extract parsed values with defaults
                 try:
-                    solution_sympy_str = str(parsed.get("solution_sympy")) \
-                        if parsed.get("solution_sympy") is not None else None
+                    solution_sympy_str = (
+                        str(parsed.get("solution_sympy"))
+                        if parsed.get("solution_sympy") is not None
+                        else None
+                    )
                 except Exception:
                     solution_sympy_str = None
 

@@ -194,11 +194,11 @@ def _family_numeric_compare_samples(
                     sample_result["x_values"] = x_values.tolist()
                     # Convert complex numbers to strings for JSON serialization
                     sample_result["y_pred"] = [
-                        str(val) if isinstance(val, complex) else val 
+                        str(val) if isinstance(val, complex) else val
                         for val in y_solution.tolist()
                     ]
                     sample_result["y_true"] = [
-                        str(val) if isinstance(val, complex) else val 
+                        str(val) if isinstance(val, complex) else val
                         for val in y_truth_arr.tolist()
                     ]
                     sample_result["points_source"] = "evaluation_points"

@@ -149,11 +149,13 @@ class BatchPromptProcessor:
             data = json.load(f)
 
         if not isinstance(data, list):
-            raise ValueError(f"JSON must contain a list of equation objects, got {type(data)}")
+            raise ValueError(
+                f"JSON must contain a list of equation objects, got {type(data)}"
+            )
 
         # Validate required columns
         required_cols = ["u", "f", "kernel", "lambda_val", "a", "b"]
-        
+
         # Check first item for required columns
         if data and isinstance(data[0], dict):
             missing = [col for col in required_cols if col not in data[0]]

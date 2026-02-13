@@ -184,7 +184,12 @@ def _clean_expression(expr: str) -> str:
 
     # Remove trailing explanatory text after the expression
     # Handle combined \), where / \). / \), patterns in one pass
-    expr = re.sub(r"\s*\\\)\s*[,;.]?\s*(?:where|with|for|if|when)\b.*$", "", expr, flags=re.IGNORECASE)
+    expr = re.sub(
+        r"\s*\\\)\s*[,;.]?\s*(?:where|with|for|if|when)\b.*$",
+        "",
+        expr,
+        flags=re.IGNORECASE,
+    )
     expr = re.sub(r"\s*\\\)\s*[,;.]*\s*$", "", expr)  # remaining \) at end
     # Common patterns: "where C = ...", "(where ...)", "\) where ...", etc.
     expr = re.sub(
@@ -278,7 +283,8 @@ def _latex_to_infix(expr: str) -> str:
         # Handle \func^{n}{arg} or \func^{n}\!(arg) -> func(arg)**n
         # LaTeX convention: \sin^{2}{x} means sin(x)^2
         expr = re.sub(
-            latex_cmd + r"\^[\{]?(\d+)[\}]?\s*\\?[!;,]?\s*(?:\\(?:left|bigl?)\s*)?[\{(]([^})]+)[\})](?:\s*\\(?:right|bigr?))?\s*",
+            latex_cmd
+            + r"\^[\{]?(\d+)[\}]?\s*\\?[!;,]?\s*(?:\\(?:left|bigl?)\s*)?[\{(]([^})]+)[\})](?:\s*\\(?:right|bigr?))?\s*",
             sympy_func + r"(\2)**\1",
             expr,
         )
@@ -470,7 +476,7 @@ def _parse_to_sympy(expr_str: str) -> sp.Expr:
     """
     if not expr_str or not isinstance(expr_str, str):
         return None
-    
+
     try:
         from src.llm.math_verify_adapter import parse_latex_to_sympy
 

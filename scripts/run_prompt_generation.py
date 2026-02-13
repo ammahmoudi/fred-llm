@@ -96,11 +96,11 @@ def parse_args() -> argparse.Namespace:
 
 def get_data_files(input_path: Path, pattern: str = None) -> list[Path]:
     """Get list of CSV and JSON files from input path.
-    
+
     Both formats are supported:
     - CSV files with required columns (u, f, kernel, lambda_val, a, b)
     - JSON files with array of equation objects
-    
+
     Priority order when multiple files exist:
     1. Formatted files (formatted/*)
     2. CSV/JSON files in root
@@ -112,26 +112,40 @@ def get_data_files(input_path: Path, pattern: str = None) -> list[Path]:
         if suffix in [".csv", ".json"]:
             return [input_path]
         else:
-            console.print(f"[yellow]⚠ File must be CSV or JSON format: {input_path}[/yellow]")
+            console.print(
+                f"[yellow]⚠ File must be CSV or JSON format: {input_path}[/yellow]"
+            )
             return []
     elif input_path.is_dir():
         # First check for formatted files (highest priority)
         formatted_dir = input_path / "formatted"
         if formatted_dir.exists() and formatted_dir.is_dir():
-            formatted_files = sorted(formatted_dir.glob("*.csv")) + sorted(formatted_dir.glob("*.json"))
-            formatted_files = [f for f in formatted_files if "validation_report" not in f.name.lower()]
+            formatted_files = sorted(formatted_dir.glob("*.csv")) + sorted(
+                formatted_dir.glob("*.json")
+            )
+            formatted_files = [
+                f for f in formatted_files if "validation_report" not in f.name.lower()
+            ]
             if formatted_files:
                 return sorted(set(formatted_files))
-        
+
         # Fall back to root directory files
-        root_files = sorted(input_path.glob("*.csv")) + sorted(input_path.glob("*.json"))
+        root_files = sorted(input_path.glob("*.csv")) + sorted(
+            input_path.glob("*.json")
+        )
         # Filter out validation_report.json and base/augmented files if formatted data exists
-        root_files = [f for f in root_files if "validation_report" not in f.name.lower()]
-        
+        root_files = [
+            f for f in root_files if "validation_report" not in f.name.lower()
+        ]
+
         # If we have formatted files, skip base and augmented
         if formatted_dir.exists():
-            root_files = [f for f in root_files if "base" not in f.name and "augmented" not in f.name]
-        
+            root_files = [
+                f
+                for f in root_files
+                if "base" not in f.name and "augmented" not in f.name
+            ]
+
         return sorted(set(root_files))
     else:
         console.print(f"[red]✗ Input path not found: {input_path}[/red]")

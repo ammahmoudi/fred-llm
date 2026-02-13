@@ -686,33 +686,221 @@ else:
 
 ---
 
-## Part 8: Text Similarity Metrics (BLEU/ROUGE)
+## Part 8: New Evaluation Metrics (February 13, 2026)
 
-Currently **NOT computed** during evaluation. To extract solution pairs for text metrics:
+### ✅ BLEU Score - Token-Level String Similarity
 
+**What it measures**: Similarity between predicted and ground truth solution **strings**.
+
+**Input format**: **Raw solution strings** (not SymPy!)
+- Predicted: `data["solution_str"]` – extracted string from LLM
+- Ground truth: `data["ground_truth"]` – reference string
+
+**How it works**:
 ```python
-import json
-from nltk.translate.bleu_score import sentence_bleu
-from rouge_score import rouge_scorer
-
-with open("predictions.jsonl") as f:
-    for line in f:
-        data = json.loads(line)
-        
-        # Extract clean solutions from raw response
-        predicted = data["raw_response"]
-        reference = data["ground_truth"]
-        
-        # Compute BLEU
-        bleu = sentence_bleu(
-            [reference.split()],
-            predicted.split()
-        )
-        
-        # Compute ROUGE-L
-        scorer = rouge_scorer.RougeScorer(['rougeL'])
-        rouge = scorer.score(reference, predicted)
+def bleu_score(pred_str: str, gt_str: str) -> float:
+    """Tokenize both strings by math operators, compute NLTK BLEU."""
+    # "x**2 + 1" → ["x", "**", "2", "+", "1"]
+    ref_tokens = _tokenize_math(gt_str)
+    hyp_tokens = _tokenize_math(pred_str)
+    return sentence_bleu([ref_tokens], hyp_tokens, smoothing_function=...")
 ```
+
+**Handles different input formats**:
+- ✅ **Infix**: Works perfectly – tokenizes directly
+  - Input: `"x**2 + sin(x)"`
+  - Tokens: `["x", "**", "2", "+", "sin", "(", "x", ")"]`
+- ✅ **LaTeX**: Works – compares LaTeX strings as-is
+  - Input: `"x^{2} + \sin(x)"`
+  - Tokens: `["x", "^", "{", "2", "}", "+", "\sin", "(", "x", ")"]`
+- ✅ **RPN**: Works – compares RPN tokens
+  - Input: `"x 2 ^ x sin +"`
+  - Tokens: `["x", "2", "^", "x", "sin", "+"]`
+
+**Returns**: Float in [0.0, 1.0]
+- 1.0 = perfect token match
+- 0.0 = completely different
+
+**When to use**: 
+- Quick check if structure is similar
+- Not mathematically aware (treats `x**2` and `2**x` as completely different)
+- Good for catching typos in coefficients
+
+---
+
+### ✅ Operator F1 - Structural Comparison
+
+**What it measures**: F1 (precision/recall) of **used mathematical operators**.
+
+**Input format**: **SymPy expressions** (parsed solutions)
+- Predicted: Parsed to SymPy: `solution_sympy`
+- Ground truth: Parsed to SymPy from `ground_truth` string
+
+**How it works**:
+```python
+def operator_f1(pred_expr: sp.Expr, gt_expr: sp.Expr):
+    """Extract operators: {sin, cos, Add, Pow, ...}. Compare as sets."""
+    pred_ops = extract_operators(pred_expr)      # {"sin", "Add", "Pow"}
+    gt_ops = extract_operators(gt_expr)          # {"sin", "Add"}
+    # Compute precision, recall, F1
+```
+
+**Handles different input formats**:
+- ✅ **Infix** → Parsed directly to SymPy
+  - `"x**2 + sin(x)"` → SymPy expression → ops: `{"Pow", "Add", "sin"}`
+- ✅ **LaTeX** → Math-Verify or regex → SymPy
+  - `"x^{2} + \sin(x)"` → **converted to infix** → SymPy → ops: `{"Pow", "Add", "sin"}`
+- ✅ **RPN** → `rpn_to_sympy()` → SymPy
+  - `"x 2 ^ x sin +"` → **converted to SymPy** → ops: `{"Pow", "Add", "sin"}`
+
+**Tracked operators**: sin, cos, tan, exp, log, sqrt, sinh, cosh, tanh, Abs, Add, Mul, Pow, Integral
+
+**Returns**: Dict with precision, recall, F1 in [0.0, 1.0]
+
+---
+
+### ✅ None-Type Detection - Precision/Recall/F1
+
+**What it measures**: Accuracy of detecting "no solution exists" cases.
+
+**Input format**: **Boolean from Predictions**
+- Predicted: `has_solution` (bool or None)
+- Ground truth: `ground_truth_has_solution` (bool)
+
+**How it works**:
+```python
+# For all predictions where ground_truth_solution_type == "none":
+if has_solution == False:  # ✓ TRUE POSITIVE
+    tp += 1
+elif has_solution == True:  # ✗ FALSE NEGATIVE
+    fn += 1
+    
+# For all other cases:
+if has_solution == False:  # ✗ FALSE POSITIVE (incorrectly said no solution)
+    fp += 1
+```
+
+**Handles different input formats**: **N/A** – Only uses boolean flags, not the solution itself
+
+**Returns**: Dict with precision, recall, F1, tp, fp, fn
+
+---
+
+### ✅ Residual Verification - Fredholm Equation Satisfaction
+
+**What it measures**: Does the predicted solution **actually satisfy the Fredholm equation**?
+
+**Input format**: **SymPy expressions**
+- Predicted: Parsed solution `solution_sympy`
+- Ground truth: Kernel `K(x,t)`, RHS `f(x)`, Lambda `λ`
+
+**Equation checked**:
+$$u(x) - \lambda \int_a^b K(x,t) u(t) dt = f(x)$$
+
+**How it works**:
+```python
+def verify_solution(solution, kernel, f, lambda_val, domain=(0,1)):
+    """Compute residual = solution - λ*integral(kernel*solution) - f.
+    Check if |residual| < tolerance."""
+```
+
+**Handles different input formats**:
+- ✅ **Infix** → SymPy → evaluate
+- ✅ **LaTeX** → Math-Verify → SymPy → evaluate
+- ✅ **RPN** → rpn_to_sympy → SymPy → evaluate
+
+**Returns**: Dict with verified (bool), residual_max, residual_mean
+
+---
+
+### ✅ Relative L2 Error - Scale-Invariant Numeric
+
+**What it measures**: Normalized error $\frac{\|pred - true\|_2}{\|true\|_2}$ (scale-independent).
+
+**Input format**: **SymPy expressions** (evaluated numerically)
+- Predicted: Parsed solution `solution_sympy`
+- Ground truth: Either SymPy expression OR **evaluation_points dict** with pre-computed values
+
+**How it works**:
+```python
+def numeric_compare(solution, ground_truth, ...):
+    if isinstance(ground_truth, dict) and "evaluation_points" in ground_truth:
+        # Use stored points!
+        test_points = ground_truth["evaluation_points"]["x_values"]
+        y_truth = ground_truth["evaluation_points"]["u_values"]
+    else:
+        # Generate new points
+        test_points = np.linspace(*domain, n_points)
+        y_truth = lambdify(ground_truth)(test_points)
+    
+    y_pred = lambdify(solution)(test_points)
+    errors = y_pred - y_truth
+    rel_l2 = np.sqrt(sum(errors**2)) / np.sqrt(sum(y_truth**2))
+```
+
+**Handles different input formats**:
+- ✅ **Infix** → SymPy → lambdify → numeric evaluation
+- ✅ **LaTeX** → Math-Verify → SymPy → lambdify → numeric evaluation
+- ✅ **RPN** → rpn_to_sympy → SymPy → lambdify → numeric evaluation
+
+**Returns**: Float in [0.0, inf]
+- 0.0 = identical
+- 0.1 = 10% error (scale-independent)
+- inf = ground truth is zero but prediction is nonzero
+
+---
+
+## Part 9: Evaluation Points vs. Numeric Metrics
+
+### ⚠️ IMPORTANT DISTINCTION
+
+**Evaluation Points** (stored in dataset) and **Numeric Comparison** (computed per evaluation) are **DIFFERENT**:
+
+#### Evaluation Points (Pre-Computed in Data)
+```python
+# Generated ONCE during augmentation, stored in dataset
+{
+    "x": {...},
+    "f": {...},
+    "u": "sin(x)",
+    "evaluation_points": {
+        "x_values": [0.0, 0.01, 0.02, ..., 1.0],          # 50 points
+        "u_values": [0.0, 0.0099..., 0.0198..., ..., 0.84...],  # Ground truth evaluated here
+    }
+}
+```
+
+**Purpose**: 
+- ✅ Consistent evaluation across all runs (same test points every time)
+- ✅ Includes carefully chosen points (boundaries, critical points)
+- ✅ Pre-computed so ground truth values don't change
+- ✅ For **ground truth function only**
+
+#### Numeric Comparison (Computed During Evaluation)
+```python
+# Computed PER EVALUATION RUN
+numeric_compare(
+    solution=parsed_llm_solution,    # What LLM predicted
+    ground_truth={...},              # Ground truth data
+    domain=(0, 1),
+    n_points=100                     # Can be different each time!
+)
+```
+
+**Process**:
+1. IF evaluation_points available in ground_truth → Use them (50 points from dataset)
+2. If not → Generate new points: `np.linspace(a, b, n_points)` (default 100)
+3. Evaluate **predicted solution** at these points
+4. Compare with ground truth values at same points
+
+**Important**: 
+- ✅ Predicted solution is **always converted to SymPy and evaluated numerically**
+- ✅ Ground truth uses pre-computed or generated points
+- ⚠️ Without evaluation_points, numeric metrics vary across runs
+
+---
+
+## Part 10: Complete Metric Comparison Table
 
 ---
 
@@ -800,6 +988,189 @@ with open("outputs/test_100/predictions_20260206_120237.jsonl") as f:
 metrics = evaluate_solutions(predictions)
 print(f"Overall accuracy: {metrics['accuracy']:.1%}")
 print(f"Symbolic accuracy: {metrics['symbolic_accuracy']:.1%}")
+```
+
+---
+
+## Part 10: Metric Input/Output Reference
+
+### Quick Reference: Which Input Does Each Metric Use?
+
+| **Metric** | **Input Form** | **Data Source** | **Raw Text** | **Parsed String** | **SymPy Expr** | **Handles RPN** | **Handles LaTeX** | **Handles Infix** |
+|---|---|---|---|---|---|---|---|---|
+| **BLEU Score** | Solution string | `solution_str` | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Operator F1** | SymPy expr | `solution_sympy` | ❌ No | ❌ No | ✅ Yes | ✅ (after convert) | ✅ (after convert) | ✅ (direct) |
+| **None-Detection** | Boolean | `has_solution` | ❌ No | ❌ No | ❌ No | ❌ No | ❌ No | ❌ No |
+| **Residual Verify** | SymPy expr | `solution_sympy` | ❌ No | ❌ No | ✅ Yes | ✅ (after convert) | ✅ (after convert) | ✅ (direct) |
+| **Relative L2** | SymPy expr | `solution_sympy` | ❌ No | ❌ No | ✅ Yes | ✅ (after convert) | ✅ (after convert) | ✅ (direct) |
+| **Symbolic Compare** | SymPy expr | `solution_sympy` | ❌ No | ❌ No | ✅ Yes | ✅ (after convert) | ✅ (after convert) | ✅ (direct) |
+| **Numeric Compare** | SymPy expr | `solution_sympy` | ❌ No | ❌ No | ✅ Yes | ✅ (after convert) | ✅ (after convert) | ✅ (direct) |
+
+### Legend:
+- **Input Form**: What the metric actually processes
+- **Data Source**: Where to get it from the parsed output
+- **Raw Text**: Works with unparsed LLM output?
+- **Parsed String**: Works with cleaned but unparsed strings?
+- **SymPy Expr**: Works with parsed symbolic expressions?
+- **Handles RPN**: Can process RPN format solutions?
+- **Handles LaTeX**: Can process LaTeX format solutions?
+- **Handles Infix**: Can process standard infix notation solutions?
+
+### Format Conversion Pipeline
+
+**All input formats → SymPy pipeline:**
+
+```
+RPN (Reverse Polish Notation)
+  ↓
+rpn_to_sympy() converter
+  ↓
+SymPy Expression ←→ [Use SymPy-based metrics]
+
+LaTeX Format
+  ↓
+Math-Verify (primary) OR Regex fallback
+  ↓
+Infix string
+  ↓
+SymPy parse
+  ↓
+SymPy Expression ←→ [Use SymPy-based metrics]
+
+Infix Format (standard math notation)
+  ↓
+SymPy parse (direct)
+  ↓
+SymPy Expression ←→ [Use SymPy-based metrics]
+```
+
+### Data Flow for Different Metrics
+
+#### BLEU Score (String-based)
+```
+LLM Response
+  ↓ parse_llm_output()
+  ├─ raw_response: "Let me solve... u(x) = x**2 + sin(x), therefore..."
+  ├─ solution_str: "x**2 + sin(x)"
+  └─ solution_sympy: Symbol('x')**2 + sin(Symbol('x'))
+
+BLEU Score Calculation:
+  pred_str = "x**2 + sin(x)"  ← Uses solution_str!
+  gt_str = "sin(x) + x**2"    ← Ground truth string
+  
+  Tokenize both: ["x", "**", "2", "+", "sin", "(", "x", ")"]
+                   ["sin", "(", "x", ")", "+", "x", "**", "2"]
+  
+  Return: BLEU score in [0.0, 1.0]
+```
+
+**Key point**: BLEU only needs the **extracted string**, not the full raw response with reasoning!
+
+#### Operator F1 (SymPy-based)
+```
+LLM Response
+  ↓ parse_llm_output()
+  ├─ raw_response: "Let me solve... u(x) = x**2 + sin(x), therefore..."
+  ├─ solution_str: "x**2 + sin(x)"
+  └─ solution_sympy: Symbol('x')**2 + sin(Symbol('x')) ← Uses this!
+
+Operator F1 Calculation:
+  extract_operators(solution_sympy)
+    ↓ Walk SymPy tree
+    ↓ Find all node types: Pow, Add, sin
+  
+  pred_ops = {"Pow", "Add", "sin"}
+  gt_ops = {"Pow", "sin", "Add"}
+  
+  precision = |intersection| / |pred_ops|
+  recall = |intersection| / |gt_ops|
+  f1 = 2 * (precision * recall) / (precision + recall)
+```
+
+**Key point**: Operator F1 only needs **parsed SymPy expression**, never touches raw text!
+
+#### Relative L2 Error (SymPy evaluated)
+```
+LLM Response
+  ↓ parse_llm_output()
+  ├─ solution_str: "x**2 + sin(x)"
+  └─ solution_sympy: Symbol('x')**2 + sin(Symbol('x')) ← Uses this!
+
+Ground Truth
+  ├─ evaluation_points (if available):
+  │  ├─ x_values: [0.0, 0.01, 0.02, ..., 1.0]  ← 50 pre-computed points
+  │  └─ u_values: [0.0, 0.0099..., 0.0198..., ...]
+  │
+  └─ OR generated on-the-fly:
+     └─ np.linspace(0, 1, 100)  ← 100 random points
+
+Relative L2 Calculation:
+  y_pred = lambdify(solution_sympy, 'x')(x_values)
+  y_truth = evaluation_points['u_values']  ← Pre-computed!
+  
+  error = y_pred - y_truth
+  rel_l2 = sqrt(sum(error**2)) / sqrt(sum(y_truth**2))
+```
+
+**Key point**: 
+- Uses **parsed SymPy expression** for prediction
+- Uses **stored evaluation_points** for ground truth (when available)
+- Avoids recomputing ground truth every evaluation
+
+---
+
+## Part 11: Evaluation Results Organization
+
+After evaluation, results are organized by metric type:
+
+```python
+{
+    "string_metrics": {
+        "bleu": 0.85,
+        "bleu_score": 0.85  # Alternative name
+    },
+    "structural_metrics": {
+        "operator_f1": {
+            "precision": 0.90,
+            "recall": 0.88,
+            "f1": 0.89,
+            "gt_operators": ["Pow", "sin", "Add"],
+            "pred_operators": ["Pow", "sin", "Add"]
+        }
+    },
+    "detection_metrics": {
+        "none_type": {
+            "precision": 0.95,
+            "recall": 0.92,
+            "f1": 0.93,
+            "tp": 15,
+            "fp": 1,
+            "fn": 2
+        }
+    },
+    "verification_metrics": {
+        "residual_verification": {
+            "verified": True,
+            "residual_max": 1e-6,
+            "residual_mean": 1e-7
+        }
+    },
+    "numeric_metrics": {
+        "relative_l2": 0.021,  # 2.1% error
+        "rmse": 0.045,
+        "mae": 0.032,
+        "max_error": 0.15
+    },
+    "symbolic_metrics": {
+        "equivalent": True,
+        "simplified_match": False
+    },
+    "aggregated": {
+        "numeric_accuracy": 0.98,  # rel_l2 < 0.05
+        "symbolic_accuracy": 0.92,  # simplified_match or equivalent
+        "overall_score": 0.95
+    }
+}
 ```
 
 ---

@@ -189,6 +189,12 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Symbolic evaluation - SymPy-based expression comparison ✅ **Implemented in evaluate.py**
 - [x] Numeric evaluation - MAE, MSE, RMSE metrics ✅ **Implemented in evaluate.py**
   - Uses stored evaluation_points when available ✅ **February 12, 2026**
+- [x] **Relative L2 error (rel_l2)** - Scale-invariant numeric error metric ✅ **February 13, 2026**
+  - rel_l2 = ||pred - true||₂ / ||true||₂ (standard from PDEBench, CodePDE)
+  - Aggregated in summary as mean_rel_l2 across all solutions
+  - Automatically computed in numeric_compare() 
+  - Handles zero ground truth case (returns inf/0 appropriately)
+  - Integrated with SolutionEvaluator.summary()
 - [x] Math-Verify integration - LaTeX parsing + fast-path symbolic verification ✅ **Adapter + fallback parsing**
 - [x] Postprocessing - Math-Verify extraction with regex fallback ✅ **Multi-strategy u(x)/SOLUTION parsing**
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**
@@ -231,7 +237,37 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] solution_type accuracy (7-class: exact_symbolic, approx_coef, discrete_points, series, family, regularized, none)
   - [x] confusion_matrix for solution_type misclassifications ✅ **(February 12, 2026)**
   - [ ] Edge case recognition rate (% of edge cases correctly identified) ❌ **Not implemented**
-- [ ] BLEU / TeX-BLEU - Token-level similarity metrics ❌ **Not started**
+- [x] **BLEU score** - Token-level string similarity metric ✅ **February 13, 2026**
+  - bleu_score(pred_str, gt_str): Computes NLTK sentence_bleu with smoothing
+  - Tokenizes math expressions by splitting on operators (+, -, *, /, ^, parentheses, etc.)
+  - Returns float in [0.0, 1.0]; handles empty strings gracefully (returns 0.0)
+  - Integrated with SolutionEvaluator.evaluate() when pred_str and gt_str provided
+  - Aggregated in summary as mean_bleu across all solutions
+  - Test coverage: 7 unit tests covering identical, different, partial, empty cases
+- [x] **extract_operators()** - Operator set extraction from SymPy expressions ✅ **February 13, 2026**
+  - Recursively walks expression tree to collect operators (sin, cos, tan, exp, log, sqrt, Add, Mul, Pow, Integral, etc.)
+  - Returns set of operator names for structural comparison
+  - Used by operator_f1 for precision/recall computation
+  - Test coverage: 5 unit tests for polynomials, trig, nested, constants, symbols
+- [x] **operator_f1()** - Operator set-based F1 metric ✅ **February 13, 2026**
+  - operator_f1(pred_expr, gt_expr): Computes precision, recall, F1 based on operator sets
+  - Supports both expressions with operators and pure constants (F1=1.0 for both empty)
+  - Returns: {"precision", "recall", "f1", "pred_ops", "gt_ops"}
+  - Integrated with SolutionEvaluator.evaluate() for all solution types
+  - Aggregated in summary as mean_operator_precision, mean_operator_recall, mean_operator_f1
+  - Test coverage: 6 unit tests for identical, disjoint, partial overlap, constants, superset cases
+- [x] **None-type detection metrics** - Precision/recall/F1 for no-solution classification ✅ **February 13, 2026**
+  - Tracks TP (none correctly predicted), FP (false "no solution"), FN (missed none-type)
+  - Computes precision = TP/(TP+FP), recall = TP/(TP+FN), F1 = 2PR/(P+R)
+  - Integrated with evaluate_solutions() for batch evaluation
+  - Returns metrics["none_detection"] = {"precision", "recall", "f1", "tp", "fp", "fn"}
+  - Test coverage: 6 unit tests for perfect detection, missed, false positive, mixed scenarios
+- [x] **Residual verification** - Fredholm equation solution verification ✅ **February 13, 2026**
+  - verify_solution(solution, kernel, f, lambda, domain): Checks u(x) - λ ∫K(x,t)u(t)dt = f(x)
+  - Tries symbolic integration first, falls back to numericintegration on 50-point grid
+  - Returns {"verified", "residual_max", "residual_mean"} 
+  - Integrated with evaluate_solutions() when kernel/f/lambda metadata available
+  - Aggregated in metrics["residual_verification"] with verified_count/rate and mean residuals
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**
 - [ ] Generalization testing - Performance on unseen function types ❌ **Not started**
 - [ ] Benchmark suite - Standardized evaluation dataset ❌ **Not started**
@@ -321,11 +357,11 @@ This document tracks all features - implemented and planned. Check off items as 
 
 ---
 
-## Testing Results (January 2, 2026)
+## Testing Results (February 13, 2026)
 
 ### 🧪 Unit Tests
 
-Test suite size: **238 tests** (latest count)
+Test suite size: **~300+ tests** (including new evaluation tests)
 
 **Test Coverage:**
 - `test_fredholm_loader.py` - 13 tests: FredholmEquation class, type inference, CSV parsing
@@ -338,6 +374,17 @@ Test suite size: **238 tests** (latest count)
 - `test_splitting.py` - 19 tests: Stratified splitting with sklearn/pandas
 - `test_prompt_generation.py` - 30 tests: Prompt styles, edge case modes, batch processing
 - `test_math_verify_adapter.py` - 29 tests: Math-Verify parsing, extraction, compare, and fallbacks
+- **`test_evaluate.py` - 60+ tests (February 13, 2026):**
+  - **TestBleuScore** - 7 tests: Identical strings, different strings, partial matches, empty cases, score bounds
+  - **TestExtractOperators** - 5 tests: Polynomials, trig, nested functions, constants, single symbols
+  - **TestOperatorF1** - 6 tests: Identical operators, disjoint sets, partial overlap, constants, supersets
+  - **TestNoneDetectionPRF1** - 6 tests: Perfect detection, missed, false positives, mixed scenarios  
+  - **TestSymbolicCompare** - 4 tests: Identical, equivalent, different, trig identities
+  - **TestNumericCompare** - 3+ tests: Identical functions, close functions, different functions, custom domains
+  - **TestVerifySolution** - 2 tests: Simple valid solutions, error handling
+  - **TestSolutionEvaluator** - 10+ tests: Single solutions, summaries, series/approx_coef metadata, family evaluation
+  - **TestEvaluateSolutions** - 9+ tests: File loading, JSON/JSONL, parse error handling, edge cases
+  - Plus: RelativeL2, DiscretePoints, SeriesTerms, ApproxCoef evaluation tests
 
 All core components validated at unit level.
 

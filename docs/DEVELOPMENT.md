@@ -106,6 +106,52 @@ start htmlcov/index.html  # Windows
 
 **Total**: See tests/ for current coverage (run pytest for an accurate count)
 
+## Reproducibility
+
+### Setting Global Random Seeds
+
+Fred-LLM provides a global seed management system to ensure reproducible results across all random operations:
+
+```bash
+# Use seed from config (default: 42)
+uv run python -m src.cli run --config config.yaml
+
+# Override seed from CLI (takes precedence)
+uv run python -m src.cli run --config config.yaml --seed 12345
+```
+
+### What the Seed Controls
+
+The global seed (`src/utils/random_seed.py::set_global_seed()`) manages:
+- **Data augmentation**: Edge case generation (strategies like oscillatory, boundary layer, etc.)
+- **Dataset splitting**: Train/val/test allocation
+- **Evaluation points**: Point sampling for numeric evaluation
+- **All random libraries**: Python's `random`, NumPy, PyTorch, TensorFlow
+
+### Config-Based Seed
+
+Set seed in your YAML configuration:
+
+```yaml
+dataset:
+  raw:
+    seed: 42  # Applied globally on pipeline initialization
+    augment: true
+    split: true
+```
+
+### Using in Code
+
+If you're not using the CLI, set the seed manually:
+
+```python
+from src.utils.random_seed import set_global_seed
+
+set_global_seed(42)  # Call once at program start
+```
+
+The seed is automatically applied when the CLI loads a config.
+
 ## Code Style
 
 ### Formatting with Ruff

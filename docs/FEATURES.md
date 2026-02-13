@@ -32,6 +32,14 @@ This document tracks all features - implemented and planned. Check off items as 
     - [x] Documentation in EVALUATION_PIPELINE.md and QUICKSTART.md
     - [x] Example configs and sample data in examples/
     - [x] Data formats reference in DATA_FORMATS_REFERENCE.md
+  - [x] **Global seed management for reproducibility** ✅ **February 13, 2026**
+    - [x] Centralized set_global_seed() function in src/utils/random_seed.py
+    - [x] Controls: Python random, NumPy, TensorFlow, PyTorch, OS environment
+    - [x] CLI parameter: --seed flag for run command with override capability
+    - [x] Config support: seed field in dataset.raw section of YAML configs
+    - [x] Default seed: 42 across all configs for reproducible results
+    - [x] Affects: Data augmentation, train/test splitting, evaluation point generation
+    - [x] Usage: `uv run python -m src.cli run --config config.yaml --seed 12345`
   - [ ] Caching intermediate results - Save prepared data and prompts for reuse 🚧 **Outputs saved but no checkpointing**
   - [ ] Resume capability - Continue from last successful stage ❌
 - [x] Logging utilities - Structured logging with file output support ✅ **Working in all modules**

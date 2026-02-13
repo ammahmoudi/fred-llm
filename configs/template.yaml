@@ -45,6 +45,7 @@ dataset:
     # Splitting
     split: true
     split_ratios: [0.7, 0.15, 0.15]
+    seed: 42  # Random seed for reproducibility (splits, augmentation, evaluation points)
     
     # Format conversion
     convert_formats: [infix]  # Available: [infix, latex, rpn, tokenized, python]

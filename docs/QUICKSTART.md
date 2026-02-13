@@ -2,6 +2,24 @@
 
 Get up and running with Fred-LLM in 5 minutes.
 
+## Reproducible Runs
+
+All operations use a fixed random seed by default (42) for reproducibility:
+
+```bash
+# Reproduces exact same augmentations, splits, evaluation points
+uv run python -m src.cli run --config config.yaml
+
+# Override seed for different variations
+uv run python -m src.cli run --config config.yaml --seed 12345
+```
+
+The seed controls:
+- Data augmentation randomness
+- Train/val/test splitting
+- Evaluation point generation
+- All NumPy/PyTorch/TensorFlow random operations
+
 ## Using the Main Pipeline (Recommended)
 
 The main CLI automatically orchestrates all steps based on your config:
@@ -35,7 +53,7 @@ python scripts/prepare_dataset.py \
   --output data/processed/my_data \
   --augment --validate --split --convert
 
-# Prompt generation (legacy helper)
+# Prompt generation (accepts CSV or JSON files)
 python scripts/run_prompt_generation.py \
   --input data/processed/my_data \
   --output data/prompts/my_prompts \

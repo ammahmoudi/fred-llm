@@ -212,7 +212,9 @@ def main() -> None:
                     )
                     generated_files.append(output_file)
                 except Exception as e:
-                    console.print(f"[red]✗ Error processing {data_file.name}: {e}[/red]")
+                    console.print(
+                        f"[red]✗ Error processing {data_file.name}: {e}[/red]"
+                    )
 
                 progress.update(task, advance=1)
 

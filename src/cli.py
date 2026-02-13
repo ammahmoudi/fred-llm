@@ -14,6 +14,8 @@ import typer
 from dotenv import load_dotenv
 from rich.console import Console
 
+from src.utils.random_seed import set_global_seed
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -44,6 +46,12 @@ def run(
         "--dry-run",
         help="Show execution plan without running",
     ),
+    seed: Optional[int] = typer.Option(
+        None,
+        "--seed",
+        "-s",
+        help="Random seed for reproducibility (overrides config)",
+    ),
 ) -> None:
     """Run the adaptive LLM pipeline for Fredholm equations."""
     from src.adaptive_config import AdaptivePipelineConfig
@@ -53,6 +61,10 @@ def run(
 
     # Load adaptive config
     adaptive_config = AdaptivePipelineConfig.from_yaml(config)
+    
+    # Set global seed for reproducibility (CLI override takes precedence)
+    seed_to_use = seed if seed is not None else (adaptive_config.dataset.raw.seed if adaptive_config.dataset.raw and hasattr(adaptive_config.dataset.raw, 'seed') else 42)
+    set_global_seed(seed_to_use)
 
     # Create and run adaptive pipeline
     pipeline = AdaptivePipeline(adaptive_config)

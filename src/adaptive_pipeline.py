@@ -1,5 +1,4 @@
-"""
-Adaptive pipeline orchestrator.
+"""Adaptive pipeline orchestrator.
 
 Smart pipeline that automatically determines what preparation steps are needed
 based on the configuration and available files.
@@ -21,6 +20,7 @@ from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.llm.model_runner import ModelRunner
 from src.postprocessing import parse_llm_output
 from src.utils.logging_utils import get_logger
+from src.utils.random_seed import set_global_seed
 
 console = Console()
 logger = get_logger(__name__)
@@ -41,6 +41,10 @@ class AdaptivePipeline:
         self.config = config
         self.automation_level = config.get_automation_level()
         self.paths = config.resolve_paths()  # Resolve all paths upfront
+        
+        # Set global random seed for reproducibility
+        if config.dataset.raw and hasattr(config.dataset.raw, 'seed'):
+            set_global_seed(config.dataset.raw.seed)
 
         console.print(f"\n[bold blue]Adaptive Pipeline[/bold blue]")
         console.print(f"Automation Level: [cyan]{self.automation_level}[/cyan]")

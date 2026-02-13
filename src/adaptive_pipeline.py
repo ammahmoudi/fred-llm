@@ -982,6 +982,12 @@ class AdaptivePipeline:
             console.print(f"  Operator Recall: {summary['mean_operator_recall']:.2%}")
         if "mean_rel_l2" in summary:
             console.print(f"  Relative L2: {summary['mean_rel_l2']:.6f}")
+        if "mean_mae" in summary:
+            console.print(f"  Mean MAE: {summary['mean_mae']:.6f}")
+        if "mean_rmse" in summary:
+            console.print(f"  Mean RMSE: {summary['mean_rmse']:.6f}")
+        if "mean_max_error" in summary:
+            console.print(f"  Mean Max Error: {summary['mean_max_error']:.6f}")
         if "mean_bleu" in summary:
             console.print(f"  BLEU: {summary['mean_bleu']:.4f}")
         if "none_detection" in metrics:

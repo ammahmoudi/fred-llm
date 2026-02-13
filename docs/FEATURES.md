@@ -208,6 +208,8 @@ This document tracks all features - implemented and planned. Check off items as 
   - Automatically computed in numeric_compare() 
   - Handles zero ground truth case (returns inf/0 appropriately)
   - Integrated with SolutionEvaluator.summary()
+- [x] **Aggregated numeric metrics in reports** ✅ **February 13, 2026**
+  - Mean MAE, RMSE, mean error, and max error reported in CLI and metrics JSON
 - [x] **Residual verification x sampling uses evaluation_points** ✅ **February 13, 2026**
   - Uses dataset evaluation_points.x_values when available
   - Falls back to reproducible random sampling otherwise

@@ -580,6 +580,44 @@ class SolutionEvaluator:
             "numeric_accuracy": numeric_correct / total,
         }
 
+        numeric_results = [
+            r.get("numeric")
+            for r in self.results
+            if isinstance(r.get("numeric"), dict)
+        ]
+
+        def _finite(value: float | None) -> bool:
+            return value is not None and value != float("inf")
+
+        if numeric_results:
+            mae_values = [
+                n.get("mae", n.get("mean_error"))
+                for n in numeric_results
+                if _finite(n.get("mae", n.get("mean_error")))
+            ]
+            rmse_values = [
+                n.get("rmse") for n in numeric_results if _finite(n.get("rmse"))
+            ]
+            max_error_values = [
+                n.get("max_error")
+                for n in numeric_results
+                if _finite(n.get("max_error"))
+            ]
+            mean_error_values = [
+                n.get("mean_error")
+                for n in numeric_results
+                if _finite(n.get("mean_error"))
+            ]
+
+            if mae_values:
+                summary["mean_mae"] = float(np.mean(mae_values))
+            if rmse_values:
+                summary["mean_rmse"] = float(np.mean(rmse_values))
+            if max_error_values:
+                summary["mean_max_error"] = float(np.mean(max_error_values))
+            if mean_error_values:
+                summary["mean_mean_error"] = float(np.mean(mean_error_values))
+
         series_counts = [
             r.get("series_term_count")
             for r in self.results

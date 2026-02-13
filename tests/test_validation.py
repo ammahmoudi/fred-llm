@@ -125,7 +125,9 @@ class TestIntegration:
 
         # 2. Light augmentation
         eq_dicts = [eq.to_dict() for eq in equations]
-        augmenter = DataAugmenter(strategies=["none_solution"])  # Use edge case strategy
+        augmenter = DataAugmenter(
+            strategies=["none_solution"]
+        )  # Use edge case strategy
         augmented = augmenter.augment(eq_dicts, multiplier=2)
         assert len(augmented) >= len(eq_dicts)
 

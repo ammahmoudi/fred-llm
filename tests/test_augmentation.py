@@ -286,9 +286,7 @@ class TestEdgeCaseAugmentations:
         }
 
         # Use multiple edge case strategies
-        augmenter = DataAugmenter(
-            strategies=["none_solution", "approx_coef"]
-        )
+        augmenter = DataAugmenter(strategies=["none_solution", "approx_coef"])
         # Use higher multiplier to ensure all strategies get applied
         augmented = augmenter.augment([sample_eq], multiplier=15)
 

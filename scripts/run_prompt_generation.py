@@ -57,8 +57,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--pattern",
         type=str,
-        default="*.csv",
-        help="File pattern to match (default: *.csv)",
+        default="*.{csv,json}",
+        help="File pattern to match (default: *.csv and *.json)",
     )
     parser.add_argument(
         "--no-ground-truth",
@@ -94,12 +94,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_csv_files(input_path: Path, pattern: str) -> list[Path]:
-    """Get list of CSV files from input path."""
+def get_data_files(input_path: Path, pattern: str = None) -> list[Path]:
+    """Get list of CSV or JSON files from input path."""
     if input_path.is_file():
         return [input_path]
     elif input_path.is_dir():
-        return sorted(input_path.glob(pattern))
+        if pattern is None or pattern == "*.{csv,json}":
+            # Get both CSV and JSON files
+            files = sorted(input_path.glob("*.csv")) + sorted(input_path.glob("*.json"))
+            return sorted(set(files))  # Remove duplicates and sort
+        else:
+            return sorted(input_path.glob(pattern))
     else:
         console.print(f"[red]✗ Input path not found: {input_path}[/red]")
         return []
@@ -114,7 +119,7 @@ def expand_styles(styles_str: str) -> list[str]:
 
 
 def display_config(
-    args: argparse.Namespace, csv_files: list[Path], styles: list[str]
+    args: argparse.Namespace, data_files: list[Path], styles: list[str]
 ) -> None:
     """Display configuration summary."""
     console.print()
@@ -126,7 +131,7 @@ def display_config(
 
     table.add_row("Input", str(args.input))
     table.add_row("Output", str(args.output))
-    table.add_row("Files", f"{len(csv_files)} CSV files")
+    table.add_row("Files", f"{len(data_files)} data files (CSV/JSON)")
     table.add_row("Styles", ", ".join(styles))
     table.add_row("Ground Truth", "❌ No" if args.no_ground_truth else "✅ Yes")
     table.add_row(
@@ -145,23 +150,23 @@ def main() -> None:
     # Import here to show args parsing is fast
     from src.prompts import create_processor
 
-    # Get CSV files
-    csv_files = get_csv_files(args.input, args.pattern)
-    if not csv_files:
-        console.print("[yellow]⚠ No CSV files found[/yellow]")
+    # Get data files (CSV or JSON)
+    data_files = get_data_files(args.input, args.pattern)
+    if not data_files:
+        console.print("[yellow]⚠ No CSV or JSON files found[/yellow]")
         return
 
     # Expand styles
     styles = expand_styles(args.styles)
 
     # Display configuration
-    display_config(args, csv_files, styles)
+    display_config(args, data_files, styles)
 
     # Create output directory
     args.output.mkdir(parents=True, exist_ok=True)
 
     # Generate prompts for each style
-    total_files = len(csv_files) * len(styles)
+    total_files = len(data_files) * len(styles)
     generated_files = []
 
     with Progress(
@@ -171,7 +176,7 @@ def main() -> None:
     ) as progress:
         for style in styles:
             task = progress.add_task(
-                f"[cyan]Generating {style} prompts...", total=len(csv_files)
+                f"[cyan]Generating {style} prompts...", total=len(data_files)
             )
 
             # Create processor for this style
@@ -184,14 +189,14 @@ def main() -> None:
                 edge_case_mode=args.edge_case_mode,
             )
 
-            for csv_file in csv_files:
-                progress.update(task, description=f"[cyan]{style}: {csv_file.name}")
+            for data_file in data_files:
+                progress.update(task, description=f"[cyan]{style}: {data_file.name}")
 
                 # Determine format
                 format_type = args.format
                 if format_type is None:
                     # Auto-detect from filename
-                    filename_lower = csv_file.name.lower()
+                    filename_lower = data_file.name.lower()
                     if "latex" in filename_lower:
                         format_type = "latex"
                     elif "rpn" in filename_lower:
@@ -201,13 +206,13 @@ def main() -> None:
 
                 try:
                     output_file = processor.process_dataset(
-                        input_csv=csv_file,
+                        input_csv=data_file,
                         format_type=format_type,
                         show_progress=False,
                     )
                     generated_files.append(output_file)
                 except Exception as e:
-                    console.print(f"[red]✗ Error processing {csv_file.name}: {e}[/red]")
+                    console.print(f"[red]✗ Error processing {data_file.name}: {e}[/red]")
 
                 progress.update(task, advance=1)
 

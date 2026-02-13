@@ -47,7 +47,11 @@ def augment_dataset(
         Augmented dataset.
     """
     if strategies is None:
-        strategies = ["none_solution", "approx_coef", "discrete_points"]  # All edge case strategies
+        strategies = [
+            "none_solution",
+            "approx_coef",
+            "discrete_points",
+        ]  # All edge case strategies
 
     # Keep originals with metadata marking them as original
     augmented = []

@@ -29,7 +29,7 @@ dataset:
     
     # Multiple formats for flexibility
     convert_formats: [latex]
-    output_format: csv  # CSV required for prompt generation when split=false
+    output_format: json  # JSON format for data
   
   # Prompt generation
   prompting:

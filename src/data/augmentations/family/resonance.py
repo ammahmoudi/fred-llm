@@ -121,16 +121,6 @@ class ResonanceAugmentation(BaseAugmentation):
                 "augmentation_type": "resonance",
                 "augmentation_variant": "separable_eigenvalue_exact",
             }
-            # Generate evaluation points for consistent evaluation
-            if case1.get("has_solution") and case1.get("u"):
-                try:
-                    a_val = float(sp.sympify(case1.get("a", "0")))
-                    b_val = float(sp.sympify(case1.get("b", "1")))
-                    case1["evaluation_points"] = self._generate_evaluation_points(
-                        case1["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Constant kernel K(x,t) = 1 on [0,1]
@@ -164,16 +154,6 @@ class ResonanceAugmentation(BaseAugmentation):
                 "augmentation_type": "resonance",
                 "augmentation_variant": "constant_kernel_resonance",
             }
-            # Generate evaluation points for consistent evaluation
-            if case2.get("has_solution") and case2.get("u"):
-                try:
-                    a_val = float(sp.sympify(case2.get("a", "0")))
-                    b_val = float(sp.sympify(case2.get("b", "1")))
-                    case2["evaluation_points"] = self._generate_evaluation_points(
-                        case2["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
         except Exception as e:

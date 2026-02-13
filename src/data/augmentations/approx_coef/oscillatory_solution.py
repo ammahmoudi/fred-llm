@@ -22,9 +22,9 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
     Mathematical Background:
         Unlike "approximate_only" which has oscillatory KERNEL K(x,t),
         this strategy creates cases where the SOLUTION u(x) oscillates rapidly.
-        
+
         Example: u(x) = sin(ωx) for large ω
-        
+
         If ω = 100π, the solution has 50 complete cycles in [0,1].
         Standard quadrature with N=20 points will completely miss the oscillations
         (Nyquist: need at least 2 points per cycle → need N ≥ 100).
@@ -62,9 +62,7 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
     """
 
     def __init__(
-        self,
-        base_frequency: float = 10.0,
-        num_sample_points: int = 100
+        self, base_frequency: float = 10.0, num_sample_points: int = 100
     ) -> None:
         """
         Initialize oscillatory solution augmentation.
@@ -92,7 +90,9 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
 
             # Reduce lambda to prevent equation instability
             lambda_scaled = lambda_val * 0.1
@@ -123,23 +123,14 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
                     "filon_quadrature",
                     "levin_collocation",
                     "fine_uniform_sampling",
-                    "adaptive_sampling"
+                    "adaptive_sampling",
                 ],
                 "numerical_challenge": f"Solution oscillates {cycles1:.1f} times, standard quadrature undersamples",
                 "augmented": True,
                 "augmentation_type": "oscillatory_solution",
                 "augmentation_variant": "high_frequency_sine",
             }
-            # Generate evaluation points for consistent evaluation
-            if case1.get("has_solution") and case1.get("u"):
-                try:
-                    a_val = float(sp.sympify(case1.get("a", "0")))
-                    b_val = float(sp.sympify(case1.get("b", "1")))
-                    case1["evaluation_points"] = self._generate_evaluation_points(
-                        case1["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
+
             results.append(case1)
 
             # Case 2: Modulated oscillation - amplitude varies with position
@@ -167,23 +158,13 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_quadrature",
                     "filon_with_modulation",
-                    "variable_step_runge_kutta"
+                    "variable_step_runge_kutta",
                 ],
                 "numerical_challenge": "Both amplitude and phase vary → adaptive sampling essential",
                 "augmented": True,
                 "augmentation_type": "oscillatory_solution",
                 "augmentation_variant": "amplitude_modulated",
             }
-            # Generate evaluation points for consistent evaluation
-            if case2.get("has_solution") and case2.get("u"):
-                try:
-                    a_val = float(sp.sympify(case2.get("a", "0")))
-                    b_val = float(sp.sympify(case2.get("b", "1")))
-                    case2["evaluation_points"] = self._generate_evaluation_points(
-                        case2["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
             # Case 3: Multiple frequency components (beating)
@@ -213,23 +194,13 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "fourier_based_quadrature",
                     "spectral_collocation",
-                    "fine_uniform_sampling"
+                    "fine_uniform_sampling",
                 ],
                 "numerical_challenge": "Multiple frequencies create complex interference pattern",
                 "augmented": True,
                 "augmentation_type": "oscillatory_solution",
                 "augmentation_variant": "multi_frequency_beating",
             }
-            # Generate evaluation points for consistent evaluation
-            if case3.get("has_solution") and case3.get("u"):
-                try:
-                    a_val = float(sp.sympify(case3.get("a", "0")))
-                    b_val = float(sp.sympify(case3.get("b", "1")))
-                    case3["evaluation_points"] = self._generate_evaluation_points(
-                        case3["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case3)
 
         except Exception as e:
@@ -254,7 +225,7 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
         import numpy as np
 
         x_points = np.linspace(a, b, n_points)
-        
+
         # Generate sample points (subsample to keep manageable size)
         samples = []
         step = max(1, n_points // self.num_sample_points)
@@ -266,7 +237,7 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[:self.num_sample_points]
+        return samples[: self.num_sample_points]
 
     def _generate_adaptive_mesh(
         self, a: float, b: float, n_base: int
@@ -286,7 +257,7 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
         # Denser at boundaries
         left = np.linspace(a, a + 0.1 * (b - a), n // 4)
         right = np.linspace(b - 0.1 * (b - a), b, n // 4)
-        
+
         x_points = np.sort(np.concatenate([left, middle, right]))
 
         # Generate samples
@@ -300,4 +271,4 @@ class OscillatorySolutionAugmentation(BaseAugmentation):
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[:self.num_sample_points]
+        return samples[: self.num_sample_points]

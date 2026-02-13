@@ -6,6 +6,7 @@ Generates variations of equations for training data, including edge cases.
 
 from typing import Any
 
+import numpy as np
 import sympy as sp
 
 from src.data.augmentations import (
@@ -83,7 +84,63 @@ def augment_dataset(
                 logger.debug(f"Augmentation failed for {strategy}: {e}")
 
     logger.info(f"Augmented dataset from {len(data)} to {len(augmented)} samples")
+
+    # Generate evaluation_points for all items with solutions (except "none" type)
+    augmented = _add_evaluation_points(augmented)
+
     return augmented
+
+
+def _add_evaluation_points(
+    data: list[dict[str, Any]], n_points: int = 50
+) -> list[dict[str, Any]]:
+    """
+    Generate evaluation_points for all dataset items with solutions.
+
+    Skips items with no solution (solution_type == "none") and items
+    that already have evaluation_points populated.
+
+    Args:
+        data: Dataset items with u, a, b fields.
+        n_points: Number of evaluation points to generate.
+
+    Returns:
+        Dataset with evaluation_points populated.
+    """
+    # Use NoSolutionAugmentation to access _generate_evaluation_points method
+    augmenter = NoSolutionAugmentation()
+
+    processed = []
+    for item in data:
+        # Skip items with no solution
+        if item.get("solution_type") == "none" or not item.get("has_solution", True):
+            processed.append(item)
+            continue
+
+        # Skip if evaluation_points already exists and is not None
+        if item.get("evaluation_points") is not None:
+            processed.append(item)
+            continue
+
+        try:
+            # Generate evaluation_points for this item
+            u_expr = item.get("u", "")
+            a = float(item.get("a", 0))
+            b = float(item.get("b", 1))
+
+            if u_expr:
+                eval_points = augmenter._generate_evaluation_points(
+                    u_expr, a, b, n_points
+                )
+                item["evaluation_points"] = eval_points
+        except Exception as e:
+            logger.debug(f"Failed to generate evaluation_points for item: {e}")
+            # Leave evaluation_points as None if generation fails
+            item["evaluation_points"] = None
+
+        processed.append(item)
+
+    return processed
 
 
 def _apply_augmentation(

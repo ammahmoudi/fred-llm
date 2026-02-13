@@ -9,8 +9,11 @@ import re
 from typing import Optional
 
 import sympy as sp
-from sympy.parsing.sympy_parser import (implicit_multiplication, parse_expr,
-                                        standard_transformations)
+from sympy.parsing.sympy_parser import (
+    implicit_multiplication,
+    parse_expr,
+    standard_transformations,
+)
 
 from src.utils.logging_utils import get_logger
 
@@ -66,8 +69,11 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
     Raises:
         ParseError: If all parsing strategies fail.
     """
-    from src.postprocessing.parse import (ParseError, _latex_to_infix,
-                                          _preprocess_for_sympy)
+    from src.postprocessing.parse import (
+        ParseError,
+        _latex_to_infix,
+        _preprocess_for_sympy,
+    )
 
     if HAS_MATH_VERIFY:
         mv_expr = _try_math_verify_parse(expr_str)
@@ -75,6 +81,12 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
             return mv_expr
 
     # --- Strategy 2: Custom _latex_to_infix + parse_expr ---
+    try:
+        infix = _latex_to_infix(expr_str)
+        return parse_expr(
+            infix,
+            local_dict=FREDHOLM_LOCAL_DICT,
+            transformations=TRANSFORMATIONS,
         )
     except Exception:
         pass

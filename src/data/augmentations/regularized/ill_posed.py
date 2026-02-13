@@ -87,46 +87,16 @@ class IllPosedAugmentation(BaseAugmentation):
             # Case 1: Simple kernel K(x,t) = x*t, f(x) = x²
             case1 = self._create_simple_first_kind(a, b)
             if case1:
-                # Generate evaluation points for consistent evaluation
-                if case1.get("has_solution") and case1.get("u"):
-                    try:
-                        a_val = float(sp.sympify(case1.get("a", "0")))
-                        b_val = float(sp.sympify(case1.get("b", "1")))
-                        case1["evaluation_points"] = self._generate_evaluation_points(
-                            case1["u"], a_val, b_val
-                        )
-                    except Exception as e:
-                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case1)
 
             # Case 2: Exponential kernel (more challenging)
             case2 = self._create_exponential_first_kind(a, b)
             if case2:
-                # Generate evaluation points for consistent evaluation
-                if case2.get("has_solution") and case2.get("u"):
-                    try:
-                        a_val = float(sp.sympify(case2.get("a", "0")))
-                        b_val = float(sp.sympify(case2.get("b", "1")))
-                        case2["evaluation_points"] = self._generate_evaluation_points(
-                            case2["u"], a_val, b_val
-                        )
-                    except Exception as e:
-                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case2)
 
             # Case 3: Oscillatory kernel (highly ill-posed)
             case3 = self._create_oscillatory_first_kind(a, b)
             if case3:
-                # Generate evaluation points for consistent evaluation
-                if case3.get("has_solution") and case3.get("u"):
-                    try:
-                        a_val = float(sp.sympify(case3.get("a", "0")))
-                        b_val = float(sp.sympify(case3.get("b", "1")))
-                        case3["evaluation_points"] = self._generate_evaluation_points(
-                            case3["u"], a_val, b_val
-                        )
-                    except Exception as e:
-                        logger.debug(f"Failed to generate evaluation points: {e}")
                 results.append(case3)
 
         except Exception as e:

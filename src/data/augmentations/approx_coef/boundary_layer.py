@@ -59,11 +59,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         }
     """
 
-    def __init__(
-        self,
-        epsilon: float = 0.01,
-        num_sample_points: int = 20
-    ) -> None:
+    def __init__(self, epsilon: float = 0.01, num_sample_points: int = 20) -> None:
         """
         Initialize boundary layer augmentation.
 
@@ -90,7 +86,9 @@ class BoundaryLayerAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
 
             # Reduce lambda to prevent numerical instability
             lambda_scaled = lambda_val * 0.2
@@ -114,7 +112,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "exponential_mesh_grading",
-                    "shishkin_mesh"
+                    "shishkin_mesh",
                 ],
                 "numerical_challenge": f"Rapid variation in layer of width {self.epsilon} at x={a}",
                 "minimum_points_in_layer": int(10),  # Need at least 10 points in layer
@@ -122,16 +120,6 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "augmentation_type": "boundary_layer",
                 "augmentation_variant": "left_exponential_layer",
             }
-            # Generate evaluation points for consistent evaluation
-            if case1.get("has_solution") and case1.get("u"):
-                try:
-                    a_val = float(sp.sympify(case1.get("a", "0")))
-                    b_val = float(sp.sympify(case1.get("b", "1")))
-                    case1["evaluation_points"] = self._generate_evaluation_points(
-                        case1["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Right boundary layer - exp((x-b)/ε)
@@ -153,7 +141,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "exponential_mesh_grading",
-                    "shishkin_mesh"
+                    "shishkin_mesh",
                 ],
                 "numerical_challenge": f"Rapid variation in layer of width {self.epsilon} at x={b}",
                 "minimum_points_in_layer": int(10),
@@ -161,16 +149,6 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "augmentation_type": "boundary_layer",
                 "augmentation_variant": "right_exponential_layer",
             }
-            # Generate evaluation points for consistent evaluation
-            if case2.get("has_solution") and case2.get("u"):
-                try:
-                    a_val = float(sp.sympify(case2.get("a", "0")))
-                    b_val = float(sp.sympify(case2.get("b", "1")))
-                    case2["evaluation_points"] = self._generate_evaluation_points(
-                        case2["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
             # Case 3: Double boundary layers - tanh profile
@@ -193,7 +171,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "adaptive_mesh_refinement",
                     "double_exponential_grading",
-                    "shishkin_mesh_double"
+                    "shishkin_mesh_double",
                 ],
                 "numerical_challenge": f"Two boundary layers of width {self.epsilon} at x={a} and x={b}",
                 "minimum_points_in_layer": int(15),  # More points needed for 2 layers
@@ -241,7 +219,7 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         # exp(x) overflows around x > 700, so we cap at a reasonable value
         max_exp_arg = 50  # exp(50) ≈ 5e21, sufficient for graded mesh
         exp_arg = min((b - a) / epsilon, max_exp_arg)
-        
+
         if layer_position == a:
             # Graded mesh near x=a
             # Use transformation: x = a + ε*log(1 + α*ξ) where ξ ∈ [0,1]
@@ -258,14 +236,14 @@ class BoundaryLayerAugmentation(BaseAugmentation):
         # Generate sample points
         samples = []
         for xi in x_points:
-            for ti in x_points[:n//2]:  # Use half for t to limit total points
+            for ti in x_points[: n // 2]:  # Use half for t to limit total points
                 samples.append([float(xi), float(ti)])
                 if len(samples) >= self.num_sample_points:
                     break
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[:self.num_sample_points]
+        return samples[: self.num_sample_points]
 
     def _generate_double_layer_mesh(
         self, a: float, b: float, epsilon: float
@@ -283,10 +261,10 @@ class BoundaryLayerAugmentation(BaseAugmentation):
 
         # Left layer [a, a + 3ε]
         left_layer = np.linspace(a, a + 3 * epsilon, n_layer)
-        
+
         # Interior [a + 3ε, b - 3ε]
         interior = np.linspace(a + 3 * epsilon, b - 3 * epsilon, n_interior)
-        
+
         # Right layer [b - 3ε, b]
         right_layer = np.linspace(b - 3 * epsilon, b, n_layer)
 
@@ -302,4 +280,4 @@ class BoundaryLayerAugmentation(BaseAugmentation):
             if len(samples) >= self.num_sample_points:
                 break
 
-        return samples[:self.num_sample_points]
+        return samples[: self.num_sample_points]

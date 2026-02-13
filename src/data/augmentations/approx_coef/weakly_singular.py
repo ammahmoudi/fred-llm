@@ -74,7 +74,9 @@ class WeaklySingularAugmentation(BaseAugmentation):
             # Extract base parameters
             a = float(sp.sympify(item.get("a", "0")))
             b = float(sp.sympify(item.get("b", "1")))
-            lambda_val = float(sp.sympify(item.get("lambda", item.get("lambda_val", "1"))))
+            lambda_val = float(
+                sp.sympify(item.get("lambda", item.get("lambda_val", "1")))
+            )
 
             # Scale lambda to ensure stability
             lambda_scaled = lambda_val * 0.1  # Reduce to prevent dominance
@@ -97,23 +99,13 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "product_integration",
                     "singularity_subtraction",
-                    "graded_mesh"
+                    "graded_mesh",
                 ],
                 "numerical_challenge": "Kernel diverges at x=t (logarithmically)",
                 "augmented": True,
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "logarithmic_kernel",
             }
-            # Generate evaluation points for consistent evaluation
-            if case1.get("has_solution") and case1.get("u"):
-                try:
-                    a_val = float(sp.sympify(case1.get("a", "0")))
-                    b_val = float(sp.sympify(case1.get("b", "1")))
-                    case1["evaluation_points"] = self._generate_evaluation_points(
-                        case1["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case1)
 
             # Case 2: Power law singularity - |x-t|^(-1/2)
@@ -122,7 +114,9 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "u": item["u"],
                 "f": item["f"],
                 "kernel": "1/sqrt(abs(x - t) + 1e-8)",  # Avoid division by zero
-                "lambda_val": str(lambda_scaled * 0.5),  # Further reduce for stronger singularity
+                "lambda_val": str(
+                    lambda_scaled * 0.5
+                ),  # Further reduce for stronger singularity
                 "lambda_val": str(lambda_scaled * 0.5),
                 "a": str(a),
                 "b": str(b),
@@ -134,23 +128,13 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "product_integration",
                     "abel_transform",
-                    "collocation_with_grading"
+                    "collocation_with_grading",
                 ],
                 "numerical_challenge": "Kernel ~ |x-t|^(-0.5) near singularity",
                 "augmented": True,
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "power_law_kernel",
             }
-            # Generate evaluation points for consistent evaluation
-            if case2.get("has_solution") and case2.get("u"):
-                try:
-                    a_val = float(sp.sympify(case2.get("a", "0")))
-                    b_val = float(sp.sympify(case2.get("b", "1")))
-                    case2["evaluation_points"] = self._generate_evaluation_points(
-                        case2["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case2)
 
             # Case 3: Algebraic singularity with smooth part
@@ -171,23 +155,13 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 "recommended_methods": [
                     "product_integration",
                     "singularity_extraction",
-                    "nyström_modified"
+                    "nyström_modified",
                 ],
                 "numerical_challenge": "Mixed smooth and singular parts require decomposition",
                 "augmented": True,
                 "augmentation_type": "weakly_singular",
                 "augmentation_variant": "algebraic_mixed_kernel",
             }
-            # Generate evaluation points for consistent evaluation
-            if case3.get("has_solution") and case3.get("u"):
-                try:
-                    a_val = float(sp.sympify(case3.get("a", "0")))
-                    b_val = float(sp.sympify(case3.get("b", "1")))
-                    case3["evaluation_points"] = self._generate_evaluation_points(
-                        case3["u"], a_val, b_val
-                    )
-                except Exception as e:
-                    logger.debug(f"Failed to generate evaluation points: {e}")
             results.append(case3)
 
         except Exception as e:
@@ -244,4 +218,4 @@ class WeaklySingularAugmentation(BaseAugmentation):
                 if len(samples) >= self.num_sample_points:
                     break
 
-        return samples[:self.num_sample_points]
+        return samples[: self.num_sample_points]

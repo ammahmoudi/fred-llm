@@ -25,7 +25,7 @@ dataset:
     # Data validation and splitting
     validate_data: true
     split: false  # No split - use all augmented data
-    split_ratios: [0.7, 0.15, 0.15]
+    split_ratios: [0.7, 0.15, 0.15] # not used as the spllit is false
     seed: 42  # Random seed for reproducibility
     
     # Multiple formats for flexibility

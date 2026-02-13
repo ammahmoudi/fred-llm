@@ -41,9 +41,9 @@ class AdaptivePipeline:
         self.config = config
         self.automation_level = config.get_automation_level()
         self.paths = config.resolve_paths()  # Resolve all paths upfront
-        
+
         # Set global random seed for reproducibility
-        if config.dataset.raw and hasattr(config.dataset.raw, 'seed'):
+        if config.dataset.raw and hasattr(config.dataset.raw, "seed"):
             set_global_seed(config.dataset.raw.seed)
 
         console.print(f"\n[bold blue]Adaptive Pipeline[/bold blue]")

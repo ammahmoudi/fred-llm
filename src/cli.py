@@ -61,9 +61,18 @@ def run(
 
     # Load adaptive config
     adaptive_config = AdaptivePipelineConfig.from_yaml(config)
-    
+
     # Set global seed for reproducibility (CLI override takes precedence)
-    seed_to_use = seed if seed is not None else (adaptive_config.dataset.raw.seed if adaptive_config.dataset.raw and hasattr(adaptive_config.dataset.raw, 'seed') else 42)
+    seed_to_use = (
+        seed
+        if seed is not None
+        else (
+            adaptive_config.dataset.raw.seed
+            if adaptive_config.dataset.raw
+            and hasattr(adaptive_config.dataset.raw, "seed")
+            else 42
+        )
+    )
     set_global_seed(seed_to_use)
 
     # Create and run adaptive pipeline

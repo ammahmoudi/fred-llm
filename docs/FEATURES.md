@@ -29,7 +29,7 @@ This document tracks all features - implemented and planned. Check off items as 
     - [x] EvaluationDataConfig in adaptive_config.py for predictions_path
     - [x] _run_evaluation_only() method in AdaptivePipeline
     - [x] Enhanced CLI evaluate command with tolerance options
-    - [x] Comprehensive documentation in EVAL_MODE_GUIDE.md
+    - [x] Documentation in EVALUATION_PIPELINE.md and QUICKSTART.md
     - [x] Example configs and sample data in examples/
     - [x] Data formats reference in DATA_FORMATS_REFERENCE.md
   - [ ] Caching intermediate results - Save prepared data and prompts for reuse 🚧 **Outputs saved but no checkpointing**
@@ -195,6 +195,12 @@ This document tracks all features - implemented and planned. Check off items as 
   - Automatically computed in numeric_compare() 
   - Handles zero ground truth case (returns inf/0 appropriately)
   - Integrated with SolutionEvaluator.summary()
+- [x] **Residual verification x sampling uses evaluation_points** ✅ **February 13, 2026**
+  - Uses dataset evaluation_points.x_values when available
+  - Falls back to reproducible random sampling otherwise
+- [x] **Residual verification reports MAE/RMSE** ✅ **February 13, 2026**
+  - Adds residual_mae and residual_rmse to per-sample results
+  - Aggregates mean_residual_mae and mean_residual_rmse
 - [x] Math-Verify integration - LaTeX parsing + fast-path symbolic verification ✅ **Adapter + fallback parsing**
 - [x] Postprocessing - Math-Verify extraction with regex fallback ✅ **Multi-strategy u(x)/SOLUTION parsing**
 - [x] **Structured output extraction** - Parse has_solution and solution_type from LLM responses ✅ **(January 3, 2026)**

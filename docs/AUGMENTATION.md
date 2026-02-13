@@ -79,6 +79,25 @@ All augmentation strategies produce the same 18 core fields:
 }
 ```
 
+### Evaluation Points (Optional)
+
+Augmented outputs include pre-computed evaluation points when `has_solution=True`.
+These are used for consistent numeric evaluation.
+
+```python
+"evaluation_points": {
+  "x_values": [0.0, 0.1, 0.2, 0.3],
+  "u_values": [0.0, 0.109, 0.241, 0.304],
+  "n_points": 50,
+  "constant_samples": [-1.0, 1.0, 2.0],
+  "u_values_samples": [[...], [...], [...]]
+}
+```
+
+Notes:
+- `constant_samples` and `u_values_samples` are only present for `family` solutions.
+- Values are computed with overflow-safe evaluation and non-finite filtering.
+
 **Optional metadata** (60+ fields): Add `--include-edge-metadata` flag to include detailed technical fields like `singularity_type`, `layer_location`, `oscillation_frequency`, etc.
 
 ## Edge Case Strategies

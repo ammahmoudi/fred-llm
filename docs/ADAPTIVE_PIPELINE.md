@@ -56,6 +56,28 @@ uv run python -m src.cli run --config configs/run_inference.yaml
 
 ---
 
+### 3. Evaluation-Only ✅
+**Use when:** You already have LLM predictions and want to score them
+
+**What it does:**
+```
+Predictions JSONL/JSON -> Evaluate -> Metrics
+```
+
+**Config:** [configs/eval_only.yaml](../configs/eval_only.yaml)
+
+**Run:**
+```bash
+uv run python -m src.cli run --config configs/eval_only.yaml
+```
+
+**Direct CLI alternative:**
+```bash
+python -m src.cli evaluate outputs/run_*/predictions_*.jsonl --output outputs/eval_results/metrics.json
+```
+
+---
+
 ## Smart Defaults & Path Chaining
 
 ### Default Output Paths

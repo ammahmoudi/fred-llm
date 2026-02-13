@@ -259,13 +259,13 @@ python -m src.cli evaluate your_predictions.jsonl \
 
 This computes RMSE, MAE, and symbolic/numeric accuracy metrics.
 
-→ See [Evaluation-Only Mode Guide](EVAL_MODE_GUIDE.md) for details
+→ See [Evaluation Pipeline](EVALUATION_PIPELINE.md) for details
 
 ## Next Steps
 
 - **Configure your LLM**: Edit `config.yaml` to set your API keys and model preferences
 - **Train/Fine-tune**: Use generated prompts for fine-tuning or in-context learning
-- **Evaluate**: Run evaluation metrics on model outputs with [eval-only mode](EVAL_MODE_GUIDE.md)
+- **Evaluate**: Run evaluation metrics on model outputs with [eval-only mode](EVALUATION_PIPELINE.md)
 - **Explore**: Check out the notebooks in `notebooks/` for data exploration
 
 ## Common Issues

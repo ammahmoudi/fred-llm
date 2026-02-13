@@ -61,8 +61,8 @@ eq_1,x,2*(x-t),x + 2*\sin(x),0,1,true,elementary
 ### Training Data Format
 
 ```csv
-id,equation_id,f_latex,K_latex,u_latex,u_infix,u_rpn,domain,has_solution,solution_type
-eq_0_train,eq_0,\sin(x),e^{x*t},\sin(x)/(1-0.5),sin(x)/(1-0.5),x sin / 0.5 1 - /,...
+id,equation_id,f_latex,K_latex,u_latex,u_infix,u_rpn,domain,has_solution,solution_type,evaluation_points
+eq_0_train,eq_0,\sin(x),e^{x*t},\sin(x)/(1-0.5),sin(x)/(1-0.5),x sin / 0.5 1 - /,...,{"x_values":[0.0,0.1],"u_values":[0.0,0.109]}
 ```
 
 **Key Columns:**
@@ -72,6 +72,7 @@ eq_0_train,eq_0,\sin(x),e^{x*t},\sin(x)/(1-0.5),sin(x)/(1-0.5),x sin / 0.5 1 - /
 - `u_latex`: Ground truth solution (LaTeX)
 - `u_infix`, `u_rpn`: Alternative formats
 - `has_solution`, `solution_type`: Metadata
+- `evaluation_points`: Optional JSON with x_values/u_values
 
 ### File Listing
 
@@ -177,9 +178,9 @@ data/prompts/chain-of-thought/
   "ground_truth": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
   "solution_str": "\\sin(x) / (1 - 0.5*\\int_0^1 e^{xt} dt)",
   "evaluation_points": {
-    "u": "sin(x) / (1 - 0.5*integrate(exp(x*t), (t, 0, 1)))",
-    "points": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-    "values": [0.0, 0.1005, 0.2018, 0.3047, 0.4108, 0.5235, 0.6453, 0.7826, 0.9433, 1.1381, 1.4436]
+    "x_values": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "u_values": [0.0, 0.1005, 0.2018, 0.3047, 0.4108, 0.5235, 0.6453, 0.7826, 0.9433, 1.1381, 1.4436],
+    "n_points": 50
   },
   "has_solution": true,
   "solution_type": "elementary"
@@ -202,7 +203,7 @@ outputs/run_20260212_140313/
 
 **File Format:** JSONL (line-delimited JSON)
 
-**Location:** `outputs/<run_name>/evaluated_predictions_<timestamp>.jsonl`
+**Location:** `outputs/<run_name>/predictions_evaluated_<timestamp>.jsonl`
 
 **When Created:** After running evaluation (Stage 5)
 
@@ -404,7 +405,7 @@ expr = parse_latex_to_sympy("\\sin(x) * e^{-x}")
 | 2 | Prepare | Raw equations | train.csv, val.csv, test.csv | Split, formatted data |
 | 3 | Prompts | Prepared data | `train.jsonl`, `val.jsonl`, `test.jsonl` | Prompts + ground truth |
 | 4 | **LLM Inference** | Prompts | `predictions_*.jsonl`, `cost_*.json` | **LLM outputs only (NO evaluation)** |
-| 4b | **Evaluation** | Predictions | `evaluated_predictions_*.jsonl`, `metrics_*.json` | **Symbolic/Numeric metrics added** |
+| 4b | **Evaluation** | Predictions | `predictions_evaluated_*.jsonl`, `metrics_*.json` | **Symbolic/Numeric metrics added** |
 
 ## Critical Clarification: When Are Evaluation Metrics Added?
 
@@ -432,7 +433,7 @@ python -m src.cli evaluate outputs/run_xxx/predictions_*.jsonl \
 ```
 
 **After evaluation runs**, these files are created:
-- `evaluated_predictions_*.jsonl` - Predictions **+ evaluation results**
+- `predictions_evaluated_*.jsonl` - Predictions **+ evaluation results**
 - `metrics_*.json` - Summary statistics
 
 ## Data Flow with Evaluation
@@ -485,7 +486,7 @@ python -m src.cli evaluate outputs/run_1/predictions_20260212_140313.jsonl \
   --output outputs/run_1/metrics_strict.json
 
 # Creates: 
-# - outputs/run_1/evaluated_predictions_20260212_150000.jsonl (with metrics)
+# - outputs/run_1/predictions_evaluated_20260212_150000.jsonl (with metrics)
 # - outputs/run_1/metrics_strict.json (summary stats)
 ```
 
@@ -495,6 +496,6 @@ python -m src.cli evaluate outputs/run_1/predictions_20260212_140313.jsonl \
 |-------|-------|--------|------------------------|--------------------|
 | 1-3 | Raw data | Prompts | N/A | N/A |
 | **4: LLM** | Prompts | `predictions_*.jsonl` | **NO** ❌ | **NO** ❌ |
-| **4b: Evaluation** | Predictions | `evaluated_predictions_*.jsonl` | **YES** ✅ | **YES** ✅ |
+| **4b: Evaluation** | Predictions | `predictions_evaluated_*.jsonl` | **YES** ✅ | **YES** ✅ |
 | **5: Metrics** | Predictions | `metrics_*.json` | **Summary only** ✅ | **Per-type aggregates** ✅ |
 

@@ -515,6 +515,7 @@ def evaluate_solutions(
                     residual = verify_solution(
                         pred_expr, kernel_expr, f_expr,
                         float(lambda_val), domain=domain,
+                        x_values=(eval_points or {}).get("x_values"),
                     )
                     residual_results.append(residual)
                 except Exception as e_res:
@@ -579,6 +580,12 @@ def evaluate_solutions(
             )),
             "mean_residual_mean": float(np.mean(
                 [r["residual_mean"] for r in residuals_valid]
+            )),
+            "mean_residual_mae": float(np.mean(
+                [r["residual_mae"] for r in residuals_valid]
+            )),
+            "mean_residual_rmse": float(np.mean(
+                [r["residual_rmse"] for r in residuals_valid]
             )),
         }
 
@@ -800,6 +807,7 @@ def verify_solution(
     f: sp.Expr,
     lambda_val: float,
     domain: tuple[float, float] = (0, 1),
+    x_values: Optional[list[float]] = None,
     tolerance: float = 1e-6,
 ) -> dict[str, Any]:
     """
@@ -813,6 +821,7 @@ def verify_solution(
         f: Right-hand side f(x).
         lambda_val: Lambda parameter.
         domain: Integration domain (a, b).
+        x_values: Optional list of x sample points for residual checks.
         tolerance: Tolerance for verification.
 
     Returns:
@@ -822,6 +831,8 @@ def verify_solution(
         "verified": False,
         "residual_max": float("inf"),
         "residual_mean": float("inf"),
+        "residual_mae": float("inf"),
+        "residual_rmse": float("inf"),
     }
 
     x, t = sp.symbols("x t")
@@ -846,6 +857,8 @@ def verify_solution(
                 result["verified"] = True
                 result["residual_max"] = 0.0
                 result["residual_mean"] = 0.0
+                result["residual_mae"] = 0.0
+                result["residual_rmse"] = 0.0
                 return result
 
         except Exception:
@@ -853,7 +866,14 @@ def verify_solution(
 
         # Numeric verification
         n_points = 50
-        test_x = np.linspace(a, b, n_points)
+        test_x = None
+        if x_values:
+            test_x = np.array(x_values, dtype=float)
+            if test_x.size == 0:
+                test_x = None
+        if test_x is None:
+            rng = np.random.default_rng(0)
+            test_x = rng.uniform(a, b, n_points)
 
         # Create numeric functions
         f_solution = sp.lambdify(x, solution, modules=["numpy"])
@@ -879,6 +899,8 @@ def verify_solution(
         residuals = np.array(residuals)
         result["residual_max"] = float(np.max(residuals))
         result["residual_mean"] = float(np.mean(residuals))
+        result["residual_mae"] = result["residual_mean"]
+        result["residual_rmse"] = float(np.sqrt(np.mean(residuals**2)))
         result["verified"] = result["residual_max"] < tolerance
 
     except Exception as e:

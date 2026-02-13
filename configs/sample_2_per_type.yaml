@@ -1,0 +1,59 @@
+# Full Pipeline: 2 samples per solution type
+# Includes data prep, augmentation, prompt generation, inference, and evaluation
+
+dataset:
+  raw:
+    path: data/raw/Fredholm_Dataset_Sample.csv
+    output_dir: null  # Auto-generated with timestamp
+    
+    # Stratified sampling: 2 samples from each of 7 solution types
+    stratified_sample: true
+    samples_per_type: 2
+    
+    # Augmentation for diverse edge cases
+    augment: true
+    augment_multiplier: 1.15
+    include_edge_metadata: true
+    
+    # Data validation and splitting
+    validate_data: true
+    split: false  # Disable split for very small samples (14 total) - use all for inference
+    split_ratios: [0.7, 0.15, 0.15]
+    
+    # Multiple formats for flexibility
+    convert_formats: [latex]
+    output_format: json
+  
+  # Prompt generation
+  prompting:
+    style: basic
+    edge_case_mode: none
+    num_examples: 3
+    include_ground_truth: true
+
+# Model configuration for inference
+model:
+  provider: openrouter
+  name: openai/gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 60
+
+# Evaluation settings
+evaluation:
+  mode: both  # symbolic and numeric
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  use_math_verify: true
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
+
+# Output configuration
+output:
+  dir: outputs/sample_2_per_type
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

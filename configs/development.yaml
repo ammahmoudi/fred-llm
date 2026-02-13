@@ -2,12 +2,20 @@
 # Smaller dataset, faster inference for local testing
 
 dataset:
-  # Pre-split dataset paths - use small test set for dev
-  train_path: data/processed/training_data/train_infix.csv
-  val_path: data/processed/training_data/val_infix.csv
-  test_path: data/processed/training_data/test_infix.csv
-  format: infix  # infix, latex, or rpn
-  max_samples: 10  # Small subset for quick testing
+  # Pre-split dataset paths
+  prepared:
+    train_path: data/processed/training_data/train_infix.csv
+    val_path: data/processed/training_data/val_infix.csv
+    test_path: data/processed/training_data/test_infix.csv
+    format: infix  # infix, latex, or rpn
+    max_samples: 10  # Small subset for quick testing
+  
+  # Generate prompts on-the-fly
+  prompting:
+    style: basic  # Simple prompts for fast iteration
+    edge_case_mode: none
+    num_examples: 2
+    include_ground_truth: true
 
 model:
   provider: openai
@@ -16,19 +24,15 @@ model:
   max_tokens: 1024
   timeout: 30
 
-prompting:
-  # Pre-generated prompts directory
-  prompts_dir: data/prompts/basic
-  style: basic  # Simple prompts for fast iteration
-
 evaluation:
   mode: symbolic  # Skip numeric for speed
   symbolic_tolerance: 1e-10
   numeric_tolerance: 1e-4
   num_test_points: 20
-  integration_domain:
-    a: 0
-    b: 1
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
 
 output:
   dir: outputs/dev

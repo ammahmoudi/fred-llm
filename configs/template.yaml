@@ -94,6 +94,12 @@ model:
   temperature: 0.1
   max_tokens: 2048
   timeout: 60
+  
+  # Reasoning configuration (for reasoning models like o1, o3, GPT-5.x)
+  # Uncomment to enable reasoning mode
+  # reasoning:
+  #   effort: medium  # low|medium|high - Lower = fewer reasoning tokens, faster/cheaper
+
 
 # Evaluation configuration (optional)
 evaluation:
@@ -101,10 +107,19 @@ evaluation:
   symbolic_tolerance: 1e-10
   numeric_tolerance: 1e-6
   num_test_points: 100
+  use_math_verify: true
+  # Per-solution-type numeric tolerance overrides:
+  # Useful because some types (series, regularized) need looser tolerances
+  # Solution types: exact_symbolic, series, discrete_points, approx_coef, family, regularized, none
+  type_tolerances:
+    series: 1e-2          # Looser for series approximations
+    approx_coef: 1e-3     # Moderate for coefficient fits
+    regularized: 1e-3     # Moderate for Fredholm 1st kind (ill-posed)
+    # Other types use numeric_tolerance if not specified here
 
 # Output configuration
 output:
   dir: outputs
-  save_predictions: true
-  save_metrics: true
+  save_predictions: true   # Save LLM predictions to JSON/JSONL
+  save_metrics: true       # Save evaluation metrics
   log_level: INFO  # DEBUG|INFO|WARNING|ERROR

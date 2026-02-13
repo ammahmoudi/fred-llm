@@ -4,11 +4,19 @@
 
 dataset:
   # Pre-split dataset paths
-  train_path: data/processed/training_data/train_infix.csv
-  val_path: data/processed/training_data/val_infix.csv
-  test_path: data/processed/training_data/test_infix.csv
-  format: infix  # infix, latex, or rpn
-  max_samples: null
+  prepared:
+    train_path: data/processed/training_data/train_infix.csv
+    val_path: data/processed/training_data/val_infix.csv
+    test_path: data/processed/training_data/test_infix.csv
+    format: infix  # infix, latex, or rpn
+    max_samples: null
+  
+  # Generate prompts on-the-fly
+  prompting:
+    style: chain-of-thought
+    edge_case_mode: none
+    num_examples: 2
+    include_ground_truth: true
 
 model:
   provider: openrouter  # Uses OPENROUTER_API_KEY from .env automatically
@@ -28,28 +36,17 @@ model:
   temperature: 0.1
   max_tokens: 4096
   timeout: 120
-  
-  # OpenRouter specific settings
-  openrouter:
-    base_url: https://openrouter.ai/api/v1
-    # Optional: Set your app name for OpenRouter analytics
-    app_name: fred-llm
-    # Optional: Set site URL for rankings
-    site_url: https://github.com/ammahmoudi/fred-llm
-
-prompting:
-  # Pre-generated prompts directory
-  prompts_dir: data/prompts/chain-of-thought
-  style: chain-of-thought
 
 evaluation:
   mode: both
   symbolic_tolerance: 1e-10
   numeric_tolerance: 1e-6
   num_test_points: 100
-  integration_domain:
-    a: 0
-    b: 1
+  use_math_verify: true
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
 
 output:
   dir: outputs/openrouter

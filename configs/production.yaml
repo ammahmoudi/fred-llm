@@ -2,12 +2,18 @@
 # Full dataset, best model, comprehensive evaluation
 
 dataset:
-  # Pre-split dataset paths - full dataset for production
-  train_path: data/processed/training_data/train_infix.csv
-  val_path: data/processed/training_data/val_infix.csv
-  test_path: data/processed/training_data/test_infix.csv
-  format: infix  # infix, latex, or rpn
-  max_samples: null  # Use all samples
+  # Pre-split dataset (full dataset for production)
+  prepared:
+    train_path: data/processed/training_data/train_infix.csv
+    val_path: data/processed/training_data/val_infix.csv
+    test_path: data/processed/training_data/test_infix.csv
+    format: infix  # infix, latex, or rpn
+    max_samples: null  # Use all samples
+  
+  # Use pre-generated few-shot prompts (best results)
+  prompts:
+    prompts_dir: data/prompts/few-shot
+    style: few-shot
 
 model:
   provider: openai
@@ -16,19 +22,15 @@ model:
   max_tokens: 4096
   timeout: 120
 
-prompting:
-  # Pre-generated prompts directory - use few-shot for best results
-  prompts_dir: data/prompts/few-shot
-  style: few-shot
-
 evaluation:
   mode: both
   symbolic_tolerance: 1e-12
   numeric_tolerance: 1e-8
   num_test_points: 200
-  integration_domain:
-    a: 0
-    b: 1
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
 
 output:
   dir: outputs/production

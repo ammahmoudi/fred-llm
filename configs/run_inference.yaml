@@ -21,6 +21,11 @@ evaluation:
   symbolic_tolerance: 1e-10
   numeric_tolerance: 1e-6
   num_test_points: 100
+  use_math_verify: true
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
 
 # Output
 output:

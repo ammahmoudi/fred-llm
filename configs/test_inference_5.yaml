@@ -1,4 +1,4 @@
-# Test Inference Configuration - 7 Diverse Samples with All Edge Cases
+# Test Inference Configuration - 5 Diverse Samples
 # Tests the full inference pipeline with real API calls and cost tracking
 
 dataset:
@@ -19,6 +19,10 @@ evaluation:
   symbolic_tolerance: 1e-10
   numeric_tolerance: 1e-6
   num_test_points: 10
+  type_tolerances:
+    series: 1e-2
+    approx_coef: 1e-3
+    regularized: 1e-3
 
 # Output
 output:

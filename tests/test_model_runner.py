@@ -32,19 +32,26 @@ class TestOpenAIModelRunner:
 
     def test_api_key_from_env(self) -> None:
         """Test loading API key from environment."""
-        os.environ["TEST_OPENAI_KEY"] = "env-test-key"
+        os.environ["OPENAI_API_KEY"] = "env-test-key"
         try:
-            runner = OpenAIModelRunner(api_key_env="TEST_OPENAI_KEY")
+            runner = OpenAIModelRunner()
             assert runner.api_key == "env-test-key"
         finally:
-            del os.environ["TEST_OPENAI_KEY"]
+            if "OPENAI_API_KEY" in os.environ:
+                del os.environ["OPENAI_API_KEY"]
 
     def test_missing_api_key_raises_error(self) -> None:
         """Test that missing API key raises error on client creation."""
-        runner = OpenAIModelRunner(api_key=None, api_key_env="NONEXISTENT_KEY")
+        # Remove the env var if it exists
+        old_key = os.environ.pop("OPENAI_API_KEY", None)
+        try:
+            runner = OpenAIModelRunner(api_key=None)
 
-        with pytest.raises(ValueError, match="API key not found"):
-            runner._get_client()
+            with pytest.raises(ValueError, match="API key not found"):
+                runner._get_client()
+        finally:
+            if old_key is not None:
+                os.environ["OPENAI_API_KEY"] = old_key
 
     def test_generate_with_mock(self) -> None:
         """Test generate with mocked OpenAI client."""
@@ -110,10 +117,16 @@ class TestOpenRouterModelRunner:
 
     def test_missing_api_key_raises_error(self) -> None:
         """Test that missing API key raises error on client creation."""
-        runner = OpenRouterModelRunner(api_key=None, api_key_env="NONEXISTENT_KEY")
+        # Remove the env var if it exists
+        old_key = os.environ.pop("OPENROUTER_API_KEY", None)
+        try:
+            runner = OpenRouterModelRunner(api_key=None)
 
-        with pytest.raises(ValueError, match="API key not found"):
-            runner._get_client()
+            with pytest.raises(ValueError, match="API key not found"):
+                runner._get_client()
+        finally:
+            if old_key is not None:
+                os.environ["OPENROUTER_API_KEY"] = old_key
 
     def test_generate_with_mock(self) -> None:
         """Test generate with mocked client."""

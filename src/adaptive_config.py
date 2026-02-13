@@ -275,8 +275,8 @@ class AdaptivePipelineConfig(BaseModel):
     """Complete adaptive pipeline configuration."""
 
     dataset: AdaptiveDatasetConfig
-    model: Optional[ModelConfig] = None
-    evaluation: Optional[EvaluationConfig] = None
+    model: ModelConfig = Field(default_factory=ModelConfig)
+    evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
 
     def get_automation_level(self) -> Literal["full", "partial", "manual", "eval-only"]:

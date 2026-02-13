@@ -13,14 +13,11 @@ from typing import Any
 
 from openai import OpenAI
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
+from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
+                      wait_exponential)
 
-from src.llm.cost_calculator import calculate_openai_cost, calculate_openrouter_cost
+from src.llm.cost_calculator import (calculate_openai_cost,
+                                     calculate_openrouter_cost)
 from src.llm.cost_tracker import CallCost, CostTracker
 from src.utils.logging_utils import get_logger
 

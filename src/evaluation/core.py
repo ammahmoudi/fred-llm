@@ -13,11 +13,13 @@ from src.evaluation.metrics import (
     operator_f1,
     symbolic_compare,
 )
-                                    symbolic_compare)
-from src.evaluation.types import (evaluate_approx_coeffs,
-                                  evaluate_discrete_points,
-                                  evaluate_series_terms, family_compare,
-                                  verify_solution)
+from src.evaluation.types import (
+    evaluate_approx_coeffs,
+    evaluate_discrete_points,
+    evaluate_series_terms,
+    family_compare,
+    verify_solution,
+)
 from src.evaluation.types.family import (_family_numeric_compare_samples,
                                          _family_param_metadata,
                                          _substitute_family_constants)

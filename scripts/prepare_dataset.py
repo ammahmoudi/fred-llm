@@ -69,29 +69,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--augment-strategies",
         nargs="+",
-        default=["substitute", "scale", "shift"],
+        default=["none_solution", "approx_coef", "discrete_points"],
         choices=[
-            # Basic transformations (exact_symbolic)
-            "substitute",
-            "scale",
-            "shift",
-            "compose",
             # Solution-type folders (each runs all strategies in folder)
-            "none_solution",  # 4 strategies × 3 variants = 12 edge cases
-            "approx_coef",  # 5 strategies × 3 variants = 15 edge cases
-            "discrete_points",  # 2 strategies × 3 variants = 6 edge cases
-            "series",  # 1 strategy × 3 variants = 3 edge cases
-            "family",  # 1 strategy × 3 variants = 3 edge cases
-            "regularized",  # 1 strategy × 3 variants = 3 edge cases
+            "none_solution",  # 4 edge case strategies
+            "approx_coef",  # 5 edge case strategies
+            "discrete_points",  # 2 edge case strategies
+            "series",  # 1 edge case strategy
+            "family",  # 1 edge case strategy
+            "regularized",  # 1 edge case strategy
         ],
         help=(
-            "Solution-type-based augmentation strategies:\n"
-            "none_solution: eigenvalue_cases + range_violation + divergent_kernel + disconnected_support (12 variants)\n"
-            "approx_coef: boundary_layer + oscillatory + weakly_singular + mixed_type + compact_support (15 variants)\n"
-            "discrete_points: complex_kernels + near_resonance (6 variants)\n"
-            "series: neumann_series (3 variants)\n"
-            "family: resonance (3 variants)\n"
-            "regularized: ill_posed (3 variants)"
+            "Edge case augmentation strategies:\n"
+            "none_solution: eigenvalue_cases + range_violation + divergent_kernel + disconnected_support (4 strategies)\n"
+            "approx_coef: boundary_layer + oscillatory + weakly_singular + mixed_type + compact_support (5 strategies)\n"
+            "discrete_points: approximate_only + near_resonance (2 strategies)\n"
+            "series: neumann_series (1 strategy)\n"
+            "family: resonance (1 strategy)\n"
+            "regularized: ill_posed (1 strategy)"
         ),
     )
     parser.add_argument(

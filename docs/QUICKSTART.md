@@ -138,7 +138,7 @@ python scripts/prepare_dataset.py \
   - `regularized`: Fredholm 1st kind, ill-posed problems (3 variants)
   - `none_solution`: Eigenvalue issues, no solution cases (12 variants)
 - Uses multiplier 1.15 → ~5,750 total equations (87% exact, 13% edge cases)
-- **Note**: Without `--augment-strategies`, only 3 basic transformations are applied (substitute, scale, shift)
+- **Note**: Without `--augment-strategies`, default edge case strategies are applied (none_solution, approx_coef, discrete_points)
 - Validates data quality (checks 100 random samples)
 - Splits into train (80%) and test (20%) sets with stratification
 - Converts to 3 formats (infix, LaTeX, RPN) for LLM training
@@ -165,7 +165,7 @@ python scripts/prepare_dataset.py --augment
 --augment-strategies series family                       # Series expansions + non-unique solutions
 
 # Include basic transformations (exact_symbolic) + edge cases
---augment-strategies substitute scale shift compose approx_coef discrete_points series family regularized none_solution
+--augment-strategies none_solution approx_coef discrete_points series family regularized
 ```
 
 **Folder-based strategies** (each runs multiple strategies):

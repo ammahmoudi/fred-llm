@@ -708,11 +708,10 @@ uv run python scripts/prepare_dataset.py \
   --augment-multiplier 1.1 \
   --augment-strategies weakly_singular
 
-# All strategies (basic transformations + all edge case folders)
+# All strategies (all edge case folders)
 uv run python scripts/prepare_dataset.py \
   --augment \
-  --augment-strategies substitute scale shift compose \
-    none approx_coef discrete_points series family regularized
+  --augment-strategies none_solution approx_coef discrete_points series family regularized
 ```
 
 ### Direct Usage

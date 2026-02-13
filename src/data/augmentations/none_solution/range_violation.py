@@ -103,6 +103,7 @@ class RangeViolationAugmentation(BaseAugmentation):
                     "range_space_decomposition",
                     "parity_check",
                 ],
+                "numerical_challenge": "Symmetry constraints prevent solution existence",
                 "augmented": True,
                 "augmentation_type": "range_violation",
                 "augmentation_variant": "even_odd_mismatch",
@@ -128,6 +129,7 @@ class RangeViolationAugmentation(BaseAugmentation):
                 "operator_property": "separable_rank_one",
                 "mathematical_explanation": "K(x,t) = φ(x)ψ(t), Range = span{φ}, but ⟨f,φ⟩ ≠ 0",
                 "orthogonality_violated": "cos(pi*x) ⊥ sin(pi*x)",
+                "numerical_challenge": "Separability detection → orthogonality test determines unsolvability",
                 "recommended_methods": [
                     "separability_detection",
                     "orthogonality_test",
@@ -158,6 +160,7 @@ class RangeViolationAugmentation(BaseAugmentation):
                 "operator_property": "finite_rank",
                 "kernel_rank": 2,
                 "range_basis": "span{sin(x), cos(x)}",
+                "numerical_challenge": "Rank-deficient operator → finite basis insufficient for polynomial RHS",
                 "mathematical_explanation": "Operator has rank 2, but f requires infinite basis",
                 "recommended_methods": [
                     "rank_analysis",

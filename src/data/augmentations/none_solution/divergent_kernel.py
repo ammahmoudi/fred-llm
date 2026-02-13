@@ -96,6 +96,7 @@ class DivergentKernelAugmentation(BaseAugmentation):
                 "singularity_order": 1.0,  # α = 1
                 "singularity_strength": "strong",
                 "divergence_type": "logarithmic",
+                "numerical_challenge": "Non-integrable singularity → diverging integral",
                 "mathematical_explanation": "∫₀¹ 1/|x-t| dt diverges logarithmically",
                 "contrast_with": "weakly_singular (α < 1 is integrable)",
                 "recommended_methods": [
@@ -125,6 +126,7 @@ class DivergentKernelAugmentation(BaseAugmentation):
                 "singularity_order": 2.0,  # α = 2
                 "singularity_strength": "very_strong",
                 "divergence_type": "power_law",
+                "numerical_challenge": "Very strong divergence → integral undefined at order α = 2",
                 "mathematical_explanation": "∫₀¹ 1/|x-t|² dt = ∞ (power law divergence)",
                 "physically_invalid": "Second-order pole in 1D integral equation",
                 "recommended_methods": [
@@ -156,6 +158,7 @@ class DivergentKernelAugmentation(BaseAugmentation):
                 "singularity_order": 1.0,
                 "singularity_strength": "strong",
                 "divergence_type": "logarithmic_with_weight",
+                "numerical_challenge": "Smooth factor cannot cancel non-integrable singularity dominance",
                 "mathematical_explanation": "∫ (1+x*t)/|x-t| dt still diverges despite smooth factor",
                 "kernel_structure": "smooth_function * singular_part",
                 "recommended_methods": [

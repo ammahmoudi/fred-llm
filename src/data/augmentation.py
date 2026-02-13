@@ -41,13 +41,13 @@ def augment_dataset(
         data: Original dataset.
         strategies: Augmentation strategies to apply.
         multiplier: Target size multiplier (e.g., 1.15 for 15% augmentation).
-            Recommended: 1.1-1.2 for 11 strategies, 1.25-1.33 for 3 strategies.
+            Recommended: 1.1-1.2 for 14 edge case strategies.
 
     Returns:
         Augmented dataset.
     """
     if strategies is None:
-        strategies = ["none_solution", "approx_coef", "discrete_points"]
+        strategies = ["none_solution", "approx_coef", "discrete_points"]  # All edge case strategies
 
     # Keep originals with metadata marking them as original
     augmented = []
@@ -153,14 +153,10 @@ class DataAugmenter:
         Initialize the augmenter.
 
         Args:
-            strategies: Augmentation strategies to use:
+            strategies: Edge case augmentation strategies to use:
 
-                Solution-type groups (each runs all strategies with that solution type):
-                - none_solution: No solution (eigenvalue_cases, range_violation, divergent_kernel,
-                        disconnected_support) - 4 strategies
-                - approx_coef: Functional form with numerical params (weakly_singular,
-                              boundary_layer, oscillatory_solution, mixed_type,
-                              compact_support) - 5 strategies
+                - none_solution: No solution (eigenvalue_cases, range_violation, divergent_kernel, disconnected_support) - 4 strategies
+                - approx_coef: Functional form with numerical params (weakly_singular, boundary_layer, oscillatory_solution, mixed_type, compact_support) - 5 strategies
                 - discrete_points: Pure sample arrays (approximate_only, near_resonance) - 2 strategies
                 - series: Truncated series (neumann_series) - 1 strategy
                 - regularized: Ill-posed equations (ill_posed) - 1 strategy
@@ -170,7 +166,11 @@ class DataAugmenter:
 
             seed: Random seed for reproducibility.
         """
-        self.strategies = strategies or ["none_solution", "approx_coef", "discrete_points"]
+        self.strategies = strategies or [
+            "none_solution",
+            "approx_coef",
+            "discrete_points",
+        ]
         self.seed = seed
 
     def augment(

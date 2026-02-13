@@ -1,11 +1,10 @@
 """
 Augmentation strategies for Fredholm integral equations.
 
-Strategies are organized by solution type (7 types total):
+Strategies are organized by solution type (6 types total):
 
 ## Folder Structure (by Solution Type)
 
-- **exact_symbolic/**: Closed-form analytical solutions (substitute, scale, shift, compose)
 - **approx_coef/**: Functional forms with numerical params (boundary_layer, oscillatory, etc.)
 - **discrete_points/**: Pure point samples (complex_kernels, near_resonance)
 - **series/**: Truncated series expansions (neumann_series)
@@ -17,7 +16,6 @@ Strategies are organized by solution type (7 types total):
 
 | Solution Type | Folder | Count |
 |---------------|--------|-------|
-| exact_symbolic | exact_symbolic/ | 4 strategies |
 | approx_coef | approx_coef/ | 5 strategies |
 | discrete_points | discrete_points/ | 2 strategies |
 | series | series/ | 1 strategy |
@@ -25,7 +23,7 @@ Strategies are organized by solution type (7 types total):
 | regularized | regularized/ | 1 strategy |
 | none | none_solution/ | 4 strategies |
 
-**Total: 18 strategies (4 basic + 14 edge cases)**
+**Total: 14 edge case strategies**
 """
 
 from src.data.augmentations.approx_coef import (

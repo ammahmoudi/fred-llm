@@ -42,16 +42,6 @@ def data_augmenter() -> DataAugmenter:
 class TestDataAugmentation:
     """Test data augmentation strategies."""
 
-
-
-
-
-
-
-
-
-
-
     @pytest.mark.skipif(
         not Path("data/raw/Fredholm_Dataset_Sample.csv").exists(),
         reason="Sample dataset not found",
@@ -66,7 +56,7 @@ class TestDataAugmentation:
         equations = fredholm_loader.load()
         eq_dicts = [eq.to_dict() for eq in equations]
 
-        augmenter = DataAugmenter(strategies=["scale"])
+        augmenter = DataAugmenter(strategies=["none_solution"])
         augmented = augmenter.augment(eq_dicts, multiplier=2)
 
         # Check core required fields are present in ALL entries (original + augmented)
@@ -115,8 +105,6 @@ class TestDataAugmentation:
             else:
                 assert entry["augmentation_type"] == "original"
                 assert entry["augmentation_variant"] == "fredholm_dataset"
-
-
 
 
 class TestEdgeCaseAugmentations:
@@ -297,9 +285,9 @@ class TestEdgeCaseAugmentations:
             "b": "1",
         }
 
-        # Combine basic and folder-based edge case strategies
+        # Use multiple edge case strategies
         augmenter = DataAugmenter(
-            strategies=["substitute", "scale", "none", "approx_coef"]
+            strategies=["none_solution", "approx_coef"]
         )
         # Use higher multiplier to ensure all strategies get applied
         augmented = augmenter.augment([sample_eq], multiplier=15)

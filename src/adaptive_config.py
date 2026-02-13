@@ -42,7 +42,7 @@ class RawDatasetConfig(BaseModel):
     """Target dataset size multiplier"""
 
     augment_strategies: Optional[list[str]] = None
-    """Edge case strategies to apply. If None, uses default (substitute, scale, shift)"""
+    """Edge case strategies to apply. If None, uses default (none_solution, approx_coef, discrete_points)"""
 
     include_edge_metadata: bool = False
     """Include detailed edge case metadata in output"""

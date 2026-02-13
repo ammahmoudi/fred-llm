@@ -35,7 +35,7 @@ dataset:
     # Augmentation
     augment: false
     augment_multiplier: 1.15
-    augment_strategies: null  # null = default (substitute, scale, shift)
+    augment_strategies: null  # null = default (none_solution, approx_coef, discrete_points)
     # Available: [approx_coef, discrete_points, series, family, regularized, none_solution]
     include_edge_metadata: false
     

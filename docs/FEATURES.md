@@ -53,7 +53,7 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Series formatters (Taylor series, Neumann series) ✅ **Approximation-based solutions**
   - [x] Expression canonicalization - Simplify parameter ✅ **Available in all formatters**
   - [x] CSV export support - Export formatted equations to CSV ✅ **Matches original dataset format**
-- [x] Data augmentation framework - All 4 strategies implemented ✅ **Tested: substitute, scale, shift, compose (5.3x expansion)**
+- [x] Data augmentation framework - 14 edge case strategies ✅ **Tested: all 14 edge case strategies**
 - [x] **Edge case augmentations (14 strategies, 42 variants, 15% target ratio)** ✅ **Tested on 5K sample: 750 augmented (15.0%)**
   - [x] No-solution cases - 4 strategies: eigenvalue, range_violation, divergent_kernel, disconnected_support ✅ **Tested: 12 variants total**
   - [x] Numerical-only cases - 8 strategies: complex_kernels, weakly_singular, boundary_layer, oscillatory, mixed_type, compact_support, near_resonance, neumann_series ✅ **Tested: 24 variants total**
@@ -323,7 +323,7 @@ This document tracks all features - implemented and planned. Check off items as 
 - [x] Math-Verify adapter tests - Parsing, extraction, comparison, integration ✅ **29 tests**
 - [x] Formatter tests - 19 tests for all formatters including series formatters ✅ **All passing**
 - [x] Augmentation tests - 21 tests for all augmentation strategies ✅ **All passing**
-  - [x] 6 basic augmentation tests (substitute, scale, shift, compose, combined, structure)
+  - [x] 14 edge case augmentation strategies tested
   - [x] **Unified 18-field schema** - ALL augmentations output identical keys
   - [x] 14 edge case strategies organized in 6 solution-type folders
   - [x] 8 advanced edge case tests (weakly_singular through compact_support)

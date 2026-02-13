@@ -28,6 +28,7 @@ def parse_llm_output(
     response: str,
     extract_solution: bool = True,
     validate: bool = True,
+    use_math_verify: bool = True,
 ) -> dict[str, Any]:
     """
     Parse LLM response and extract mathematical solution with metadata.
@@ -36,6 +37,7 @@ def parse_llm_output(
         response: Raw LLM response text.
         extract_solution: Whether to extract the solution expression.
         validate: Whether to validate the parsed expression.
+        use_math_verify: Whether to use Math-Verify when available.
 
     Returns:
         Dictionary with parsed components:
@@ -83,7 +85,7 @@ def parse_llm_output(
         from src.llm.math_verify_adapter import HAS_MATH_VERIFY
 
         # Primary path: Math-Verify multi-strategy extraction (no manual regex)
-        if HAS_MATH_VERIFY and validate:
+        if use_math_verify and HAS_MATH_VERIFY and validate:
             from src.llm.math_verify_adapter import extract_solution_from_response
 
             mv_result = extract_solution_from_response(response)
@@ -95,12 +97,14 @@ def parse_llm_output(
 
         # Fallback: legacy regex pipeline (only when MV unavailable or failed)
         if result["solution_sympy"] is None:
-            solution_str = _extract_solution(response)
+            solution_str = _extract_solution(response, use_math_verify=use_math_verify)
             result["solution_str"] = solution_str
 
             if solution_str and validate:
                 try:
-                    parsed_sympy = _parse_to_sympy(solution_str)
+                    parsed_sympy = _parse_to_sympy(
+                        solution_str, use_math_verify=use_math_verify
+                    )
                     if parsed_sympy is not None:
                         result["solution_sympy"] = parsed_sympy
                         result["confidence"] = 0.7
@@ -132,7 +136,9 @@ def parse_llm_output(
     return result
 
 
-def _extract_solution(response: str) -> Optional[str]:
+def _extract_solution(
+    response: str, use_math_verify: bool = True
+) -> Optional[str]:
     """
     Extract the solution expression from LLM response.
 
@@ -170,7 +176,7 @@ def _extract_solution(response: str) -> Optional[str]:
 
     # Fallback: try to find any mathematical expression
     logger.debug("No explicit solution pattern found, using fallback extraction")
-    return _fallback_extract(response)
+    return _fallback_extract(response, use_math_verify=use_math_verify)
 
 
 def _clean_expression(expr: str) -> str:
@@ -400,7 +406,9 @@ def _latex_to_infix(expr: str) -> str:
     return expr.strip()
 
 
-def _fallback_extract(response: str) -> Optional[str]:
+def _fallback_extract(
+    response: str, use_math_verify: bool = True
+) -> Optional[str]:
     """Fallback extraction when no clear solution pattern is found."""
     lines = response.strip().split("\n")
 
@@ -441,7 +449,7 @@ def _fallback_extract(response: str) -> Optional[str]:
     # Third pass: try Math-Verify extraction on the full response
     from src.llm.math_verify_adapter import HAS_MATH_VERIFY
 
-    if HAS_MATH_VERIFY:
+    if use_math_verify and HAS_MATH_VERIFY:
         try:
             from math_verify import parse as mv_parse
 
@@ -458,7 +466,7 @@ def _fallback_extract(response: str) -> Optional[str]:
     return None
 
 
-def _parse_to_sympy(expr_str: str) -> sp.Expr:
+def _parse_to_sympy(expr_str: str, use_math_verify: bool = True) -> sp.Expr:
     """
     Parse a string expression to SymPy.
 
@@ -480,7 +488,7 @@ def _parse_to_sympy(expr_str: str) -> sp.Expr:
     try:
         from src.llm.math_verify_adapter import parse_latex_to_sympy
 
-        return parse_latex_to_sympy(expr_str)
+        return parse_latex_to_sympy(expr_str, use_math_verify=use_math_verify)
     except Exception as e:
         # Log the error but don't raise - let pipeline continue
         logger.debug(f"Failed to parse '{expr_str[:50]}...': {e}")

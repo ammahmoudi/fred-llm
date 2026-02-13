@@ -14,6 +14,7 @@ def symbolic_compare(
     solution: sp.Expr,
     ground_truth: sp.Expr,
     tolerance: float = 1e-10,
+    use_math_verify: bool = True,
 ) -> dict[str, Any]:
     """
     Compare two symbolic expressions for equivalence.
@@ -34,11 +35,12 @@ def symbolic_compare(
 
     try:
         # Math-Verify fast-path: quick boolean check before heavy simplification
-        mv_result = math_verify_compare(solution, ground_truth)
-        if mv_result is True:
-            result["equivalent"] = True
-            result["simplified_match"] = True
-            return result
+        if use_math_verify:
+            mv_result = math_verify_compare(solution, ground_truth)
+            if mv_result is True:
+                result["equivalent"] = True
+                result["simplified_match"] = True
+                return result
 
         # Evaluate any unevaluated Integral objects first
         if solution.has(sp.Integral):

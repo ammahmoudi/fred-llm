@@ -53,7 +53,7 @@ FREDHOLM_LOCAL_DICT: dict[str, sp.Basic] = {
 TRANSFORMATIONS = standard_transformations + (implicit_multiplication,)
 
 
-def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
+def parse_latex_to_sympy(expr_str: str, use_math_verify: bool = True) -> sp.Expr:
     """
     Parse a LaTeX or infix expression string to a SymPy expression.
 
@@ -75,7 +75,7 @@ def parse_latex_to_sympy(expr_str: str) -> sp.Expr:
         _preprocess_for_sympy,
     )
 
-    if HAS_MATH_VERIFY:
+    if use_math_verify and HAS_MATH_VERIFY:
         mv_expr = _try_math_verify_parse(expr_str)
         if mv_expr is not None:
             return mv_expr

@@ -5,6 +5,7 @@ based on the configuration and available files.
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -111,10 +112,11 @@ class AdaptivePipeline:
             predictions = self._run_inference()
             results["predictions"] = predictions
 
-            # Step 4: Evaluate results
-            console.print(Panel("[bold]Step 4: Evaluation[/bold]", style="blue"))
-            metrics = self._evaluate(predictions)
-            results["metrics"] = metrics
+            # Step 4: Evaluate results (if evaluation configured)
+            if self.config.evaluation:
+                console.print(Panel("[bold]Step 4: Evaluation[/bold]", style="blue"))
+                metrics = self._evaluate(predictions)
+                results["metrics"] = metrics
         else:
             if not self.config.model:
                 console.print(
@@ -554,6 +556,19 @@ class AdaptivePipeline:
 
         return output_dir
 
+    def _resolve_use_math_verify(self) -> bool:
+        """Determine whether to use Math-Verify in parsing/evaluation."""
+        eval_config = self.config.evaluation
+        if eval_config is None:
+            if sys.platform == "win32":
+                logger.info(
+                    "Math-Verify disabled by default on Windows. "
+                    "Set evaluation.use_math_verify=true to force it."
+                )
+                return False
+            return True
+        return eval_config.use_math_verify
+
     def _run_inference(self) -> list[dict[str, Any]]:
         """
         Run LLM inference on prompts.
@@ -658,10 +673,14 @@ class AdaptivePipeline:
         predictions: list[dict[str, Any]] = []
         parse_failures = 0
 
+        use_math_verify = self._resolve_use_math_verify()
+
         with open(predictions_file, "w") as f:
             for i, (prompt_data, response) in enumerate(zip(all_prompts, responses)):
                 try:
-                    parsed = parse_llm_output(response)
+                    parsed = parse_llm_output(
+                        response, use_math_verify=use_math_verify
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to parse response {i}: {e}")
                     parsed = {
@@ -745,10 +764,13 @@ class AdaptivePipeline:
             return {"total": 0, "error": "No predictions"}
 
         # Initialize evaluator
+        use_math_verify = self._resolve_use_math_verify()
+
         evaluator = SolutionEvaluator(
             symbolic_tolerance=eval_config.symbolic_tolerance if eval_config else 1e-10,
             numeric_tolerance=eval_config.numeric_tolerance if eval_config else 1e-6,
             n_test_points=eval_config.num_test_points if eval_config else 100,
+            use_math_verify=use_math_verify,
         )
 
         # Track edge case metrics
@@ -841,8 +863,20 @@ class AdaptivePipeline:
                 continue
 
             try:
-                gt_expr = parse_latex_to_sympy(ground_truth_str)
-                pred_expr = parse_latex_to_sympy(solution_str)
+                gt_expr = parse_latex_to_sympy(
+                    ground_truth_str, use_math_verify=use_math_verify
+                )
+                pred_expr = parse_latex_to_sympy(
+                    solution_str, use_math_verify=use_math_verify
+                )
+
+                if gt_expr is None or pred_expr is None:
+                    pred["evaluation"] = {
+                        "error": "parse_failed",
+                        "correct": False,
+                    }
+                    evaluated_predictions.append(pred)
+                    continue
 
                 # Branch: "family" type - use family comparison
                 if gt_solution_type == "family":
@@ -1054,12 +1088,15 @@ class AdaptivePipeline:
 
         from src.evaluation import evaluate_solutions
 
+        use_math_verify = self._resolve_use_math_verify()
+
         metrics = evaluate_solutions(
             predictions_path,
             mode=eval_config_obj.mode,
             symbolic_tolerance=eval_config_obj.symbolic_tolerance,
             numeric_tolerance=eval_config_obj.numeric_tolerance,
             n_test_points=eval_config_obj.num_test_points,
+            use_math_verify=use_math_verify,
             type_tolerances=eval_config_obj.type_tolerances,
             include_points=False,
         )

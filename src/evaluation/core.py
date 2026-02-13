@@ -42,6 +42,7 @@ def evaluate_solutions(
     symbolic_tolerance: float = 1e-10,
     numeric_tolerance: float = 1e-6,
     n_test_points: int = 100,
+    use_math_verify: bool = True,
     type_tolerances: Optional[dict[str, float]] = None,
     include_points: bool = False,
     **kwargs: Any,
@@ -55,6 +56,7 @@ def evaluate_solutions(
         symbolic_tolerance: Tolerance for symbolic comparison.
         numeric_tolerance: Tolerance for numeric comparison.
         n_test_points: Number of test points for numeric evaluation.
+        use_math_verify: Whether to use Math-Verify when available.
         type_tolerances: Per-solution-type numeric tolerance overrides.
         **kwargs: Additional evaluation parameters.
 
@@ -93,6 +95,7 @@ def evaluate_solutions(
         symbolic_tolerance=symbolic_tolerance,
         numeric_tolerance=numeric_tolerance,
         n_test_points=n_test_points,
+        use_math_verify=use_math_verify,
     )
 
     # Track edge case metrics
@@ -160,8 +163,12 @@ def evaluate_solutions(
             continue
 
         try:
-            gt_expr = parse_latex_to_sympy(ground_truth_str)
-            pred_expr = parse_latex_to_sympy(solution_str)
+            gt_expr = parse_latex_to_sympy(
+                ground_truth_str, use_math_verify=use_math_verify
+            )
+            pred_expr = parse_latex_to_sympy(
+                solution_str, use_math_verify=use_math_verify
+            )
 
             # Branch on solution type: "family" type
             if gt_solution_type == "family":
@@ -198,8 +205,12 @@ def evaluate_solutions(
             lambda_val = result.get("ground_truth_lambda")
             if kernel_str and f_str and lambda_val is not None:
                 try:
-                    kernel_expr = parse_latex_to_sympy(kernel_str)
-                    f_expr = parse_latex_to_sympy(f_str)
+                    kernel_expr = parse_latex_to_sympy(
+                        kernel_str, use_math_verify=use_math_verify
+                    )
+                    f_expr = parse_latex_to_sympy(
+                        f_str, use_math_verify=use_math_verify
+                    )
                     residual = verify_solution(
                         pred_expr,
                         kernel_expr,
@@ -297,12 +308,14 @@ class SolutionEvaluator:
         numeric_tolerance: float = 1e-6,
         n_test_points: int = 100,
         compute_bleu: bool = True,
+        use_math_verify: bool = True,
     ) -> None:
         """Initialize the evaluator."""
         self.symbolic_tolerance = symbolic_tolerance
         self.numeric_tolerance = numeric_tolerance
         self.n_test_points = n_test_points
         self.compute_bleu = compute_bleu
+        self.use_math_verify = use_math_verify
 
         self.results: list[dict[str, Any]] = []
 
@@ -334,7 +347,12 @@ class SolutionEvaluator:
             if numeric_tolerance_override is not None
             else self.numeric_tolerance
         )
-        symbolic = symbolic_compare(solution, ground_truth, self.symbolic_tolerance)
+        symbolic = symbolic_compare(
+            solution,
+            ground_truth,
+            self.symbolic_tolerance,
+            use_math_verify=self.use_math_verify,
+        )
         if evaluation_points is not None:
             numeric = numeric_compare(
                 solution,
@@ -464,7 +482,12 @@ class SolutionEvaluator:
         sol_concrete = _substitute_family_constants(solution, value=1.0)
 
         # Also try standard comparison as fallback
-        symbolic = symbolic_compare(sol_concrete, gt_concrete, self.symbolic_tolerance)
+        symbolic = symbolic_compare(
+            sol_concrete,
+            gt_concrete,
+            self.symbolic_tolerance,
+            use_math_verify=self.use_math_verify,
+        )
         numeric = _family_numeric_compare_samples(
             solution,
             ground_truth,

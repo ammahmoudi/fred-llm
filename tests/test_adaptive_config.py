@@ -303,25 +303,24 @@ class TestConfigDefaults:
     """Test default values."""
 
     def test_model_defaults(self):
-        """Model config has sensible defaults."""
+        """Model config is optional - None when not specified."""
         config = AdaptivePipelineConfig(
             dataset=AdaptiveDatasetConfig(
                 raw=RawDatasetConfig(path=Path("data/raw/dataset.csv"))
             )
         )
-        assert config.model.provider == "openai"
-        assert config.model.name == "gpt-4o-mini"
-        assert config.model.temperature == 0.1
+        # Model is now optional - should be None if not explicitly set
+        assert config.model is None
 
     def test_evaluation_defaults(self):
-        """Evaluation config has sensible defaults."""
+        """Evaluation config is optional - None when not specified."""
         config = AdaptivePipelineConfig(
             dataset=AdaptiveDatasetConfig(
                 raw=RawDatasetConfig(path=Path("data/raw/dataset.csv"))
             )
         )
-        assert config.evaluation.mode == "both"
-        assert config.evaluation.num_test_points == 100
+        # Evaluation is now optional - should be None if not explicitly set
+        assert config.evaluation is None
 
     def test_output_defaults(self):
         """Output config has sensible defaults."""

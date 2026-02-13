@@ -172,31 +172,33 @@ def _extract_solution(response: str) -> Optional[str]:
 
 def _clean_expression(expr: str) -> str:
     """Clean up a mathematical expression string."""
-    # Remove trailing punctuation
-    expr = re.sub(r"[,;.]+$", "", expr.strip())
-
-    # Remove LaTeX delimiters
-    expr = re.sub(r"\$+", "", expr)
-    expr = re.sub(r"^\s*\\\(\s*|\s*\\\)\s*$", "", expr)  # \( and \)
-    expr = re.sub(r"\\left|\\right", "", expr)  # \left and \right
+    # Remove LaTeX delimiters first (before punctuation stripping)
+    expr = re.sub(r"\$+", "", expr.strip())
+    expr = re.sub(r"^\s*\\\(\s*", "", expr)  # leading \(
 
     # Remove u(x) = prefix if present (we only want the RHS)
     expr = re.sub(r"^\s*u\s*\(\s*x\s*\)\s*=\s*", "", expr)
 
     # Remove trailing explanatory text after the expression
+    # Handle combined \), where / \). / \), patterns in one pass
+    expr = re.sub(r"\s*\\\)\s*[,;.]?\s*(?:where|with|for|if|when)\b.*$", "", expr, flags=re.IGNORECASE)
+    expr = re.sub(r"\s*\\\)\s*[,;.]*\s*$", "", expr)  # remaining \) at end
     # Common patterns: "where C = ...", "(where ...)", "\) where ...", etc.
-    expr = re.sub(
-        r"\s*\\\)\s*(?:where|with|for|if|when).*$", "", expr, flags=re.IGNORECASE
-    )
     expr = re.sub(
         r"\s*\((?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE
     )
+    expr = re.sub(
+        r"\s*[,;]\s+(?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE
+    )
     expr = re.sub(r"\s+(?:where|with|for|if|when)\s+.*$", "", expr, flags=re.IGNORECASE)
 
-    # Remove any remaining \) at end of expression
-    expr = re.sub(r"\s*\\\)\s*\.?\s*$", "", expr)
+    # Remove trailing punctuation
+    expr = re.sub(r"[,;.]+$", "", expr.strip())
+    expr = re.sub(r"\\left|\\right", "", expr)  # \left and \right
 
     # Handle "No solution" responses - not a parseable expression
+    if re.match(r"^\s*\\?\)?\s*no\s+solution\b", expr, re.IGNORECASE):
+        return ""
     if re.match(r"^\s*no\s+solution\b", expr, re.IGNORECASE):
         return ""
 
@@ -242,7 +244,7 @@ def _latex_to_infix(expr: str) -> str:
     # Remove display math markers
     expr = re.sub(r"\\begin\{[^}]+\}|\\end\{[^}]+\}", "", expr)
     expr = re.sub(r"\\\[|\\\]", "", expr)  # \[ and \]
-    expr = re.sub(r"\\,", " ", expr)  # \, (thin space in LaTeX)
+    expr = re.sub(r"\\[,;:!]", " ", expr)  # \, \; \: \! (LaTeX spaces)
 
     # Handle common functions FIRST (before other replacements)
     # Order matters: longer names first (cosh before cos)
@@ -270,6 +272,13 @@ def _latex_to_infix(expr: str) -> str:
     ]
 
     for latex_cmd, sympy_func in latex_functions:
+        # Handle \func^{n}{arg} or \func^{n}\!(arg) -> func(arg)**n
+        # LaTeX convention: \sin^{2}{x} means sin(x)^2
+        expr = re.sub(
+            latex_cmd + r"\^[\{]?(\d+)[\}]?\s*\\?[!;,]?\s*(?:\\(?:left|bigl?)\s*)?[\{(]([^})]+)[\})](?:\s*\\(?:right|bigr?))?\s*",
+            sympy_func + r"(\2)**\1",
+            expr,
+        )
         # Handle \func{arg} -> func(arg)
         expr = re.sub(latex_cmd + r"\s*\{([^}]+)\}", sympy_func + r"(\1)", expr)
         # Handle \func(arg) -> func(arg) (already has parens)

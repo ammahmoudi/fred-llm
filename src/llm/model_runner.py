@@ -257,6 +257,7 @@ class OpenRouterModelRunner(BaseModelRunner):
         timeout: int = 120,
         app_name: str = "fred-llm",
         site_url: str | None = None,
+        reasoning: dict | None = None,
     ) -> None:
         """
         Initialize OpenRouter model runner.
@@ -269,6 +270,8 @@ class OpenRouterModelRunner(BaseModelRunner):
             timeout: Request timeout in seconds.
             app_name: App name for OpenRouter analytics.
             site_url: Site URL for OpenRouter rankings.
+            reasoning: Reasoning config dict (e.g. {"effort": "low"}) for
+                reasoning models like o1, o3, GPT-5.x.
         """
         super().__init__()
         self.model_name = model_name
@@ -278,6 +281,7 @@ class OpenRouterModelRunner(BaseModelRunner):
         self.timeout = timeout
         self.app_name = app_name
         self.site_url = site_url
+        self.reasoning = reasoning
 
         self._client = None
 
@@ -319,12 +323,28 @@ class OpenRouterModelRunner(BaseModelRunner):
         logger.debug(f"Generating response with OpenRouter model: {self.model_name}")
 
         client = self._get_client()
-        response = client.chat.completions.create(
-            model=self.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=kwargs.get("temperature", self.temperature),
-            max_tokens=kwargs.get("max_tokens", self.max_tokens),
-        )
+
+        create_kwargs: dict[str, Any] = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+
+        # Reasoning models use max_completion_tokens + reasoning config
+        reasoning = kwargs.get("reasoning", self.reasoning)
+        if reasoning:
+            create_kwargs["max_completion_tokens"] = kwargs.get(
+                "max_tokens", self.max_tokens
+            )
+            create_kwargs["extra_body"] = {"reasoning": reasoning}
+        else:
+            create_kwargs["temperature"] = kwargs.get(
+                "temperature", self.temperature
+            )
+            create_kwargs["max_tokens"] = kwargs.get(
+                "max_tokens", self.max_tokens
+            )
+
+        response = client.chat.completions.create(**create_kwargs)
 
         # Track cost if tracker is available (OpenRouter provides cost in response)
         if self.cost_tracker:

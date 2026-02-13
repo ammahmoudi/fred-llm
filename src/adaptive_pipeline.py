@@ -571,6 +571,9 @@ class AdaptivePipeline:
         # Only add base_url for OpenAI (not OpenRouter, which uses class constant)
         if model_config.provider == "openai" and model_config.base_url:
             runner_kwargs["base_url"] = model_config.base_url
+        # Pass reasoning config for reasoning models (o1, o3, GPT-5.x)
+        if model_config.reasoning:
+            runner_kwargs["reasoning"] = model_config.reasoning.model_dump()
 
         runner = ModelRunner(provider=model_config.provider, **runner_kwargs)
 
@@ -646,7 +649,7 @@ class AdaptivePipeline:
                     "api_error": response == "",
                     "solution_str": parsed.get("solution_str"),
                     "solution_sympy": str(parsed.get("solution_sympy"))
-                    if parsed.get("solution_sympy")
+                    if parsed.get("solution_sympy") is not None
                     else None,
                     "has_solution": parsed.get("has_solution"),
                     "solution_type": parsed.get("solution_type"),
@@ -710,6 +713,11 @@ class AdaptivePipeline:
         api_error_count = 0
         errors: list[str] = []
 
+        # None-type detection: TP/FP/FN for precision/recall/F1
+        none_tp = 0
+        none_fp = 0
+        none_fn = 0
+
         # Read per-type tolerances from config
         type_tolerances = {}
         if eval_config and hasattr(eval_config, "type_tolerances"):
@@ -748,6 +756,15 @@ class AdaptivePipeline:
                 else:
                     key = f"{gt_solution_type}_predicted_as_{pred_solution_type}"
                     confusion_matrix[key] = confusion_matrix.get(key, 0) + 1
+
+            # None-type detection tracking
+            if gt_solution_type == "none":
+                if pred_has_solution is False:
+                    none_tp += 1
+                else:
+                    none_fn += 1
+            elif gt_solution_type is not None and pred_has_solution is False:
+                none_fp += 1
 
             # Extract domain from metadata
             domain = tuple(pred.get("ground_truth_domain") or [0, 1])
@@ -805,6 +822,8 @@ class AdaptivePipeline:
                     numeric_tolerance_override=tol_override,
                     evaluation_points=eval_points,
                     include_points=True,
+                    pred_str=solution_str,
+                    gt_str=ground_truth_str,
                 )
                 pred["evaluation"] = eval_result
                 evaluated_predictions.append(pred)
@@ -843,6 +862,23 @@ class AdaptivePipeline:
         if confusion_matrix:
             metrics["confusion_matrix"] = confusion_matrix
 
+        # None-type detection precision / recall / F1
+        if none_tp + none_fp + none_fn > 0:
+            none_prec = none_tp / (none_tp + none_fp) if (none_tp + none_fp) > 0 else 0.0
+            none_rec = none_tp / (none_tp + none_fn) if (none_tp + none_fn) > 0 else 0.0
+            none_f1 = (
+                2 * none_prec * none_rec / (none_prec + none_rec)
+                if (none_prec + none_rec) > 0 else 0.0
+            )
+            metrics["none_detection"] = {
+                "precision": none_prec,
+                "recall": none_rec,
+                "f1": none_f1,
+                "tp": none_tp,
+                "fp": none_fp,
+                "fn": none_fn,
+            }
+
         # Display results
         console.print(f"\n[bold]Evaluation Results:[/bold]")
         console.print(f"  Total predictions: {len(predictions)}")
@@ -854,6 +890,28 @@ class AdaptivePipeline:
             )
             console.print(
                 f"  Numeric accuracy: {summary.get('numeric_accuracy', 0):.2%}"
+            )
+        if "mean_operator_f1" in summary:
+            console.print(
+                f"  Operator F1: {summary['mean_operator_f1']:.2%}"
+            )
+            console.print(
+                f"  Operator Precision: {summary['mean_operator_precision']:.2%}"
+            )
+            console.print(
+                f"  Operator Recall: {summary['mean_operator_recall']:.2%}"
+            )
+        if "mean_rel_l2" in summary:
+            console.print(
+                f"  Relative L2: {summary['mean_rel_l2']:.6f}"
+            )
+        if "mean_bleu" in summary:
+            console.print(f"  BLEU: {summary['mean_bleu']:.4f}")
+        if "none_detection" in metrics:
+            nd = metrics["none_detection"]
+            console.print(
+                f"  None detection P/R/F1: "
+                f"{nd['precision']:.2%} / {nd['recall']:.2%} / {nd['f1']:.2%}"
             )
         if has_solution_total > 0:
             console.print(

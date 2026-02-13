@@ -221,6 +221,13 @@ class AdaptiveDatasetConfig(BaseModel):
         return self
 
 
+class ReasoningConfig(BaseModel):
+    """Configuration for reasoning models (e.g. o1, o3, GPT-5.x)."""
+
+    effort: Literal["low", "medium", "high"] = "medium"
+    """Reasoning effort level. Lower = fewer reasoning tokens, faster/cheaper."""
+
+
 class ModelConfig(BaseModel):
     """LLM model configuration."""
 
@@ -233,6 +240,8 @@ class ModelConfig(BaseModel):
     temperature: float = 0.1
     max_tokens: int = 2048
     timeout: int = 60
+    reasoning: Optional[ReasoningConfig] = None
+    """Reasoning model config. Set this for models like o1, o3, GPT-5.x."""
 
 
 class EvaluationConfig(BaseModel):

@@ -4,11 +4,13 @@ Evaluation utilities for Fredholm equation solutions.
 Provides both symbolic and numeric evaluation metrics.
 """
 
+import re
 from pathlib import Path
 from typing import Any, Optional
 
 import numpy as np
 import sympy as sp
+from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from scipy import integrate
 
 from src.llm.math_verify_adapter import (
@@ -21,6 +23,121 @@ from src.llm.postprocess import ParseError
 from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+# Operators we track, matching article Appendix C
+_TRACKED_OPERATORS: set[type] = {
+    sp.sin, sp.cos, sp.tan, sp.exp, sp.log, sp.sqrt,
+    sp.sinh, sp.cosh, sp.tanh, sp.Abs,
+    sp.Add, sp.Mul, sp.Pow,
+    sp.Integral,
+}
+
+_OPERATOR_NAMES: dict[type, str] = {
+    sp.sin: "sin", sp.cos: "cos", sp.tan: "tan",
+    sp.exp: "exp", sp.log: "log", sp.sqrt: "sqrt",
+    sp.sinh: "sinh", sp.cosh: "cosh", sp.tanh: "tanh",
+    sp.Abs: "Abs",
+    sp.Add: "Add", sp.Mul: "Mul", sp.Pow: "Pow",
+    sp.Integral: "Integral",
+}
+
+
+def extract_operators(expr: sp.Expr) -> set[str]:
+    """
+    Recursively walk a SymPy expression tree and return the set of
+    operator/function names found.
+
+    Args:
+        expr: A SymPy expression.
+
+    Returns:
+        Set of operator name strings (e.g. {"sin", "Add", "Pow"}).
+    """
+    ops: set[str] = set()
+
+    def _walk(e: sp.Basic) -> None:
+        func = type(e)
+        if func in _OPERATOR_NAMES:
+            ops.add(_OPERATOR_NAMES[func])
+        for arg in e.args:
+            _walk(arg)
+
+    _walk(expr)
+    return ops
+
+
+def operator_f1(
+    pred_expr: sp.Expr, gt_expr: sp.Expr
+) -> dict[str, Any]:
+    """
+    Compute Operator F1 (precision, recall, F1) between predicted and
+    ground-truth expressions based on the set of operators each contains.
+
+    Args:
+        pred_expr: Predicted SymPy expression.
+        gt_expr: Ground-truth SymPy expression.
+
+    Returns:
+        Dict with precision, recall, f1, pred_ops, gt_ops.
+    """
+    pred_ops = extract_operators(pred_expr)
+    gt_ops = extract_operators(gt_expr)
+
+    if not pred_ops and not gt_ops:
+        return {
+            "precision": 1.0, "recall": 1.0, "f1": 1.0,
+            "pred_ops": [], "gt_ops": [],
+        }
+
+    tp = len(pred_ops & gt_ops)
+    precision = tp / len(pred_ops) if pred_ops else 0.0
+    recall = tp / len(gt_ops) if gt_ops else 0.0
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if (precision + recall) > 0
+        else 0.0
+    )
+
+    return {
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "pred_ops": sorted(pred_ops),
+        "gt_ops": sorted(gt_ops),
+    }
+
+
+def _tokenize_math(text: str) -> list[str]:
+    """Tokenize a math string by splitting on whitespace and operators."""
+    # Insert spaces around mathematical operators so they become tokens
+    text = re.sub(r"([+\-*/^()=,])", r" \1 ", text)
+    return text.split()
+
+
+def bleu_score(pred_str: str, gt_str: str) -> float:
+    """
+    Compute BLEU score between predicted and ground-truth solution strings.
+
+    Uses nltk sentence_bleu with smoothing to avoid zero scores on short
+    sequences.
+
+    Args:
+        pred_str: Predicted solution string.
+        gt_str: Ground-truth solution string.
+
+    Returns:
+        BLEU score in [0.0, 1.0].
+    """
+    ref_tokens = _tokenize_math(gt_str)
+    hyp_tokens = _tokenize_math(pred_str)
+
+    if not ref_tokens or not hyp_tokens:
+        return 0.0
+
+    smoothing = SmoothingFunction().method1
+    return float(
+        sentence_bleu([ref_tokens], hyp_tokens, smoothing_function=smoothing)
+    )
 
 
 def count_series_terms(expr: sp.Expr) -> int:
@@ -299,6 +416,14 @@ def evaluate_solutions(
     evaluated_count = 0
     errors: list[str] = []
 
+    # None-type detection: TP/FP/FN for precision/recall/F1
+    none_tp = 0  # GT=none AND pred says no solution
+    none_fp = 0  # GT!=none AND pred says no solution
+    none_fn = 0  # GT=none AND pred does NOT say no solution
+
+    # Residual verification results (when equation components available)
+    residual_results: list[dict[str, Any]] = []
+
     for i, result in enumerate(results):
         # Evaluate edge case metrics
         gt_has_solution = result.get("ground_truth_has_solution")
@@ -317,6 +442,15 @@ def evaluate_solutions(
             else:
                 key = f"{gt_solution_type}_predicted_as_{pred_solution_type}"
                 confusion_matrix[key] = confusion_matrix.get(key, 0) + 1
+
+        # None-type detection tracking
+        if gt_solution_type == "none":
+            if pred_has_solution is False:
+                none_tp += 1
+            else:
+                none_fn += 1
+        elif gt_solution_type is not None and pred_has_solution is False:
+            none_fp += 1
 
         # Extract domain from metadata
         domain = tuple(result.get("ground_truth_domain") or [0, 1])
@@ -365,8 +499,28 @@ def evaluate_solutions(
                 numeric_tolerance_override=tol_override,
                 evaluation_points=eval_points,
                 include_points=include_points,
+                pred_str=solution_str,
+                gt_str=ground_truth_str,
             )
             evaluated_count += 1
+
+            # Residual verification (when equation components available)
+            kernel_str = result.get("ground_truth_kernel")
+            f_str = result.get("ground_truth_f")
+            lambda_val = result.get("ground_truth_lambda")
+            if kernel_str and f_str and lambda_val is not None:
+                try:
+                    kernel_expr = parse_latex_to_sympy(kernel_str)
+                    f_expr = parse_latex_to_sympy(f_str)
+                    residual = verify_solution(
+                        pred_expr, kernel_expr, f_expr,
+                        float(lambda_val), domain=domain,
+                    )
+                    residual_results.append(residual)
+                except Exception as e_res:
+                    logger.debug(
+                        f"Residual verification failed for result {i}: {e_res}"
+                    )
 
         except Exception as e:
             errors.append(f"Result {result.get('equation_id', i)}: {str(e)}")
@@ -395,9 +549,40 @@ def evaluate_solutions(
         metrics["solution_type_accuracy"] = solution_type_correct / solution_type_total
         metrics["solution_type_total"] = solution_type_total
 
-    logger.info(
-        f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}"
-    )
+    # None-type detection precision / recall / F1
+    if none_tp + none_fp + none_fn > 0:
+        none_prec = none_tp / (none_tp + none_fp) if (none_tp + none_fp) > 0 else 0.0
+        none_rec = none_tp / (none_tp + none_fn) if (none_tp + none_fn) > 0 else 0.0
+        none_f1 = (
+            2 * none_prec * none_rec / (none_prec + none_rec)
+            if (none_prec + none_rec) > 0 else 0.0
+        )
+        metrics["none_detection"] = {
+            "precision": none_prec,
+            "recall": none_rec,
+            "f1": none_f1,
+            "tp": none_tp,
+            "fp": none_fp,
+            "fn": none_fn,
+        }
+
+    # Aggregate residual verification
+    residuals_valid = [r for r in residual_results if "error" not in r]
+    if residuals_valid:
+        verified = sum(1 for r in residuals_valid if r.get("verified", False))
+        metrics["residual_verification"] = {
+            "verified_count": verified,
+            "total": len(residuals_valid),
+            "verified_rate": verified / len(residuals_valid),
+            "mean_residual_max": float(np.mean(
+                [r["residual_max"] for r in residuals_valid]
+            )),
+            "mean_residual_mean": float(np.mean(
+                [r["residual_mean"] for r in residuals_valid]
+            )),
+        }
+
+    logger.info(f"Evaluation complete: {evaluated_count}/{len(results)} evaluated, accuracy: {summary.get('accuracy', 0):.2%}")
 
     return metrics
 
@@ -496,6 +681,7 @@ def numeric_compare(
         "mean_error": float("inf"),
         "mae": float("inf"),
         "rmse": float("inf"),
+        "rel_l2": float("inf"),
     }
 
     points_source: str | None = None
@@ -579,6 +765,14 @@ def numeric_compare(
         result["mean_error"] = float(np.mean(errors))
         result["mae"] = result["mean_error"]
         result["rmse"] = float(np.sqrt(np.mean(errors**2)))
+
+        # Relative L2 error: ||pred - true||_2 / ||true||_2
+        # Scale-invariant; standard in PDEBench and CodePDE.
+        gt_norm = float(np.sqrt(np.sum(y_truth**2)))
+        if gt_norm > 0:
+            result["rel_l2"] = float(np.sqrt(np.sum(errors**2))) / gt_norm
+        else:
+            result["rel_l2"] = 0.0 if result["rmse"] == 0.0 else float("inf")
 
         # Check if within tolerance
         result["match"] = result["max_error"] < tolerance
@@ -1019,11 +1213,13 @@ class SolutionEvaluator:
         symbolic_tolerance: float = 1e-10,
         numeric_tolerance: float = 1e-6,
         n_test_points: int = 100,
+        compute_bleu: bool = True,
     ) -> None:
         """Initialize the evaluator."""
         self.symbolic_tolerance = symbolic_tolerance
         self.numeric_tolerance = numeric_tolerance
         self.n_test_points = n_test_points
+        self.compute_bleu = compute_bleu
 
         self.results: list[dict[str, Any]] = []
 
@@ -1036,6 +1232,8 @@ class SolutionEvaluator:
         numeric_tolerance_override: Optional[float] = None,
         evaluation_points: Optional[dict[str, Any]] = None,
         include_points: bool = False,
+        pred_str: Optional[str] = None,
+        gt_str: Optional[str] = None,
     ) -> dict[str, Any]:
         """Evaluate a single solution.
 
@@ -1045,6 +1243,8 @@ class SolutionEvaluator:
             domain: Evaluation domain.
             solution_type: Type of solution for per-type tracking.
             numeric_tolerance_override: Override numeric tolerance for this evaluation.
+            pred_str: Raw predicted solution string (for BLEU).
+            gt_str: Raw ground truth string (for BLEU).
         """
         tol = (
             numeric_tolerance_override
@@ -1071,13 +1271,17 @@ class SolutionEvaluator:
                 include_points=include_points,
             )
 
-        result = {
+        # Operator F1
+        op_f1 = operator_f1(solution, ground_truth)
+
+        result: dict[str, Any] = {
             "symbolic": symbolic,
             "numeric": numeric,
             "symbolic_match": symbolic.get("equivalent", False),
             "numeric_match": numeric.get("match", False),
             "correct": symbolic["equivalent"] or numeric["match"],
             "solution_type": solution_type,
+            "operator_f1": op_f1,
         }
 
         if solution_type == "series":
@@ -1100,6 +1304,10 @@ class SolutionEvaluator:
                 tolerance=tol,
                 relative_tolerance=0.1,
             )
+
+        # BLEU (only when raw strings are provided)
+        if self.compute_bleu and pred_str and gt_str:
+            result["bleu"] = bleu_score(pred_str, gt_str)
 
         self.results.append(result)
         return result
@@ -1339,6 +1547,33 @@ class SolutionEvaluator:
                 "naming_convention_rate": float(np.mean(naming_rates)),
                 "param_count_match_rate": float(np.mean(count_match)),
             }
+
+        # Aggregate Operator F1
+        op_f1_results = [r["operator_f1"] for r in self.results if "operator_f1" in r]
+        if op_f1_results:
+            summary["mean_operator_precision"] = sum(
+                r["precision"] for r in op_f1_results
+            ) / len(op_f1_results)
+            summary["mean_operator_recall"] = sum(
+                r["recall"] for r in op_f1_results
+            ) / len(op_f1_results)
+            summary["mean_operator_f1"] = sum(
+                r["f1"] for r in op_f1_results
+            ) / len(op_f1_results)
+
+        # Aggregate relative L2 error
+        rel_l2_values = [
+            r["numeric"]["rel_l2"] for r in self.results
+            if r.get("numeric", {}).get("rel_l2") is not None
+            and r["numeric"]["rel_l2"] != float("inf")
+        ]
+        if rel_l2_values:
+            summary["mean_rel_l2"] = sum(rel_l2_values) / len(rel_l2_values)
+
+        # Aggregate BLEU
+        bleu_results = [r["bleu"] for r in self.results if "bleu" in r]
+        if bleu_results:
+            summary["mean_bleu"] = sum(bleu_results) / len(bleu_results)
 
         # Per-type breakdown
         per_type: dict[str, dict[str, Any]] = {}

@@ -150,7 +150,10 @@ def _extract_solution(
     - LaTeX inline: backslash-paren u(x) = ... backslash-paren
     """
     patterns = [
-        # Prioritize structured output format (SOLUTION: u(x) = ...)
+        # Highest priority: FINAL_ANSWER (clean, self-contained expression)
+        r"^FINAL_ANSWER\s*:\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
+        r"^FINAL_ANSWER\s*:\s*(.+?)(?:\n|$)",
+        # Then structured output format (SOLUTION: u(x) = ...)
         r"^SOLUTION\s*:\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         r"^SOLUTION\s*:\s*(.+?)(?:\n|$)",
         # LaTeX delimited patterns - \( ... \) or $ ... $
@@ -209,6 +212,10 @@ def _clean_expression(expr: str) -> str:
     # Remove trailing punctuation
     expr = re.sub(r"[,;.]+$", "", expr.strip())
     expr = re.sub(r"\\left|\\right", "", expr)  # \left and \right
+    # Strip sizing/formatting commands: \Bigl, \Bigr, \bigl, \bigr, \Big, \big
+    expr = re.sub(r"\\(?:Bigl?|Bigr?|bigl?|bigr?)\b", "", expr)
+    # Strip display/spacing commands
+    expr = re.sub(r"\\(?:displaystyle|qquad|quad)\b", "", expr)
 
     # Handle "No solution" responses - not a parseable expression
     if re.match(r"^\s*\\?\)?\s*no\s+solution\b", expr, re.IGNORECASE):
@@ -259,6 +266,8 @@ def _latex_to_infix(expr: str) -> str:
     expr = re.sub(r"\\begin\{[^}]+\}|\\end\{[^}]+\}", "", expr)
     expr = re.sub(r"\\\[|\\\]", "", expr)  # \[ and \]
     expr = re.sub(r"\\[,;:!]", " ", expr)  # \, \; \: \! (LaTeX spaces)
+    # Remove sizing/formatting commands
+    expr = re.sub(r"\\(?:Bigl?|Bigr?|bigl?|bigr?|displaystyle|qquad|quad)\b", "", expr)
 
     # Handle common functions FIRST (before other replacements)
     # Order matters: longer names first (cosh before cos)

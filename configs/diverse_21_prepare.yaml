@@ -1,0 +1,38 @@
+# Data Preparation: 3 samples per solution type = 21 diverse equations
+# Builds fresh from raw data with augmentation to cover all 7 types.
+
+dataset:
+  raw:
+    path: data/raw/Fredholm_Dataset.csv
+    output_dir: data/processed/diverse_21
+
+    stratified_sample: true
+    samples_per_type: 3
+
+    augment: true
+    augment_multiplier: 1.15
+    augment_strategies:
+      - none_solution
+      - approx_coef
+      - discrete_points
+      - series
+      - family
+      - regularized
+    include_edge_metadata: true
+
+    validate_data: true
+    split: false
+    seed: 42
+
+    convert_formats: [latex]
+    output_format: both
+
+  prompting:
+    style: basic
+    output_dir: data/prompts/basic/diverse_21
+    edge_case_mode: none
+    include_ground_truth: true
+
+output:
+  dir: data/outputs/diverse_21_prepare
+  log_level: INFO

@@ -51,7 +51,14 @@ For SOLUTION_TYPE:
 - regularized: Ill-posed, requires regularization
 - none: No solution exists
 
-If no solution exists, write "No solution" for SOLUTION."""
+If no solution exists, write "No solution" for SOLUTION.
+
+After your reasoning, you MUST provide the final answer as a **single, self-contained mathematical expression** for u(x):
+- Do NOT leave unevaluated integrals — compute them numerically if needed.
+- Do NOT define auxiliary variables — substitute everything into one expression in x only.
+- Do NOT use LaTeX formatting commands like \\Bigl, \\Bigr, \\displaystyle, or \\qquad.
+
+FINAL_ANSWER: u(x) = [single expression in x only]"""
 
     def get_user_prompt(
         self,

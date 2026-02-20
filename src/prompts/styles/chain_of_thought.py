@@ -57,7 +57,14 @@ For SOLUTION_TYPE:
 - series: Truncated series with exactly 4 explicit terms in SOLUTION
 - family: Non-unique solutions (arbitrary c_1, c_2, ...)
 - regularized: Ill-posed, needs regularization
-- none: No solution exists"""
+- none: No solution exists
+
+After your reasoning, you MUST provide the final answer as a **single, self-contained mathematical expression** for u(x):
+- Do NOT leave unevaluated integrals — compute them numerically if needed.
+- Do NOT define auxiliary variables — substitute everything into one expression in x only.
+- Do NOT use LaTeX formatting commands like \\Bigl, \\Bigr, \\displaystyle, or \\qquad.
+
+FINAL_ANSWER: u(x) = [single expression in x only]"""
 
     def get_user_prompt(
         self,

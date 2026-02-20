@@ -29,6 +29,8 @@ from src.evaluation.types.series import count_series_terms
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.utils.logging_utils import get_logger
 
+logger = get_logger(__name__)
+
 from src.evaluation.types.family import (
     _family_numeric_compare_samples,
     _family_param_metadata,

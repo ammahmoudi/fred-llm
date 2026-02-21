@@ -150,10 +150,7 @@ def _extract_solution(
     - LaTeX inline: backslash-paren u(x) = ... backslash-paren
     """
     patterns = [
-        # Highest priority: FINAL_ANSWER (clean, self-contained expression)
-        r"^FINAL_ANSWER\s*:\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
-        r"^FINAL_ANSWER\s*:\s*(.+?)(?:\n|$)",
-        # Then structured output format (SOLUTION: u(x) = ...)
+        # Highest priority: structured output format (SOLUTION: u(x) = ...)
         r"^SOLUTION\s*:\s*u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         r"^SOLUTION\s*:\s*(.+?)(?:\n|$)",
         # LaTeX delimited patterns - \( ... \) or $ ... $
@@ -163,7 +160,7 @@ def _extract_solution(
         # Then look for other patterns
         r"[Ss]olution[:\s]+u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         r"[Tt]herefore[,:\s]+u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
-        r"[Ff]inal\s+[Aa]nswer[:\s]+(.+?)(?:\n|$)",
+        r"[Aa]nswer[:\s]+u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$)",
         # Generic u(x) = pattern (last resort, may match reasoning)
         r"u\s*\(\s*x\s*\)\s*=\s*(.+?)(?:\n|$|\.(?:\s|$))",
     ]

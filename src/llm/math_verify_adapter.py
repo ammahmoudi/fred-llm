@@ -267,11 +267,6 @@ def extract_solution_from_response(
     if not HAS_MATH_VERIFY:
         return None
 
-    # Strategy 0 – FINAL_ANSWER: line (cleanest, self-contained expression)
-    result = _mv_final_answer(response)
-    if result is not None:
-        return result
-
     # Strategy 1 – targeted u(x) = ... line (most specific)
     result = _mv_targeted_ux(response)
     if result is not None:
@@ -320,34 +315,6 @@ def _clean_mv_content(text: str) -> str:
     # Strip trailing punctuation
     text = re.sub(r"[,;.]+$", "", text.strip())
     return text.strip()
-
-
-def _mv_final_answer(
-    response: str,
-) -> Optional[tuple[sp.Expr, str]]:
-    """Find ``FINAL_ANSWER:`` line and parse the RHS with Math-Verify."""
-    if not HAS_MATH_VERIFY:
-        return None
-
-    lines = response.strip().split("\n")
-    for line in lines:
-        stripped = line.strip()
-        m = re.match(r"FINAL_ANSWER\s*[:=]\s*(.+)", stripped, re.IGNORECASE)
-        if m:
-            content = m.group(1).strip()
-            if not content:
-                continue
-            # Strip u(x) = prefix if present
-            ux_m = re.search(r"u\s*\(\s*x\s*\)\s*=\s*", content)
-            if ux_m:
-                content = content[ux_m.end() :].strip()
-            content = _clean_mv_content(content)
-            if not content:
-                continue
-            mv_expr = _try_math_verify_parse(content)
-            if mv_expr is not None:
-                return mv_expr, content
-    return None
 
 
 def _mv_targeted_ux(

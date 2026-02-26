@@ -28,5 +28,8 @@
     },
     "editor.rulers": [88],
     "jupyter.notebookFileRoot": "${workspaceFolder}",
-    "postman.settings.dotenv-detection-notification-visibility": false
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "latex-workshop.linting.chktex.args": [
+        "-l", "${workspaceFolder}/article/fred_llm_article/.chktexrc"
+    ]
 }

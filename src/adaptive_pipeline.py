@@ -227,6 +227,12 @@ class AdaptivePipeline:
                     f"   • Model: {self.config.model.name}",
                 ]
             )
+            if self.config.model.agentic:
+                plan.append(
+                    f"   • Agentic: {len(self.config.model.agentic.methods)} method "
+                    f"agents, {self.config.model.agentic.max_repair_rounds} repair "
+                    "round(s)"
+                )
             if self.config.evaluation:
                 plan.extend(
                     [
@@ -630,6 +636,24 @@ class AdaptivePipeline:
 
         runner = ModelRunner(provider=model_config.provider, **runner_kwargs)
 
+        # Wrap in the agentic multi-method workflow when configured
+        if model_config.agentic:
+            from src.llm.agentic_runner import AgenticModelRunner
+
+            runner = AgenticModelRunner(
+                base_runner=runner,
+                methods=list(model_config.agentic.methods),
+                max_repair_rounds=model_config.agentic.max_repair_rounds,
+                parallel_workers=model_config.agentic.parallel_workers,
+                equation_workers=model_config.agentic.equation_workers,
+                verify_tolerance=model_config.agentic.verify_tolerance,
+                use_math_verify=self._resolve_use_math_verify(),
+            )
+            console.print(
+                f"[cyan]> Agentic mode: {len(runner.methods)} method agents, "
+                f"max {runner.max_repair_rounds} repair round(s)[/cyan]"
+            )
+
         # Set cost tracker on the runner
         runner.set_cost_tracker(cost_tracker)
 
@@ -641,11 +665,23 @@ class AdaptivePipeline:
         )
 
         # Run batch generation
-        responses = runner.batch_generate(
-            prompt_texts,
-            rate_limit_delay=0.5 if model_config.provider == "openai" else 1.0,
-            show_progress=True,
-        )
+        batch_kwargs: dict[str, Any] = {
+            "rate_limit_delay": 0.5 if model_config.provider == "openai" else 1.0,
+            "show_progress": True,
+        }
+        if model_config.agentic:
+            # Verifier gets problem-statement fields only — never GT labels
+            batch_kwargs["equations"] = [
+                {
+                    "id": p.get("equation_id"),
+                    "kernel": (p.get("metadata") or {}).get("kernel"),
+                    "f": (p.get("metadata") or {}).get("f"),
+                    "lambda_val": (p.get("metadata") or {}).get("lambda_val"),
+                    "domain": (p.get("metadata") or {}).get("domain"),
+                }
+                for p in all_prompts
+            ]
+        responses = runner.batch_generate(prompt_texts, **batch_kwargs)
 
         # Save raw responses immediately (before any parsing that could crash)
         output_dir = Path(self.config.output.dir)
@@ -667,6 +703,14 @@ class AdaptivePipeline:
                 }
                 f.write(json.dumps(raw_entry) + "\n")
         console.print(f"[cyan]> Saved raw responses to {raw_responses_file}[/cyan]")
+
+        # Save agentic trace (all candidates, verdicts, selection reasons)
+        if model_config.agentic:
+            trace_file = output_dir / f"agentic_trace_{timestamp}.jsonl"
+            with open(trace_file, "w") as f:
+                for trace in runner.traces:
+                    f.write(json.dumps(trace) + "\n")
+            console.print(f"[cyan]> Saved agentic trace to {trace_file}[/cyan]")
 
         # Parse responses and write predictions incrementally
         predictions_file = output_dir / f"predictions_{timestamp}.jsonl"

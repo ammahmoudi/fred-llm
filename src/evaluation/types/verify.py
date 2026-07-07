@@ -19,6 +19,8 @@ def verify_solution(
     domain: tuple[float, float] = (0, 1),
     x_values: Optional[list[float]] = None,
     tolerance: float = 1e-6,
+    symbolic: bool = True,
+    n_points: int = 50,
 ) -> dict[str, Any]:
     """
     Verify that a solution satisfies the Fredholm equation.
@@ -33,6 +35,11 @@ def verify_solution(
         domain: Integration domain (a, b).
         x_values: Optional list of x sample points for residual checks.
         tolerance: Tolerance for verification.
+        symbolic: Try symbolic integration first. Disable for speed —
+            sympy.integrate has no timeout and can take minutes on hairy
+            kernels; numeric quadrature alone still detects wrong solutions.
+        n_points: Number of random sample points for the numeric check
+            (used when x_values is not given).
 
     Returns:
         Dictionary with verification results.
@@ -55,27 +62,29 @@ def verify_solution(
         # Compute the integral symbolically if possible
         integrand = kernel * u_of_t
 
-        try:
-            # Try symbolic integration
-            integral = sp.integrate(integrand, (t, a, b))
+        if symbolic:
+            try:
+                # Try symbolic integration
+                integral = sp.integrate(integrand, (t, a, b))
 
-            # Compute residual: u(x) - λ*integral - f(x)
-            residual = solution - lambda_val * integral - f
-            residual_simplified = sp.simplify(residual)
+                # Compute residual: u(x) - λ*integral - f(x)
+                residual = solution - lambda_val * integral - f
+                residual_simplified = sp.simplify(residual)
 
-            if residual_simplified == 0:
-                result["verified"] = True
-                result["residual_max"] = 0.0
-                result["residual_mean"] = 0.0
-                result["residual_mae"] = 0.0
-                result["residual_rmse"] = 0.0
-                return result
+                if residual_simplified == 0:
+                    result["verified"] = True
+                    result["residual_max"] = 0.0
+                    result["residual_mean"] = 0.0
+                    result["residual_mae"] = 0.0
+                    result["residual_rmse"] = 0.0
+                    return result
 
-        except Exception:
-            logger.debug("Symbolic integration failed, using numeric verification")
+            except Exception:
+                logger.debug(
+                    "Symbolic integration failed, using numeric verification"
+                )
 
         # Numeric verification
-        n_points = 50
         test_x = None
         if x_values:
             test_x = np.array(x_values, dtype=float)

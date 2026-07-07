@@ -86,10 +86,14 @@ class OpenAIModelRunner(BaseModelRunner):
                 raise ValueError(
                     "OpenAI API key not found. Set OPENAI_API_KEY env var or pass api_key."
                 )
+            # Custom routers (e.g. ai-router.rastar.dev) sit behind WAFs that
+            # 403 the default "OpenAI/Python" User-Agent; identify as fred-llm.
+            headers = {"User-Agent": "fred-llm/0.1.0"} if self.base_url else None
             self._client = OpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,
                 timeout=self.timeout,
+                default_headers=headers,
             )
         return self._client
 

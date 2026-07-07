@@ -228,6 +228,36 @@ class ReasoningConfig(BaseModel):
     """Reasoning effort level. Lower = fewer reasoning tokens, faster/cheaper."""
 
 
+AGENTIC_METHODS = [
+    "degenerate_kernel",
+    "adomian",
+    "neumann",
+    "fredholm_alternative",
+    "numerical",
+]
+
+
+class AgenticConfig(BaseModel):
+    """Agentic multi-method solver configuration (see docs/AGENTIC_SOLVER.md)."""
+
+    methods: list[Literal[
+        "degenerate_kernel",
+        "adomian",
+        "neumann",
+        "fredholm_alternative",
+        "numerical",
+    ]] = Field(default_factory=lambda: list(AGENTIC_METHODS))
+    """Method-specialist agents to dispatch in parallel."""
+    max_repair_rounds: int = 1
+    """Feedback-driven retry rounds when no candidate verifies. 0 disables."""
+    parallel_workers: int = 5
+    """Concurrent LLM calls per equation."""
+    equation_workers: int = 2
+    """Equations processed concurrently (total calls ≈ this × parallel_workers)."""
+    verify_tolerance: float = 1e-6
+    """Max-residual threshold for a candidate to count as verified."""
+
+
 class ModelConfig(BaseModel):
     """LLM model configuration."""
 
@@ -242,6 +272,8 @@ class ModelConfig(BaseModel):
     timeout: int = 60
     reasoning: Optional[ReasoningConfig] = None
     """Reasoning model config. Set this for models like o1, o3, GPT-5.x."""
+    agentic: Optional[AgenticConfig] = None
+    """When set, wrap the base model in the agentic multi-method workflow."""
 
 
 class EvaluationConfig(BaseModel):

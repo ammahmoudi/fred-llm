@@ -1,0 +1,31 @@
+# Diverse 21 — cx/gpt-5.4 via rastar.dev router, BASELINE single-prompt.
+# API key comes from OPENAI_API_KEY in .env
+
+dataset:
+  prompts:
+    prompts_dir: data/prompts/basic/diverse_21/basic
+    style: basic
+
+model:
+  provider: openai
+  name: cx/gpt-5.4
+  base_url: https://ai-router.rastar.dev/v1
+  temperature: 0.1
+  max_tokens: 8192
+  timeout: 300
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  type_tolerances:
+    series: 0.01
+    approx_coef: 0.001
+    regularized: 0.001
+
+output:
+  dir: outputs/diverse_21_gpt54
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

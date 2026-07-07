@@ -1,0 +1,41 @@
+# Diverse 21 — gpt-4o-mini, AGENTIC multi-method workflow.
+# Identical to diverse_21_gpt4omini.yaml except for model.agentic,
+# so results are directly comparable. See docs/AGENTIC_SOLVER.md.
+
+dataset:
+  prompts:
+    prompts_dir: data/prompts/basic/diverse_21/basic
+    style: basic
+
+model:
+  provider: openrouter
+  name: openai/gpt-4o-mini
+  temperature: 0.1
+  max_tokens: 2048
+  timeout: 120
+  agentic:
+    methods:
+      - degenerate_kernel
+      - adomian
+      - neumann
+      - fredholm_alternative
+      - numerical
+    max_repair_rounds: 1
+    parallel_workers: 5
+    verify_tolerance: 1.0e-6
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  type_tolerances:
+    series: 0.01
+    approx_coef: 0.001
+    regularized: 0.001
+
+output:
+  dir: outputs/diverse_21_gpt4omini_agentic
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

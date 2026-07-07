@@ -146,6 +146,14 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Test coverage - 10 tests for calculators, tracker, and runner integration ✅ **All passing**
 - [x] Local model support - HuggingFace placeholder ⚠️ **Scaffolded but TODO: Model loading not implemented**
 - [x] Batch generation - Process multiple equations efficiently ✅ **With rate limiting**
+- [x] **Agentic multi-method solver** ✅ **July 7, 2026 - see docs/AGENTIC_SOLVER.md**
+  - [x] 5 parallel method agents (degenerate_kernel, adomian, neumann, fredholm_alternative, numerical) ✅
+  - [x] Deterministic SymPy residual verification (reuses verify_solution, no GT leak) ✅
+  - [x] Feedback-driven repair round for failed candidates ✅
+  - [x] Deterministic selection: verified > majority vote > best effort ✅
+  - [x] Config via model.agentic section; same predictions schema → baseline-comparable ✅
+  - [x] Per-equation trace file (agentic_trace_*.jsonl) with candidates and verdicts ✅
+  - [x] Test coverage - 8 tests with mocked base runner ✅ **All passing**
 - [ ] Fine-tuning support - Train custom models (Phi, T5) ❌ **Not started**
 - [ ] Tool-assisted solving - LLM generates Python code for SymPy ❌ **Not started**
 - [ ] Iterative refinement - Multi-turn conversation for complex equations ❌ **Not started**

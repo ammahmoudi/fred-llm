@@ -109,3 +109,4 @@ uv.lock
 data/*
 article/others/*
 .mcp-debug-tools/config.json
+docs/*.pdf

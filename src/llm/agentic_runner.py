@@ -334,6 +334,14 @@ class AgenticModelRunner(BaseModelRunner):
         ):
             return None
         try:
+            # lambda_val == 0 is the first-kind sentinel (ill_posed
+            # augmentation); the second-kind residual formula does not apply,
+            # so skip verification and let majority vote decide.
+            if float(equation["lambda_val"]) == 0:
+                return None
+        except (TypeError, ValueError):
+            return None
+        try:
             return {
                 "kernel": parse_latex_to_sympy(
                     str(equation["kernel"]), use_math_verify=self.use_math_verify

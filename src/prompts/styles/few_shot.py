@@ -1,7 +1,7 @@
 """Few-shot prompt style - includes examples."""
 
 from src.prompts.base import EquationData, PromptStyle
-from src.prompts.templates import FEW_SHOT_EXAMPLES, format_equation
+from src.prompts.templates import FEW_SHOT_EXAMPLES, format_equation_line
 
 
 class FewShotPromptStyle(PromptStyle):
@@ -83,11 +83,11 @@ Solution:
         format_type: str = "infix",
     ) -> str:
         """Generate user prompt for few-shot style."""
-        f_x, kernel = format_equation(equation, format_type)
+        equation_line = format_equation_line(equation, format_type)
 
         return f"""Now solve this equation:
 
-u(x) - {equation.lambda_val} * ∫_{equation.a}^{equation.b} {kernel} * u(t) dt = {f_x}
+{equation_line}
 
 Domain: [{equation.a}, {equation.b}]
 

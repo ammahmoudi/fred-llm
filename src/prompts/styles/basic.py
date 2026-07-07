@@ -1,7 +1,7 @@
 """Basic prompt style - simple and direct."""
 
 from src.prompts.base import EquationData, PromptStyle
-from src.prompts.templates import format_equation
+from src.prompts.templates import format_equation_line
 
 
 class BasicPromptStyle(PromptStyle):
@@ -65,11 +65,11 @@ If no solution exists, write "No solution" for SOLUTION.
         format_type: str = "infix",
     ) -> str:
         """Generate user prompt for basic style."""
-        f_x, kernel = format_equation(equation, format_type)
+        equation_line = format_equation_line(equation, format_type)
 
         return f"""Solve the following Fredholm integral equation:
 
-u(x) - {equation.lambda_val} * ∫_{equation.a}^{equation.b} {kernel} * u(t) dt = {f_x}
+{equation_line}
 
 Domain: [{equation.a}, {equation.b}]
 

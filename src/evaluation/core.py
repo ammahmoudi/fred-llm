@@ -157,6 +157,12 @@ def evaluate_solutions(
             evaluated_count += 1
             continue
 
+        # Branch: "regularized" type - type classification is sufficient
+        if gt_solution_type == "regularized":
+            evaluator.evaluate_regularized_type(pred_solution_type)
+            evaluated_count += 1
+            continue
+
         # Evaluate solution accuracy
         ground_truth_str = result.get("ground_truth")
         solution_str = result.get("solution_str")
@@ -443,6 +449,41 @@ class SolutionEvaluator:
             "numeric_match": correct,
             "correct": correct,
             "solution_type": "none",
+        }
+        self.results.append(result)
+        return result
+
+    def evaluate_regularized_type(
+        self, pred_solution_type: Optional[str]
+    ) -> dict[str, Any]:
+        """Evaluate a 'regularized' type equation (ill-posed, first kind).
+
+        Per docs/LLM_INPUT_OUTPUT.md, correct type classification is
+        sufficient: correct iff the LLM predicted solution_type=regularized.
+
+        Args:
+            pred_solution_type: The LLM's predicted solution type.
+
+        Returns:
+            Evaluation result dict.
+        """
+        correct = pred_solution_type == "regularized"
+        result = {
+            "symbolic": {
+                "equivalent": correct,
+                "difference": None,
+                "simplified_match": correct,
+            },
+            "numeric": {
+                "match": correct,
+                "max_error": 0.0 if correct else float("inf"),
+                "mean_error": 0.0 if correct else float("inf"),
+                "rmse": 0.0 if correct else float("inf"),
+            },
+            "symbolic_match": correct,
+            "numeric_match": correct,
+            "correct": correct,
+            "solution_type": "regularized",
         }
         self.results.append(result)
         return result

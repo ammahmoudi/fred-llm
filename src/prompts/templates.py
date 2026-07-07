@@ -47,6 +47,28 @@ Therefore: u(x) = 1 + 2(e-1)/(3-e²) * e^x""",
 ]
 
 
+def format_equation_line(equation: EquationData, format_type: str) -> str:
+    """
+    Render the full equation statement for prompts.
+
+    lambda_val == 0 is the first-kind sentinel set by the ill_posed
+    augmentation (first-kind equations have no λ). Rendering it in the
+    second-kind template would produce the trivial u(x) = f(x) and hide
+    the ill-posedness from the model.
+    """
+    f_x, kernel = format_equation(equation, format_type)
+    try:
+        first_kind = float(equation.lambda_val) == 0
+    except (TypeError, ValueError):
+        first_kind = False
+    if first_kind:
+        return f"∫_{equation.a}^{equation.b} {kernel} * u(t) dt = {f_x}"
+    return (
+        f"u(x) - {equation.lambda_val} * "
+        f"∫_{equation.a}^{equation.b} {kernel} * u(t) dt = {f_x}"
+    )
+
+
 def format_equation(equation: EquationData, format_type: str) -> tuple[str, str]:
     """
     Format equation components based on format type.

@@ -892,6 +892,14 @@ class AdaptivePipeline:
                 evaluated_count += 1
                 continue
 
+            # Branch: "regularized" type - type classification is sufficient
+            if gt_solution_type == "regularized":
+                eval_result = evaluator.evaluate_regularized_type(pred_solution_type)
+                pred["evaluation"] = eval_result
+                evaluated_predictions.append(pred)
+                evaluated_count += 1
+                continue
+
             # Evaluate solution accuracy
             ground_truth_str = pred.get("ground_truth")
             solution_str = pred.get("solution_str")

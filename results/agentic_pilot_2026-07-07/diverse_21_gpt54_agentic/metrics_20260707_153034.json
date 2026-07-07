@@ -1,0 +1,105 @@
+{
+  "total": 21,
+  "correct": 6,
+  "accuracy": 0.2857142857142857,
+  "symbolic_accuracy": 0.14285714285714285,
+  "numeric_accuracy": 0.14285714285714285,
+  "mean_mae": 1.6676820420251339e+19,
+  "mean_rmse": 2.147199361836761e+19,
+  "mean_max_error": 4.406905407731817e+19,
+  "mean_mean_error": 1.6676820420251339e+19,
+  "series_term_stats": {
+    "total": 3,
+    "match": 0,
+    "match_rate": 0.0,
+    "min": 1,
+    "max": 3,
+    "mean": 1.6666666666666667,
+    "target": 4
+  },
+  "approx_coef_stats": {
+    "total": 3,
+    "mean_match_rate": 1.0,
+    "mean_abs_error": 0.0,
+    "mean_rel_error": 0.0
+  },
+  "discrete_points_stats": {
+    "total": 3,
+    "matched_point_rate": 0.0,
+    "mean_accuracy": 0.0,
+    "mean_rmse": 132.93937735420312
+  },
+  "family_param_stats": {
+    "total": 3,
+    "naming_convention_rate": 0.0,
+    "param_count_match_rate": 0.0
+  },
+  "mean_operator_precision": 0.4111111111111111,
+  "mean_operator_recall": 0.4222222222222222,
+  "mean_operator_f1": 0.41333333333333333,
+  "mean_rel_l2": 11900660.920664022,
+  "mean_bleu": 0.08772238277884256,
+  "per_type": {
+    "approx_coef": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "regularized": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "exact_symbolic": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "discrete_points": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "family": {
+      "total": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    "series": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "none": {
+      "total": 3,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "evaluated_count": 21,
+  "total_predictions": 21,
+  "api_errors": 0,
+  "parse_errors": 0,
+  "has_solution_accuracy": 0.7619047619047619,
+  "has_solution_total": 21,
+  "solution_type_accuracy": 0.2857142857142857,
+  "solution_type_total": 21,
+  "confusion_matrix": {
+    "regularized_predicted_as_exact_symbolic": 3,
+    "discrete_points_predicted_as_exact_symbolic": 2,
+    "family_predicted_as_exact_symbolic": 3,
+    "discrete_points_predicted_as_series": 1,
+    "series_predicted_as_approx_coef": 1,
+    "none_predicted_as_exact_symbolic": 2,
+    "series_predicted_as_none": 2,
+    "none_predicted_as_approx_coef": 1
+  },
+  "none_detection": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 2,
+    "fn": 3
+  }
+}

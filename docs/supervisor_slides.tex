@@ -1,0 +1,328 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+
+% --- plain, no-frills setup ---------------------------------------------------
+\usetheme{default}
+\usecolortheme{dove}          % near-monochrome, nothing fancy
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[default]
+\setbeamerfont{frametitle}{series=\bfseries}
+\setbeamercolor{frametitle}{fg=black}
+
+\usepackage{booktabs}
+\usepackage{amsmath}
+
+\title[Fred-LLM]{Fred-LLM: Large Language Models for Solving\\ Fredholm Integral Equations of the Second Kind}
+\author{Amirhossein Mahmoudi \and Shahriar Shariati Motlagh}
+\date{Supervisor review --- \today}
+
+\begin{document}
+
+% 1 -------------------------------------------------------------------------
+\begin{frame}[plain]
+  \titlepage
+  \begin{center}\small
+    Target venue: IEEE Transactions on AI (TAI)\\[2pt]
+    \textit{Where does an LLM sit between a symbolic oracle and a numerical spectral solver?}
+  \end{center}
+\end{frame}
+
+% 2 -------------------------------------------------------------------------
+\begin{frame}{The question in one line}
+  \[
+     u(x) - \lambda \int_a^b K(x,t)\,u(t)\,dt = f(x), \qquad x\in[a,b]
+  \]
+  \begin{itemize}
+    \item The operator equation that Galerkin, collocation, and Nystr\"om methods were built to solve.
+    \item We do \textbf{not} replace those solvers. We measure whether an LLM can produce the
+          \textbf{interpretable closed form} and recognize the \textbf{solution structure} that
+          numerical methods only approximate.
+    \item \textbf{Bridge to DEs:} linear BVP $\leftrightarrow$ Green's function $\leftrightarrow$
+          Fredholm IE. LLMs on Fredholm IE $=$ controlled proxy for LLMs on DEs in integral form.
+  \end{itemize}
+  \begin{block}{Punchline (plant it now)}
+    LLMs handle the \emph{analytical / eigenstructure} part well and the
+    \emph{numerical-quadrature} part not at all --- and the strongest model hallucinates on
+    ill-posed inputs.
+  \end{block}
+\end{frame}
+
+% 3 -------------------------------------------------------------------------
+\begin{frame}{Motivation \& the gap}
+  \begin{itemize}
+    \item \textbf{Classical / spectral numerics:} Nystr\"om with Gauss--Legendre / Clenshaw--Curtis
+          quadrature, Galerkin with global orthogonal bases, Sinc-collocation, wavelets ---
+          spectral accuracy on smooth kernels.
+    \item \textbf{Learning-based operator solvers:} Neural Integral Equations, FIE-NO
+          (Fourier features + neural operator), Fredholm Neural Networks.
+    \item Both output \textbf{discretized solutions or learned operators}. Scientific workflows
+          still want the \textbf{symbolic functional form} --- interpretability, analysis, reuse.
+    \item \textbf{Underexplored:} can an LLM emit a closed-form candidate, and can we
+          \textbf{verify it by functional equivalence}, not just pointwise fit?
+    \item Enabler: \textbf{FIE-500k} --- large symbolic SKFIE dataset with constructed ground truth.
+  \end{itemize}
+\end{frame}
+
+% 4 -------------------------------------------------------------------------
+\begin{frame}{Research questions \& contributions}
+  \textbf{Research questions}
+  \begin{itemize}
+    \item RQ1 --- Can LLMs produce correct \emph{symbolic} solutions?
+    \item RQ2 --- Does the symbolic-vs-numerical character of a problem predict success?
+    \item RQ3 --- Do LLMs recognize ill-posedness / no-solution (avoid hallucination)?
+  \end{itemize}
+  \vspace{4pt}
+  \textbf{Contributions}
+  \begin{enumerate}
+    \item 560k-equation benchmark over \textbf{7 solution types} with edge cases.
+    \item Modular pipeline: data prep $\to$ prompting $\to$ inference $\to$ evaluation.
+    \item \textbf{Structured output schema} enabling automated scoring.
+    \item Verification-first evaluation: symbolic equivalence $+$ numeric $+$ \textbf{residual satisfaction}.
+    \item Reproducible protocol across models, prompts, formats.
+  \end{enumerate}
+\end{frame}
+
+% 5 -------------------------------------------------------------------------
+\begin{frame}{The 7 solution types --- the spine of the talk}
+  \footnotesize
+  \begin{center}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    \textbf{Type} & \textbf{What it demands} & \textbf{Spectral / numerical analogue} \\
+    \midrule
+    Exact symbolic   & closed form: substitute + integrate & basis-aligned exact projection \\
+    Family (resonance) & $u = u_p + C\phi$, $\phi$ spans nullspace & \textbf{Fredholm alternative / eigenstructure} \\
+    Approx. coef.    & parametric fit (sing./osc./layer)   & fitted spectral coefficients \\
+    Series (Neumann) & $u\approx f+\lambda Kf+\lambda^2K^2f+\dots$ & truncated operator-Neumann \\
+    Discrete points  & sampled $(x,y)$, non-separable kernel & quadrature on a mesh \\
+    Regularized (1st kind) & Tikhonov $\arg\min\|Ku-g\|^2+\alpha\|u\|^2$ & ill-posed inverse / spectral filtering \\
+    No solution      & detect contradiction, flag \texttt{has\_solution=no} & spectral obstruction \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{4pt}
+  \textbf{Plant the split:} top two are analytical / eigenstructure recognition; bottom five all
+  need an actual numerical computation. \emph{The results fall exactly along this line.}
+\end{frame}
+
+% 6 -------------------------------------------------------------------------
+\begin{frame}{The benchmark / dataset}
+  \begin{itemize}
+    \item \textbf{Base --- FIE-500k:} 500k exact-symbolic equations from context-free grammars;
+          5 families $\times$ 100k (poly, trig, exp, log, mixed). Each record: $K(x,t), f(x), \lambda, [a,b], u(x)$.
+    \item \textbf{Augmentation:} $+60$k edge cases --- 14 strategies / 6 categories / 42 variants
+          (weakly singular \& oscillatory kernels, boundary layers, near-resonance, Neumann,
+          resonance families, Tikhonov 1st-kind, four no-solution constructions). \textbf{Total: 560{,}000.}
+    \item \textbf{Pre-computed eval domain:} hybrid mesh --- 50 uniform points $+$ injected critical
+          features (boundaries $a,b$, midpoint, near-boundary $\pm10\%$); family-type at $C\in\{-1,1,2\}$.
+    \item Stratified splits over functional family $\times$ solution type $\times$ edge-case label.
+  \end{itemize}
+  \begin{block}{Spectral aside}
+    Residual integral is sampled on the hybrid mesh today; obvious upgrade $=$ evaluate on
+    \textbf{Gauss--Legendre nodes} for spectrally accurate $\int K u$.
+  \end{block}
+\end{frame}
+
+% 7 -------------------------------------------------------------------------
+\begin{frame}{Pipeline \& methodology --- four stages}
+  \begin{enumerate}
+    \item \textbf{Data prep} --- augmentation $+$ format conversion (infix / \LaTeX{} / RPN / tokenized).
+    \item \textbf{Prompt engineering} --- 4 styles $\times$ 3 edge-case modes $+$ structured schema.
+    \item \textbf{LLM methods} --- in-context (zero/few-shot, CoT), tool-assisted code-gen, LoRA/QLoRA fine-tuning.
+    \item \textbf{Evaluation} --- symbolic $+$ numeric $+$ residual $+$ structural metrics.
+  \end{enumerate}
+  \vspace{4pt}
+  \textbf{Prompt styles:} basic (zero-shot, baseline) $\cdot$ chain-of-thought $\cdot$ few-shot
+  $\cdot$ \textbf{tool-assisted (emit SymPy / quadrature code)} --- literally ``LLM drives a numerical solver.''\\[3pt]
+  \textbf{Edge-case modes (disclosure axis):} \texttt{none} (pure inference) $\cdot$
+  \texttt{guardrails} (warn) $\cdot$ \texttt{hints} (disclose type).
+\end{frame}
+
+% 8 -------------------------------------------------------------------------
+\begin{frame}{Evaluation framework --- our rigor}
+  \begin{itemize}
+    \item \textbf{Category-specific routing:} symbolic $\to$ CAS pipeline; discrete $\to$ pointwise
+          numeric; regularized/none $\to$ strict classification (existence flag $+$ failure mode).
+    \item \textbf{Symbolic equivalence:} parse to a CAS tree (math-verify/ANTLR for \LaTeX{},
+          custom stack parser for RPN), inject domain symbols/bounds, test $P(x)-G(x)\!\to\!0$ via a
+          simplification cascade --- \emph{functional} equivalence, not string match.
+    \item \textbf{Numeric:} MAE, RMSE, scale-invariant Relative $L^2 = \|P-G\|_2 / \|G\|_2$.
+    \item \textbf{Residual verification (physics check):}
+          $R(x) = u(x) - \lambda\!\int_a^b\! K(x,t)u(t)\,dt - f(x)$ --- validates the integral
+          equation itself, even without symbolic ground truth.
+    \item \textbf{Structural:} Operator-F1 (multiset of operators), BLEU, None-detection F1.
+  \end{itemize}
+\end{frame}
+
+% 9 -------------------------------------------------------------------------
+\begin{frame}{Experimental setup --- be upfront}
+  \begin{itemize}
+    \item \textbf{Models reported:} GPT-4o-mini, GPT-4o, \textbf{GPT-5.2 (reasoning)} --- all OpenAI, API.
+    \item \textbf{Baseline config:} basic zero-shot $\cdot$ \LaTeX{} input $\cdot$ \texttt{none} mode
+          $\cdot$ near-greedy decoding ($T\approx0$).
+    \item \textbf{Scale, honestly:} headline numbers are a \textbf{balanced pilot of 21 equations}
+          (3 per type $\times$ 7) --- enough to expose per-type structure, not the full leaderboard.
+          Full $\sim$1{,}692-equation test set is the funded next step.
+    \item Full matrix $=$ models $\times$ 4 prompt styles $\times$ 3 formats $\times$ 3 edge-case modes;
+          ablations vary one factor at a time.
+  \end{itemize}
+\end{frame}
+
+% 10 ------------------------------------------------------------------------
+\begin{frame}{Headline results}
+  \small
+  \begin{center}
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    \textbf{Model} & \textbf{Acc.}$\uparrow$ & \textbf{Sym.}$\uparrow$ &
+    \textbf{Med.\ r$L^2$}$\downarrow$ & \textbf{Op-F1}$\uparrow$ & \textbf{None-F1}$\uparrow$ \\
+    \midrule
+    GPT-4o-mini & 15.0\% & 0.0\% & 4.47 & 33.7 & 0.0 \\
+    GPT-4o      & 19.0\% & 4.8\% & 1.50 & 26.4 & \textbf{50.0} \\
+    \textbf{GPT-5.2} & \textbf{30.0\%} & \textbf{15.0\%} & \textbf{0.08} & \textbf{39.8} & 0.0 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{4pt}
+  \begin{itemize}
+    \item GPT-5.2 leads everywhere \emph{except} none-detection.
+    \item Report \textbf{medians} for r$L^2$: a few catastrophic wrong-form predictions
+          ($>10^{19}$) blow up the mean.
+    \item For a numerics audience: GPT-5.2's \emph{typical} wrong answer is within $\sim$8\% relative
+          $L^2$ (right form, off coefficients); weaker models exceed the solution's own magnitude
+          (r$L^2>1$).
+  \end{itemize}
+\end{frame}
+
+% 11 ------------------------------------------------------------------------
+\begin{frame}{Per-type results --- the clean boundary (money slide)}
+  \small
+  \begin{center}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    \textbf{Solution type} & \textbf{4o-mini} & \textbf{4o} & \textbf{5.2} \\
+    \midrule
+    Family (resonance / eigenstructure) & 100 & 100 & \textbf{100} \\
+    Exact symbolic                      & 0   & 0   & \textbf{100} \\
+    None                                & 0   & \textbf{33} & 0 \\
+    Approx.\ coef.\ / Discrete / Series / Regularized & 0 & 0 & 0 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{3pt}
+  \begin{itemize}
+    \item \textbf{Family $=$ 100\% for everyone:} recognizing $u=u_p+C\phi$ is \textbf{eigenstructure
+          pattern recognition} (Fredholm alternative) --- needs no computation.
+    \item \textbf{Exact symbolic:} only GPT-5.2's extended reasoning gets it.
+    \item \textbf{All four numerical types $=$ 0 for everyone:} no quadrature, no Neumann truncation,
+          no Tikhonov solve, no eigenvalue computation inside a forward pass.
+  \end{itemize}
+  \textbf{Say it plainly:} LLMs do the \emph{symbolic/analytical} part of a spectral method; not the
+  \emph{numerical linear-algebra solve} on a discretized operator.
+\end{frame}
+
+% 12 ------------------------------------------------------------------------
+\begin{frame}{Finding 2 --- the hallucination asymmetry}
+  \begin{itemize}
+    \item \textbf{Counterintuitive:} the strongest solver (GPT-5.2) \textbf{never abstains} ---
+          emits a plausible closed form for every input, including provably unsolvable ones (None-F1 $=0$).
+    \item Mid-tier GPT-4o catches \textbf{1/3 of no-solution cases with perfect precision} (None-F1 $=50$).
+    \item Hallucinations \textbf{parse cleanly and follow the kernel's functional form} ---
+          undetectable without the \textbf{residual check}. Argues for residual verification and the
+          \texttt{guardrails}/\texttt{hints} modes.
+  \end{itemize}
+  \begin{block}{Spectral analogue}
+    A numerical solver \emph{fails loudly} near a resonance (singular system, blow-up); the LLM
+    \emph{fails silently} with a confident wrong form.
+  \end{block}
+\end{frame}
+
+% 13 ------------------------------------------------------------------------
+\begin{frame}{Current state --- done vs.\ pending}
+  \textbf{Done}
+  \begin{itemize}
+    \item Full pipeline + 560k benchmark with augmentation.
+    \item Multi-modal evaluation: CAS equivalence, Relative $L^2$, residual verification, Operator-F1.
+    \item Baseline: 3 OpenAI models, zero-shot, pilot sample $\to$ the per-type structure above.
+  \end{itemize}
+  \textbf{Scaffolded but not yet filled (article sections stubbed)}
+  \begin{itemize}
+    \item Ablations: prompt style, edge-case mode, input format, scale/difficulty, decoding sensitivity.
+    \item Fine-tuning (LoRA/QLoRA: LLaMA-3.x, Qwen-Math, Phi-4).
+    \item \textbf{Classical baselines --- your wheelhouse:} Nystr\"om (Gauss--Legendre \&
+          Clenshaw--Curtis) + SymPy CAS upper bound $=$ the deterministic ceiling.
+    \item Failure-mode taxonomy + qualitative case studies.
+  \end{itemize}
+  \textbf{Cost plan:} full 8-model panel over $\sim$1{,}692 test eqs $\approx$ \$115;
+  $+2$ premium reasoning models $\to$ ``ideal'' $\approx$ \$966. Proposed ask: $\sim$\$150 for the core.
+\end{frame}
+
+% 14 ------------------------------------------------------------------------
+\begin{frame}{Connections to spectral methods \& LLMs-for-DEs}
+  \begin{itemize}
+    \item \textbf{LLM as symbolic oracle, spectral solver as numerical engine $\to$ hybrid.}
+          Operator predictions become \textbf{priors that constrain a symbolic-regression / finite-expression
+          (FEX) search} --- cheaper, more interpretable.
+    \item \textbf{Tool-assisted prompting $=$ LLM dispatching a spectral/quadrature solve} --- the
+          natural fix for the four numerical types now scoring 0.
+    \item \textbf{Resonance/family success} suggests LLMs internalize Fredholm-alternative /
+          eigenvalue structure at the pattern level --- probe whether it survives near-resonance perturbation.
+    \item \textbf{Eval upgrade:} residual integration on Gauss--Legendre nodes for spectral accuracy;
+          report residual as the physics-faithful, ground-truth-free metric.
+  \end{itemize}
+\end{frame}
+
+% 15 ------------------------------------------------------------------------
+\begin{frame}{Summary \& asks}
+  \begin{itemize}
+    \item A benchmark $+$ verification-first pipeline that \textbf{cleanly separates analytical from
+          numerical competence} in equation solving.
+    \item \textbf{Headline:} LLMs solve eigenstructure (family) and --- for the strongest --- exact
+          symbolic; they solve \emph{nothing} needing numerical quadrature/iteration; the strongest model
+          hallucinates on ill-posed inputs.
+  \end{itemize}
+  \vspace{4pt}
+  \textbf{Asks of the supervisor}
+  \begin{enumerate}
+    \item Sign-off on scaling to the full test set $+$ model panel ($\sim$\$150).
+    \item Guidance on the classical spectral baselines (Nystr\"om quadrature choice, $n$, Galerkin basis).
+    \item Elevate the LLM-prior $\to$ FEX/spectral-refinement hybrid to a second contribution?
+  \end{enumerate}
+\end{frame}
+
+% 16 (backup) --------------------------------------------------------------
+\begin{frame}{Backup --- anticipated questions}
+  \scriptsize
+  \begin{itemize}
+    \item \textbf{Why not just run Nystr\"om/Galerkin?} Not competing on numerical accuracy --- that's the
+          deterministic ceiling we benchmark against. We measure interpretable closed forms + structure
+          recognition; the hybrid is where they meet.
+    \item \textbf{Why do all models fail numerical types?} A single forward pass has no iterative loop ---
+          no quadrature, no linear solve. Capability boundary, not a tuning artifact; tool-use/fine-tuning target it.
+    \item \textbf{21 equations --- is that real?} Honest pilot; already exposes per-type structure
+          (GPT-5.2 $=6/21\approx30\%$). Full $\sim$1{,}692-test-set run is the costed next step.
+    \item \textbf{Family $=$ 100\% --- leakage or too easy?} Structural recognition (nullspace + free
+          constant), not computation; open question is robustness under near-resonance perturbation.
+    \item \textbf{How spectrally accurate is your evaluation?} Hybrid mesh + residual sampling today;
+          plan to move residual to Gauss--Legendre nodes. Symbols normalized via math-verify.
+    \item \textbf{Is the structured schema penalizing models?} Possibly disadvantages free-form generation
+          --- stated limitation and a candidate ablation.
+  \end{itemize}
+\end{frame}
+
+% 17 (backup) --------------------------------------------------------------
+\begin{frame}{Backup --- facts on hand}
+  \footnotesize
+  \begin{itemize}
+    \item Equation: $u(x) - \lambda\int_a^b K(x,t)u(t)\,dt = f(x)$.
+    \item Dataset: 500k base (5 families $\times$ 100k) $+$ 60k edge cases $=$ 560k;
+          eval split $\sim$5k, held-out test $\sim$1{,}692, reported pilot $=21$.
+    \item Metrics: Overall/Symbolic Acc, Median Relative $L^2$, Operator-F1, BLEU, None-F1; residual $R(x)$.
+    \item Models pending: Gemini Flash/Pro, Gemma-3, Claude Haiku/Sonnet, LLaMA-3.x, Qwen-Math, Phi-4.
+  \end{itemize}
+  \vfill
+  \begin{center}\small Speaker notes: \texttt{docs/SUPERVISOR\_PRESENTATION.md}\end{center}
+\end{frame}
+
+\end{document}

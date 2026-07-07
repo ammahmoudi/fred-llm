@@ -1,0 +1,7 @@
+\directlua{luaotfload.add_fallback("fredfallback", {"Arial Unicode MS:mode=base;"})}
+\setmainfont{STIX Two Text}[RawFeature={fallback=fredfallback}]
+\setmonofont{Menlo}[RawFeature={fallback=fredfallback}]
+\usepackage{newunicodechar}
+\newunicodechar{ₐ}{\ensuremath{{}_{\mathrm{a}}}}
+\newunicodechar{ᵇ}{\ensuremath{{}^{\mathrm{b}}}}
+\newunicodechar{ₚ}{\ensuremath{{}_{\mathrm{p}}}}

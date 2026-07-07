@@ -681,6 +681,11 @@ class AdaptivePipeline:
                 }
                 for p in all_prompts
             ]
+            # Per-equation persistence: a killed/hung batch loses nothing and
+            # a rerun resumes completed equations instead of re-paying calls.
+            batch_kwargs["checkpoint_path"] = (
+                Path(self.config.output.dir) / "agentic_checkpoint.jsonl"
+            )
         responses = runner.batch_generate(prompt_texts, **batch_kwargs)
 
         # Save raw responses immediately (before any parsing that could crash)
@@ -711,6 +716,9 @@ class AdaptivePipeline:
                 for trace in runner.traces:
                     f.write(json.dumps(trace) + "\n")
             console.print(f"[cyan]> Saved agentic trace to {trace_file}[/cyan]")
+            # Batch fully persisted — drop the checkpoint so a future fresh
+            # run into this output dir doesn't wrongly resume from it.
+            (output_dir / "agentic_checkpoint.jsonl").unlink(missing_ok=True)
 
         # Parse responses and write predictions incrementally
         predictions_file = output_dir / f"predictions_{timestamp}.jsonl"

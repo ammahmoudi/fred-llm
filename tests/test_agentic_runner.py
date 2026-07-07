@@ -144,6 +144,27 @@ def test_batch_generate_aligned_with_prompts():
     assert len(runner.traces) == 2
 
 
+def test_checkpoint_resume_skips_completed(tmp_path):
+    ckpt = tmp_path / "ckpt.jsonl"
+    eqs = [dict(EQUATION, id=f"eq_{i}") for i in range(2)]
+
+    fake1 = FakeRunner({"degenerate_kernel": CORRECT})
+    r1 = make_runner(fake1, ["degenerate_kernel"])
+    out1 = r1.batch_generate(
+        ["p0", "p1"], equations=eqs, show_progress=False, checkpoint_path=ckpt
+    )
+    assert len(ckpt.read_text().splitlines()) == 2
+
+    fake2 = FakeRunner({"degenerate_kernel": CORRECT})
+    r2 = make_runner(fake2, ["degenerate_kernel"])
+    out2 = r2.batch_generate(
+        ["p0", "p1"], equations=eqs, show_progress=False, checkpoint_path=ckpt
+    )
+    assert fake2.calls == []  # everything resumed, no LLM calls
+    assert out2 == out1
+    assert len(r2.traces) == 2  # traces restored from checkpoint
+
+
 def test_unknown_method_rejected():
     with pytest.raises(ValueError, match="Unknown agentic methods"):
         AgenticModelRunner(base_runner=FakeRunner({}), methods=["banach"])

@@ -9,8 +9,11 @@ response is returned so the standard postprocess/evaluate pipeline applies
 unchanged. See docs/AGENTIC_SOLVER.md.
 """
 
+import json
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any
 
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -202,31 +205,30 @@ class AgenticModelRunner(BaseModelRunner):
             f"reason={reason} calls={sum(len(r) for r in rounds)} "
             f"({duration:.0f}s)"
         )
-        self.traces.append(
-            {
-                "equation_id": eq_id,
-                "duration_s": round(duration, 1),
-                "winner_method": winner["method"] if winner else None,
-                "selection_reason": reason,
-                "llm_calls": sum(len(r) for r in rounds),
-                "candidates": [
-                    {
-                        k: c.get(k)
-                        for k in (
-                            "method",
-                            "round",
-                            "status",
-                            "residual_max",
-                            "solution_str",
-                            "solution_type",
-                            "has_solution",
-                        )
-                    }
-                    for r in rounds
-                    for c in r
-                ],
-            }
-        )
+        trace = {
+            "equation_id": eq_id,
+            "duration_s": round(duration, 1),
+            "winner_method": winner["method"] if winner else None,
+            "selection_reason": reason,
+            "llm_calls": sum(len(r) for r in rounds),
+            "candidates": [
+                {
+                    k: c.get(k)
+                    for k in (
+                        "method",
+                        "round",
+                        "status",
+                        "residual_max",
+                        "solution_str",
+                        "solution_type",
+                        "has_solution",
+                    )
+                }
+                for r in rounds
+                for c in r
+            ],
+        }
+        self.traces.append(trace)
         return winner["response"] if winner else ""
 
     def batch_generate(
@@ -235,6 +237,7 @@ class AgenticModelRunner(BaseModelRunner):
         equations: list[dict[str, Any]] | None = None,
         rate_limit_delay: float = 1.0,
         show_progress: bool = True,
+        checkpoint_path: str | Path | None = None,
         **kwargs: Any,
     ) -> list[str]:
         """
@@ -248,6 +251,9 @@ class AgenticModelRunner(BaseModelRunner):
             rate_limit_delay: Unused (kept for interface compatibility);
                 concurrency is bounded by the worker pools instead.
             show_progress: Whether to show a progress spinner.
+            checkpoint_path: When set, each completed equation is appended to
+                this JSONL immediately (a hung/killed batch loses nothing),
+                and existing entries are resumed instead of re-run.
             **kwargs: Passed to the base runner's generate.
 
         Returns:
@@ -260,15 +266,67 @@ class AgenticModelRunner(BaseModelRunner):
         equations = equations or [None] * len(prompts)
         if len(equations) != len(prompts):
             raise ValueError("equations must be aligned with prompts")
-        results: list[str] = [""] * len(prompts)
+        pending = object()  # sentinel: not yet run (distinct from "" = failed)
+        results: list[Any] = [pending] * len(prompts)
+
+        checkpoint_lock = threading.Lock()
+        checkpoint_file = None
+        if checkpoint_path:
+            checkpoint_path = Path(checkpoint_path)
+            if checkpoint_path.exists():
+                for line in checkpoint_path.read_text().splitlines():
+                    try:
+                        rec = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue  # partial line from a crash
+                    i = rec.get("i")
+                    if (
+                        isinstance(i, int)
+                        and 0 <= i < len(prompts)
+                        and (equations[i] or {}).get("id") == rec.get("id")
+                    ):
+                        results[i] = rec.get("response", "")
+                        if rec.get("trace"):
+                            self.traces.append(rec["trace"])
+                resumed = sum(r is not pending for r in results)
+                if resumed:
+                    logger.info(f"Resumed {resumed} equations from checkpoint")
+            checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+            checkpoint_file = open(checkpoint_path, "a")
 
         def work(i: int) -> None:
+            if results[i] is not pending:
+                return  # resumed from checkpoint
             try:
                 results[i] = self.generate(
                     prompts[i], equation=equations[i], **kwargs
                 )
             except Exception as e:
                 logger.warning(f"Agentic generation failed for prompt {i}: {e}")
+                results[i] = ""
+            if checkpoint_file is not None:
+                eq_id = (equations[i] or {}).get("id")
+                with checkpoint_lock:
+                    trace = next(
+                        (
+                            t
+                            for t in reversed(self.traces)
+                            if t.get("equation_id") == eq_id
+                        ),
+                        None,
+                    )
+                    checkpoint_file.write(
+                        json.dumps(
+                            {
+                                "i": i,
+                                "id": eq_id,
+                                "response": results[i],
+                                "trace": trace,
+                            }
+                        )
+                        + "\n"
+                    )
+                    checkpoint_file.flush()
 
         def run_all(progress: Progress | None = None, task_id: Any = None) -> None:
             with ThreadPoolExecutor(
@@ -280,21 +338,25 @@ class AgenticModelRunner(BaseModelRunner):
                     if progress is not None:
                         progress.advance(task_id)
 
-        if show_progress:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                transient=True,
-            ) as progress:
-                task = progress.add_task(
-                    f"Agentic solving ({len(self.methods)} methods/eq)...",
-                    total=len(prompts),
-                )
-                run_all(progress, task)
-        else:
-            run_all()
+        try:
+            if show_progress:
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    transient=True,
+                ) as progress:
+                    task = progress.add_task(
+                        f"Agentic solving ({len(self.methods)} methods/eq)...",
+                        total=len(prompts),
+                    )
+                    run_all(progress, task)
+            else:
+                run_all()
+        finally:
+            if checkpoint_file is not None:
+                checkpoint_file.close()
 
-        return results
+        return [r if isinstance(r, str) else "" for r in results]
 
     # ------------------------------------------------------------------ #
     # Stages                                                             #

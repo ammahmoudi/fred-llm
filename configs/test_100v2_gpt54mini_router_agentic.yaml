@@ -1,0 +1,37 @@
+# Test 100 — cx/gpt-5.4-mini via rastar.dev router, AGENTIC multi-method.
+# Identical to test_100_gpt54mini_router.yaml except model.agentic.
+# API key comes from OPENAI_API_KEY in .env
+
+dataset:
+  prompts:
+    prompts_dir: data/prompts/basic/test_100_v2
+    style: basic
+
+model:
+  provider: openai
+  name: cx/gpt-5.4-mini
+  base_url: https://ai-router.rastar.dev/v1
+  temperature: 0.1
+  max_tokens: 4096
+  timeout: 180
+  agentic:
+    max_repair_rounds: 1
+    parallel_workers: 5
+    equation_workers: 3
+    verify_tolerance: 1.0e-6
+
+evaluation:
+  mode: both
+  symbolic_tolerance: 1e-10
+  numeric_tolerance: 1e-6
+  num_test_points: 100
+  type_tolerances:
+    series: 0.01
+    approx_coef: 0.001
+    regularized: 0.001
+
+output:
+  dir: outputs/test_100v2_gpt54mini_agentic
+  save_predictions: true
+  save_metrics: true
+  log_level: INFO

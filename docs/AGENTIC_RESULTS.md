@@ -58,6 +58,35 @@ Per-type (all six runs): `exact_symbolic` ≈ 3/3 (mini baseline 2/3),
    agent produced a closed-form solution that residual-verifies against the
    equation, but scores wrong because the label demands a point list.
 
+## test_100 (gpt-5.4-mini) — the statistically meaningful run
+
+100 equations (30 exact_symbolic, 15 approx_coef, 15 none, 10 each series /
+discrete_points / family / regularized), same configs as the pilot
+(`configs/test_100_gpt54mini_router*.yaml`). Agentic: 731 calls, 0 API errors.
+
+| metric | baseline | agentic |
+|---|---|---|
+| accuracy | 21.0% (21/100) | **25.0% (25/100)** |
+| symbolic accuracy | 8.0% | **15.0%** |
+| solution-type accuracy | 26.4% | **29.5%** |
+| none-detection P/R/F1 | 0.38 / 0.20 / 0.26 | **0.42 / 0.33 / 0.37** |
+| exact_symbolic | 6/30 | **9/30** |
+| none | 3/15 | **5/15** |
+| family | 10/10 | 10/10 |
+| approx_coef | 2/15 | 1/15 |
+| series / discrete_points / regularized | 0 | 0 |
+
+Selection reasons: 29 verified, 65 majority vote, 6 best-effort. Method wins:
+degenerate_kernel 56, fredholm_alternative 13, neumann 13, adomian 12,
+numerical 6.
+
+**Interpretation:** at n=100 the agentic lift is consistent and
+mechanism-backed — +50% relative on exact_symbolic (verification picks the
+right candidate), nearly double the symbolic accuracy, and a clear
+none-detection improvement (F1 0.26 → 0.37). The 10 regularized items remain
+structurally unwinnable (λ=0 rendering bug), so the effective ceiling is
+~90 items. Cost: ~7.3× calls for +4 pp absolute accuracy.
+
 ## Recommendations
 
 - Fix the first-kind → second-kind serialization bug (`lambda_val = 0`).

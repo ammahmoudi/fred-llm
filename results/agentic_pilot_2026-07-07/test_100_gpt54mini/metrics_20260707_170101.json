@@ -1,0 +1,115 @@
+{
+  "total": 100,
+  "correct": 21,
+  "accuracy": 0.21,
+  "symbolic_accuracy": 0.08,
+  "numeric_accuracy": 0.11,
+  "mean_mae": NaN,
+  "mean_rmse": NaN,
+  "mean_max_error": NaN,
+  "mean_mean_error": NaN,
+  "series_term_stats": {
+    "total": 10,
+    "match": 0,
+    "match_rate": 0.0,
+    "min": 1,
+    "max": 6,
+    "mean": 3.3,
+    "target": 4
+  },
+  "approx_coef_stats": {
+    "total": 15,
+    "mean_match_rate": 0.6,
+    "mean_abs_error": 67.06195466916644,
+    "mean_rel_error": Infinity
+  },
+  "discrete_points_stats": {
+    "total": 10,
+    "matched_point_rate": 0.0,
+    "mean_accuracy": 0.0,
+    "mean_rmse": Infinity
+  },
+  "family_param_stats": {
+    "total": 10,
+    "naming_convention_rate": 0.0,
+    "param_count_match_rate": 0.0
+  },
+  "mean_operator_precision": 0.4276507936507936,
+  "mean_operator_recall": 0.522952380952381,
+  "mean_operator_f1": 0.4489155289155289,
+  "mean_rel_l2": 11142.757579386212,
+  "mean_bleu": 0.04733274812038799,
+  "per_type": {
+    "series": {
+      "total": 10,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "exact_symbolic": {
+      "total": 30,
+      "correct": 6,
+      "accuracy": 0.2
+    },
+    "approx_coef": {
+      "total": 15,
+      "correct": 2,
+      "accuracy": 0.13333333333333333
+    },
+    "discrete_points": {
+      "total": 10,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "none": {
+      "total": 15,
+      "correct": 3,
+      "accuracy": 0.2
+    },
+    "family": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 1.0
+    },
+    "regularized": {
+      "total": 10,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "evaluated_count": 100,
+  "total_predictions": 100,
+  "api_errors": 0,
+  "parse_errors": 0,
+  "has_solution_accuracy": 0.83,
+  "has_solution_total": 100,
+  "solution_type_accuracy": 0.26436781609195403,
+  "solution_type_total": 87,
+  "confusion_matrix": {
+    "exact_symbolic_predicted_as_none": 2,
+    "series_predicted_as_exact_symbolic": 4,
+    "discrete_points_predicted_as_approx_coef": 2,
+    "none_predicted_as_regularized": 1,
+    "family_predicted_as_exact_symbolic": 10,
+    "regularized_predicted_as_exact_symbolic": 10,
+    "approx_coef_predicted_as_exact_symbolic": 5,
+    "approx_coef_predicted_as_none": 2,
+    "exact_symbolic_predicted_as_family": 1,
+    "discrete_points_predicted_as_exact_symbolic": 5,
+    "none_predicted_as_series": 2,
+    "exact_symbolic_predicted_as_approx_coef": 8,
+    "none_predicted_as_approx_coef": 4,
+    "none_predicted_as_exact_symbolic": 3,
+    "series_predicted_as_none": 1,
+    "series_predicted_as_approx_coef": 1,
+    "approx_coef_predicted_as_series": 2,
+    "discrete_points_predicted_as_series": 1
+  },
+  "none_detection": {
+    "precision": 0.375,
+    "recall": 0.2,
+    "f1": 0.26086956521739135,
+    "tp": 3,
+    "fp": 5,
+    "fn": 12
+  }
+}

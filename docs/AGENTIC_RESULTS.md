@@ -87,6 +87,34 @@ none-detection improvement (F1 0.26 → 0.37). The 10 regularized items remain
 structurally unwinnable (λ=0 rendering bug), so the effective ceiling is
 ~90 items. Cost: ~7.3× calls for +4 pp absolute accuracy.
 
+## test_100 v2 (first-kind fix) — gpt-5.4-mini, 2026-07-08
+
+After fixing the first-kind rendering (prompts now show `∫K u dt = f` for
+regularized items; 90 other prompts byte-identical to v1) and switching
+regularized scoring to type classification:
+
+| metric | baseline | agentic |
+|---|---|---|
+| accuracy | 21.4% (21/98) | **32.0% (32/100)** |
+| exact_symbolic | 6/30 | **13/30** |
+| regularized | 0/10 | **2/10** |
+| none | 2/15 | 5/15 |
+| family | 10/10 | 10/10 |
+
+- **Regularized is now a genuine hard task:** the baseline still never says
+  "regularized" (0/10). The agentic run got 2/10; the confusion matrix shows
+  8/10 first-kind items classified as `none` — models sense the equation is
+  pathological but pick the wrong label.
+- The v2 agentic-baseline gap (+10.6 pp) is larger than v1 (+4 pp); part of
+  that spread is run-to-run variance (temperature 0.1), so cite with care.
+
+**Incomplete runs (stopped 2026-07-08 ~00:53):** gpt-5.4 test_100 agentic was
+lost mid-batch (results were memory-only; per-equation checkpointing has since
+been added so this cannot recur). gpt-5.4 test_100 baseline inference IS saved
+(`results/.../test_100_gpt54_baseline_unevaluated/predictions_*.jsonl`) and
+only needs a local evaluation-only pass. The gpt-5.5 test_100 pair was never
+started.
+
 ## Recommendations
 
 - Fix the first-kind → second-kind serialization bug (`lambda_val = 0`).

@@ -1,0 +1,25 @@
+{
+  "note": "type-only, hang-proof (no sympy). PARTIAL 59/100, v1 prompts. No agentic pair \u2014 NOT a head-to-head. Headline symbolic/numeric accuracy not computed (untimed sympy hang on a pathological v1 prediction).",
+  "n_evaluated": 59,
+  "solution_type_accuracy": 0.3704,
+  "solution_type_correct": 20,
+  "solution_type_total": 54,
+  "has_solution_accuracy": 0.8136,
+  "none_detection": {
+    "precision": 0.25,
+    "recall": 0.111,
+    "f1": 0.154,
+    "tp": 1,
+    "fp": 3,
+    "fn": 8
+  },
+  "per_type_type_match": {
+    "approx_coef": "2/10",
+    "discrete_points": "0/4",
+    "exact_symbolic": "16/19",
+    "family": "1/5",
+    "none": "1/9",
+    "regularized": "0/7",
+    "series": "0/5"
+  }
+}

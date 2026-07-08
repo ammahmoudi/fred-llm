@@ -110,10 +110,21 @@ regularized scoring to type classification:
 
 **Incomplete runs (stopped 2026-07-08 ~00:53):** gpt-5.4 test_100 agentic was
 lost mid-batch (results were memory-only; per-equation checkpointing has since
-been added so this cannot recur). gpt-5.4 test_100 baseline inference IS saved
-(`results/.../test_100_gpt54_baseline_unevaluated/predictions_*.jsonl`) and
-only needs a local evaluation-only pass. The gpt-5.5 test_100 pair was never
-started.
+been added so this cannot recur). The gpt-5.5 test_100 pair was never started.
+
+**Salvaged gpt-5.4 test_100 baseline (partial, 59/100, v1 prompts).** The
+baseline inference was itself cut off at 59 of 100 equations
+(`results/.../test_100_gpt54_baseline_unevaluated/predictions_20260708_000045.jsonl`).
+The full symbolic/numeric eval-only pass hangs on an untimed `symbolic_compare`
+for one pathological v1 prediction (`evaluate_solutions` does not thread its
+`mode` down to gate the sympy step). A hang-proof, sympy-free type-only score
+(`metrics_partial59_typeonly.json`) is stored instead: **solution-type accuracy
+37.0% (20/54)**, has-solution 81.4%, none-detection F1 0.154 (1 TP / 3 FP / 8
+FN). Per-type type-match: exact_symbolic 16/19, approx_coef 2/10, family 1/5,
+none 1/9, series 0/5, discrete_points 0/4, regularized 0/7 — the familiar
+"classifies closed-form well, misses every pathological type" signature. This
+partial is exact_symbolic-heavy (19/54), has no matching agentic run, and is
+**not a head-to-head**; treat the number as indicative only.
 
 ## Recommendations
 

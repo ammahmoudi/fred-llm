@@ -176,6 +176,22 @@ class TestVerifySolution:
         # Should return a result without crashing
         assert "verified" in result or "error" in result
 
+    def test_skips_runaway_candidate(self) -> None:
+        """A huge (runaway) candidate is skipped, not fed to subs/lambdify/quad
+        — that path can burn minutes with no timeout in a worker thread."""
+        import time
+
+        x, t = sp.symbols("x t")
+        # ~1000-op expression: well past any legitimate Fredholm solution.
+        huge = sp.Add(*[sp.Integer(i) * x**i for i in range(1, 1000)])
+        assert sp.count_ops(huge) > 800
+
+        t0 = time.time()
+        result = verify_solution(huge, x * t, x, 1.0, domain=(0, 1))
+        assert time.time() - t0 < 2.0  # bailed fast, no heavy sympy
+        assert result["verified"] is False
+        assert result["error"] == "candidate_too_large"
+
 
 class TestSolutionEvaluator:
     """Tests for SolutionEvaluator class."""

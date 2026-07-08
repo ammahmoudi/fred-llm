@@ -56,6 +56,20 @@ def verify_solution(
     a, b = domain
 
     try:
+        # Complexity guard: reasoning models occasionally emit runaway
+        # expressions (thousands of ops). subs / lambdify / quadrature on those
+        # can burn minutes of CPU with no timeout, and — since verification runs
+        # in agentic worker threads — SIGALRM cannot bound it. A correct Fredholm
+        # solution is compact, so an enormous candidate is never verifiable:
+        # skip it (unverified) and let selection fall back to majority vote.
+        if sp.count_ops(solution) > 800:
+            logger.debug(
+                "Skipping verification: candidate too large "
+                f"({sp.count_ops(solution)} ops)"
+            )
+            result["error"] = "candidate_too_large"
+            return result
+
         # Substitute u(t) = solution(t)
         u_of_t = solution.subs(x, t)
 

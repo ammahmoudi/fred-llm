@@ -1,0 +1,112 @@
+{
+  "mode": "both",
+  "total": 96,
+  "correct": 35,
+  "accuracy": 0.3645833333333333,
+  "symbolic_accuracy": 0.2604166666666667,
+  "numeric_accuracy": 0.2604166666666667,
+  "mean_mae": 7.11168335229369e+17,
+  "mean_rmse": 5.514480542624722e+18,
+  "mean_max_error": 5.298642677459831e+19,
+  "mean_mean_error": 7.11168335229369e+17,
+  "series_term_stats": {
+    "total": 9,
+    "match": 0,
+    "match_rate": 0.0,
+    "min": 1,
+    "max": 5,
+    "mean": 2.4444444444444446,
+    "target": 4
+  },
+  "approx_coef_stats": {
+    "total": 14,
+    "mean_match_rate": 0.7857142857142857,
+    "mean_abs_error": 0.21428571428571427,
+    "mean_rel_error": Infinity
+  },
+  "discrete_points_stats": {
+    "total": 8,
+    "matched_point_rate": 0.0,
+    "mean_accuracy": 0.0,
+    "mean_rmse": Infinity
+  },
+  "family_param_stats": {
+    "total": 10,
+    "naming_convention_rate": 0.0,
+    "param_count_match_rate": 0.0
+  },
+  "mean_operator_precision": 0.7370023419203748,
+  "mean_operator_recall": 0.7755659640905542,
+  "mean_operator_f1": 0.7391950490311145,
+  "mean_rel_l2": 1619997154.1870732,
+  "mean_bleu": 0.16602050238176402,
+  "per_type": {
+    "series": {
+      "total": 9,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "exact_symbolic": {
+      "total": 30,
+      "correct": 21,
+      "accuracy": 0.7
+    },
+    "approx_coef": {
+      "total": 14,
+      "correct": 1,
+      "accuracy": 0.07142857142857142
+    },
+    "discrete_points": {
+      "total": 8,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "none": {
+      "total": 15,
+      "correct": 2,
+      "accuracy": 0.13333333333333333
+    },
+    "family": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 1.0
+    },
+    "regularized": {
+      "total": 10,
+      "correct": 1,
+      "accuracy": 0.1
+    }
+  },
+  "evaluated_count": 96,
+  "total_results": 100,
+  "parse_errors": 4,
+  "confusion_matrix": {
+    "series_predicted_as_exact_symbolic": 2,
+    "exact_symbolic_predicted_as_approx_coef": 3,
+    "approx_coef_predicted_as_exact_symbolic": 4,
+    "exact_symbolic_predicted_as_none": 2,
+    "discrete_points_predicted_as_approx_coef": 2,
+    "none_predicted_as_approx_coef": 8,
+    "family_predicted_as_exact_symbolic": 10,
+    "regularized_predicted_as_none": 9,
+    "approx_coef_predicted_as_series": 1,
+    "discrete_points_predicted_as_exact_symbolic": 7,
+    "none_predicted_as_regularized": 3,
+    "series_predicted_as_none": 2,
+    "none_predicted_as_series": 1,
+    "discrete_points_predicted_as_series": 1,
+    "series_predicted_as_approx_coef": 1
+  },
+  "has_solution_accuracy": 0.74,
+  "has_solution_total": 100,
+  "solution_type_accuracy": 0.38461538461538464,
+  "solution_type_total": 91,
+  "none_detection": {
+    "precision": 0.13333333333333333,
+    "recall": 0.13333333333333333,
+    "f1": 0.13333333333333333,
+    "tp": 2,
+    "fp": 13,
+    "fn": 13
+  }
+}

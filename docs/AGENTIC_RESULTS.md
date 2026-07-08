@@ -108,23 +108,63 @@ regularized scoring to type classification:
 - The v2 agentic-baseline gap (+10.6 pp) is larger than v1 (+4 pp); part of
   that spread is run-to-run variance (temperature 0.1), so cite with care.
 
-**Incomplete runs (stopped 2026-07-08 ~00:53):** gpt-5.4 test_100 agentic was
-lost mid-batch (results were memory-only; per-equation checkpointing has since
-been added so this cannot recur). The gpt-5.5 test_100 pair was never started.
+## test_100 v2 — gpt-5.4 (the bigger model), 2026-07-08
 
-**Salvaged gpt-5.4 test_100 baseline (partial, 59/100, v1 prompts).** The
-baseline inference was itself cut off at 59 of 100 equations
-(`results/.../test_100_gpt54_baseline_unevaluated/predictions_20260708_000045.jsonl`).
-The full symbolic/numeric eval-only pass hangs on an untimed `symbolic_compare`
-for one pathological v1 prediction (`evaluate_solutions` does not thread its
-`mode` down to gate the sympy step). A hang-proof, sympy-free type-only score
-(`metrics_partial59_typeonly.json`) is stored instead: **solution-type accuracy
-37.0% (20/54)**, has-solution 81.4%, none-detection F1 0.154 (1 TP / 3 FP / 8
-FN). Per-type type-match: exact_symbolic 16/19, approx_coef 2/10, family 1/5,
-none 1/9, series 0/5, discrete_points 0/4, regularized 0/7 — the familiar
-"classifies closed-form well, misses every pathological type" signature. This
-partial is exact_symbolic-heavy (19/54), has no matching agentic run, and is
-**not a head-to-head**; treat the number as indicative only.
+Same v2 prompts and scoring as the mini run above, on `cx/gpt-5.4` — the
+head-to-head at a stronger base model. gpt-5.4 is a reasoning model (~45 s/call
+and it emits gnarly expressions), which forced two pieces of hardening now in
+the pipeline: parallel baseline inference (8 workers) and bounded evaluation
+(symbolic + metric-leaf SIGALRM timeouts, plus a verifier complexity guard) so
+untimed sympy can no longer hang the run. A few pathological answers time out
+of the sympy scoring and drop from each side's denominator.
+
+| metric | baseline | agentic |
+|---|---|---|
+| correct equations | 35/100 | **38/100** |
+| accuracy (of evaluated) | 36.5% (35/96) | 38.4% (38/99) |
+| symbolic accuracy | 26.0% | 28.3% |
+| solution-type accuracy | 38.5% | **42.0%** |
+| exact_symbolic | 21/30 | **24/30** |
+| regularized | 1/10 | 2/10 |
+| family | 10/10 | 10/10 |
+| none | 2/15 | 2/15 |
+| approx_coef / series / discrete_points | ~0 | ~0 |
+
+Agentic: 735 LLM calls, 0 API errors. Selection: 33 verified, 66 majority vote,
+1 best-effort. Method wins: degenerate_kernel 57, adomian 20, neumann 13,
+fredholm_alternative 9, numerical 1.
+
+**Headline finding — the agentic lift shrinks as the base model gets stronger.**
+gpt-5.4's single-prompt baseline (36.5%) already sits far above mini's (21.4%),
+so there is little left for the scaffolding to fix: agentic adds +3 equations
+(+1.9 pp) here versus +10.6 pp on mini. The verification mechanism still fires —
+33/100 equations settled by deterministic residual checks (up from mini's 29) —
+and it nudges exact_symbolic 21 → 24/30 and type accuracy +3.5 pp. But on a
+capable base model the marginal value of parallel-method + verify is modest. The
+two models together sketch the trend: **agentic multi-method solving pays off
+most exactly where the base model is weakest.**
+
+(Denominators differ — baseline evaluated 96, agentic 99 — because a few
+pathological answers time out of the sympy evaluation on each side; the
+correct-count-over-100 framing, 35 vs 38, is the cleanest comparison.)
+
+## Model-scaling summary (v2, test_100)
+
+| model | baseline | agentic | agentic lift |
+|---|---|---|---|
+| gpt-5.4-mini | 21.4% (21/98) | 32.0% (32/100) | **+10.6 pp** |
+| gpt-5.4 | 36.5% (35/96) | 38.4% (38/99) | +1.9 pp |
+
+The agentic workflow is a bigger win on the weaker model. As base capability
+rises, the baseline already captures most of the winnable items and the
+scaffolding's marginal contribution falls — though verification still fires more
+often on the stronger model (33 vs 29 verified selections). gpt-5.5 (top tier)
+was not run; the trend predicts an even smaller lift there.
+
+**Superseded:** an earlier partial gpt-5.4 v1 baseline (59/100, salvaged as a
+type-only score of 37.0% type accuracy) is retained under
+`test_100_gpt54_baseline_unevaluated/` for provenance but is replaced by the
+full v2 baseline above.
 
 ## Recommendations
 

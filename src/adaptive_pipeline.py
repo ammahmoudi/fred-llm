@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.adaptive_config import AdaptivePipelineConfig, EvaluationConfig
 from src.evaluation import SolutionEvaluator
+from src.evaluation.core import _MetricTimeout
 from src.llm.math_verify_adapter import parse_latex_to_sympy
 from src.llm.model_runner import ModelRunner
 from src.postprocessing import parse_llm_output
@@ -973,6 +974,21 @@ class AdaptivePipeline:
                 pred["evaluation"] = eval_result
                 evaluated_predictions.append(pred)
                 evaluated_count += 1
+
+            except _MetricTimeout:
+                # Runaway sympy metric (e.g. an unbounded doit()/integration).
+                # _MetricTimeout is a BaseException so the leaf except-Exception
+                # handlers can't swallow it; catch it here and drop the item from
+                # the denominator, same as a parse error.
+                errors.append(
+                    f"Equation {pred.get('equation_id', i)}: metric_timeout"
+                )
+                logger.debug(f"Metric timeout evaluating prediction {i}")
+                pred["evaluation"] = {
+                    "error": "metric_timeout",
+                    "correct": False,
+                }
+                evaluated_predictions.append(pred)
 
             except Exception as e:
                 errors.append(f"Equation {pred.get('equation_id', i)}: {str(e)}")

@@ -13,11 +13,14 @@ from typing import Any
 
 from openai import OpenAI
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
-                      wait_exponential)
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
-from src.llm.cost_calculator import (calculate_openai_cost,
-                                     calculate_openrouter_cost)
+from src.llm.cost_calculator import calculate_openai_cost, calculate_openrouter_cost
 from src.llm.cost_tracker import CallCost, CostTracker
 from src.utils.logging_utils import get_logger
 
@@ -140,23 +143,57 @@ class OpenAIModelRunner(BaseModelRunner):
         prompts: list[str],
         rate_limit_delay: float = 0.5,
         show_progress: bool = True,
+        max_workers: int = 1,
         **kwargs: Any,
     ) -> list[str]:
         """
-        Generate responses for multiple prompts with rate limiting.
+        Generate responses for multiple prompts.
 
         Args:
             prompts: List of input prompts.
-            rate_limit_delay: Delay in seconds between requests.
-            show_progress: Whether to show progress bar.
+            rate_limit_delay: Delay in seconds between requests (sequential only).
+            show_progress: Whether to show progress bar (sequential only).
+            max_workers: Concurrency. >1 runs requests in a thread pool (the sync
+                OpenAI SDK is thread-safe). Reasoning models (gpt-5.x) run
+                ~45s/call, so a sequential 100-prompt batch takes >1h and is
+                unobservable; parallel + logged progress fixes both. Default 1
+                preserves the original sequential behavior.
             **kwargs: Additional generation parameters.
 
         Returns:
-            List of generated responses.
+            List of generated responses (index-aligned with prompts).
         """
-        logger.info(f"Batch generating {len(prompts)} responses with {self.model_name}")
-        results: list[str] = []
+        logger.info(
+            f"Batch generating {len(prompts)} responses with {self.model_name} "
+            f"(max_workers={max_workers})"
+        )
         errors: list[tuple[int, str]] = []
+
+        if max_workers > 1:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            results_par: list[str] = [""] * len(prompts)
+            done = 0
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
+                futures = {
+                    ex.submit(self.generate, p, **kwargs): i
+                    for i, p in enumerate(prompts)
+                }
+                for fut in as_completed(futures):
+                    i = futures[fut]
+                    try:
+                        results_par[i] = fut.result()
+                    except Exception as e:
+                        logger.warning(f"Failed to generate for prompt {i}: {e}")
+                        errors.append((i, str(e)))
+                    done += 1
+                    if done % 5 == 0 or done == len(prompts):
+                        logger.info(f"  progress: {done}/{len(prompts)} responses")
+            if errors:
+                logger.warning(f"Batch generation completed with {len(errors)} errors")
+            return results_par
+
+        results: list[str] = []
 
         if show_progress:
             with Progress(
@@ -338,12 +375,8 @@ class OpenRouterModelRunner(BaseModelRunner):
             )
             create_kwargs["extra_body"] = {"reasoning": reasoning}
         else:
-            create_kwargs["temperature"] = kwargs.get(
-                "temperature", self.temperature
-            )
-            create_kwargs["max_tokens"] = kwargs.get(
-                "max_tokens", self.max_tokens
-            )
+            create_kwargs["temperature"] = kwargs.get("temperature", self.temperature)
+            create_kwargs["max_tokens"] = kwargs.get("max_tokens", self.max_tokens)
 
         response = client.chat.completions.create(**create_kwargs)
 

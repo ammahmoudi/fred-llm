@@ -1,6 +1,10 @@
 """Core evaluation orchestration for Fredholm solutions."""
 
 import json
+import signal
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Optional
 
@@ -36,6 +40,51 @@ from src.evaluation.types.family import (
     _family_param_metadata,
     _substitute_family_constants,
 )
+
+# Per-equation cap on the pure-sympy metric leaves (numeric_compare, series /
+# approx / family evaluators). Those have no internal timeout and reasoning-model
+# answers can drive them into multi-minute hangs. The cap is armed only after
+# symbolic_compare has released its own alarm (and math_verify has run), so there
+# is no SIGALRM clobbering. On expiry the equation raises TimeoutError and is
+# dropped from the accuracy denominator, like any other un-evaluable item.
+_METRIC_TIMEOUT_S = 12.0
+
+
+class _MetricTimeout(BaseException):
+    """Per-equation metric budget expired.
+
+    Deliberately a ``BaseException``, not ``Exception``: the metric leaves
+    (``numeric_compare`` etc.) wrap their bodies in ``except Exception`` and
+    would otherwise swallow the alarm, leaving the rest of the block to run
+    unbounded on the already-spent one-shot timer. As a ``BaseException`` it
+    passes through those handlers and aborts the whole block on first fire; the
+    evaluation loop catches it explicitly.
+    """
+
+
+@contextmanager
+def _metric_alarm(seconds: float) -> Iterator[None]:
+    """Main-thread-only SIGALRM budget for a block of pure-sympy metric work.
+
+    Off the main thread (e.g. agentic worker threads) or without ``setitimer``
+    it is a no-op, so there is no regression — those paths run untimed exactly
+    as before.
+    """
+    on_main = threading.current_thread() is threading.main_thread()
+    if not on_main or not hasattr(signal, "setitimer"):
+        yield
+        return
+
+    def _handler(signum: int, frame: Any) -> None:
+        raise _MetricTimeout("metric evaluation timed out")
+
+    old = signal.signal(signal.SIGALRM, _handler)
+    signal.setitimer(signal.ITIMER_REAL, seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old)
 
 
 def evaluate_solutions(
@@ -118,6 +167,11 @@ def evaluate_solutions(
     residual_results: list[dict[str, Any]] = []
 
     for i, result in enumerate(results):
+        # Per-item progress: makes a slow-but-bounded eval observable so it is
+        # not mistaken for a hang (reasoning-model answers can be sympy-heavy).
+        if i % 10 == 0 and i > 0:
+            logger.info(f"  eval progress: {i}/{len(results)} equations")
+
         # Evaluate edge case metrics
         gt_has_solution = result.get("ground_truth_has_solution")
         pred_has_solution = result.get("has_solution")
@@ -180,13 +234,16 @@ def evaluate_solutions(
 
             # Branch on solution type: "family" type
             if gt_solution_type == "family":
-                evaluator.evaluate_family(
-                    pred_expr,
-                    gt_expr,
-                    domain=domain,
-                    evaluation_points=eval_points,
-                    include_points=include_points,
-                )
+                # Bound the (math_verify-free) family evaluator; parse above
+                # already ran math_verify, so this alarm is not clobbered.
+                with _metric_alarm(_METRIC_TIMEOUT_S):
+                    evaluator.evaluate_family(
+                        pred_expr,
+                        gt_expr,
+                        domain=domain,
+                        evaluation_points=eval_points,
+                        include_points=include_points,
+                    )
                 evaluated_count += 1
                 continue
 
@@ -233,6 +290,15 @@ def evaluate_solutions(
                         f"Residual verification failed for result {i}: {e_res}"
                     )
 
+        except _MetricTimeout:
+            errors.append(
+                f"Result {result.get('equation_id', i)}: metric timeout "
+                f"(>{_METRIC_TIMEOUT_S}s)"
+            )
+            logger.warning(
+                f"Metric evaluation timed out for result {i} "
+                f"(id={result.get('equation_id', i)}); dropped from accuracy"
+            )
         except Exception as e:
             errors.append(f"Result {result.get('equation_id', i)}: {str(e)}")
             logger.debug(f"Failed to evaluate result {i}: {e}")
@@ -361,58 +427,60 @@ class SolutionEvaluator:
             self.symbolic_tolerance,
             use_math_verify=self.use_math_verify,
         )
-        if evaluation_points is not None:
-            numeric = numeric_compare(
-                solution,
-                {"evaluation_points": evaluation_points, "u": str(ground_truth)},
-                domain,
-                self.n_test_points,
-                tol,
-                include_points=include_points,
-            )
-        else:
-            numeric = numeric_compare(
-                solution,
-                ground_truth,
-                domain,
-                self.n_test_points,
-                tol,
-                include_points=include_points,
-            )
+        # Bound the pure-sympy metric leaves as a group (see _metric_alarm).
+        with _metric_alarm(_METRIC_TIMEOUT_S):
+            if evaluation_points is not None:
+                numeric = numeric_compare(
+                    solution,
+                    {"evaluation_points": evaluation_points, "u": str(ground_truth)},
+                    domain,
+                    self.n_test_points,
+                    tol,
+                    include_points=include_points,
+                )
+            else:
+                numeric = numeric_compare(
+                    solution,
+                    ground_truth,
+                    domain,
+                    self.n_test_points,
+                    tol,
+                    include_points=include_points,
+                )
 
-        # Operator F1
-        op_f1 = operator_f1(solution, ground_truth)
+            # Operator F1
+            op_f1 = operator_f1(solution, ground_truth)
 
-        result: dict[str, Any] = {
-            "symbolic": symbolic,
-            "numeric": numeric,
-            "symbolic_match": symbolic.get("equivalent", False),
-            "numeric_match": numeric.get("match", False),
-            "correct": symbolic["equivalent"] or numeric["match"],
-            "solution_type": solution_type,
-            "operator_f1": op_f1,
-        }
+            result: dict[str, Any] = {
+                "symbolic": symbolic,
+                "numeric": numeric,
+                "symbolic_match": symbolic.get("equivalent", False),
+                "numeric_match": numeric.get("match", False),
+                "correct": symbolic["equivalent"] or numeric["match"],
+                "solution_type": solution_type,
+                "operator_f1": op_f1,
+            }
 
-        if solution_type == "series":
-            term_count = count_series_terms(solution)
-            result["series_term_count"] = term_count
-            result["series_term_target"] = 4
-            result["series_term_match"] = term_count == 4
-            result["series_term_eval"] = evaluate_series_terms(
-                solution,
-                ground_truth,
-                domain=domain,
-                n_points=self.n_test_points,
-                tolerance=tol,
-            )
+            if solution_type == "series":
+                term_count = count_series_terms(solution)
+                result["series_term_count"] = term_count
+                result["series_term_target"] = 4
+                result["series_term_match"] = term_count == 4
+                result["series_term_eval"] = evaluate_series_terms(
+                    solution,
+                    ground_truth,
+                    domain=domain,
+                    n_points=self.n_test_points,
+                    tolerance=tol,
+                )
 
-        if solution_type == "approx_coef":
-            result["approx_coef_eval"] = evaluate_approx_coeffs(
-                solution,
-                ground_truth,
-                tolerance=tol,
-                relative_tolerance=0.1,
-            )
+            if solution_type == "approx_coef":
+                result["approx_coef_eval"] = evaluate_approx_coeffs(
+                    solution,
+                    ground_truth,
+                    tolerance=tol,
+                    relative_tolerance=0.1,
+                )
 
         # BLEU (only when raw strings are provided)
         if self.compute_bleu and pred_str and gt_str:
@@ -624,9 +692,7 @@ class SolutionEvaluator:
         }
 
         numeric_results = [
-            r.get("numeric")
-            for r in self.results
-            if isinstance(r.get("numeric"), dict)
+            r.get("numeric") for r in self.results if isinstance(r.get("numeric"), dict)
         ]
 
         def _finite(value: float | None) -> bool:

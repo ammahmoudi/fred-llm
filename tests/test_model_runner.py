@@ -7,8 +7,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.llm.model_runner import (LocalModelRunner, ModelRunner,
-                                  OpenAIModelRunner, OpenRouterModelRunner)
+from src.llm.model_runner import (
+    LocalModelRunner,
+    ModelRunner,
+    OpenAIModelRunner,
+    OpenRouterModelRunner,
+)
 
 
 class TestOpenAIModelRunner:
@@ -81,6 +85,42 @@ class TestOpenAIModelRunner:
             assert isinstance(results, list)
             assert len(results) == 3
             assert results == ["resp1", "resp2", "resp3"]
+
+    def test_batch_generate_parallel_preserves_order(self) -> None:
+        """Parallel mode must return results index-aligned even when calls
+        finish out of submission order (the failure mode of naive as_completed)."""
+        import time
+
+        runner = OpenAIModelRunner(model_name="gpt-4", api_key="test-key")
+
+        def slow_gen(prompt: str, **kwargs: object) -> str:
+            # Earlier prompts sleep longer, so completions arrive reversed.
+            idx = int(prompt[1:])
+            time.sleep((5 - idx) * 0.02)
+            return f"resp{idx}"
+
+        with patch.object(runner, "generate", side_effect=slow_gen):
+            results = runner.batch_generate(
+                ["p1", "p2", "p3", "p4"], show_progress=False, max_workers=4
+            )
+
+        assert results == ["resp1", "resp2", "resp3", "resp4"]
+
+    def test_batch_generate_parallel_error_becomes_empty_string(self) -> None:
+        """A failed call in parallel mode yields '' at its index, not a shift."""
+        runner = OpenAIModelRunner(model_name="gpt-4", api_key="test-key")
+
+        def gen(prompt: str, **kwargs: object) -> str:
+            if prompt == "p2":
+                raise RuntimeError("boom")
+            return f"ok:{prompt}"
+
+        with patch.object(runner, "generate", side_effect=gen):
+            results = runner.batch_generate(
+                ["p1", "p2", "p3"], show_progress=False, max_workers=3
+            )
+
+        assert results == ["ok:p1", "", "ok:p3"]
 
 
 class TestOpenRouterModelRunner:
@@ -233,9 +273,7 @@ class TestModelRunnerFactory:
         """Test that factory delegates batch_generate to runner."""
         runner = ModelRunner(provider="openai", api_key="test")
 
-        with patch.object(
-            runner._runner, "batch_generate", return_value=["r1", "r2"]
-        ):
+        with patch.object(runner._runner, "batch_generate", return_value=["r1", "r2"]):
             results = runner.batch_generate(["p1", "p2"])
             assert results == ["r1", "r2"]
 

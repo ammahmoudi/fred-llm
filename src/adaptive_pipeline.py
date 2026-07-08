@@ -669,6 +669,11 @@ class AdaptivePipeline:
             "rate_limit_delay": 0.5 if model_config.provider == "openai" else 1.0,
             "show_progress": True,
         }
+        # Baseline OpenAI runs go parallel: reasoning models (~45s/call) make a
+        # sequential 100-prompt batch take >1h and emit no progress. Agentic
+        # mode has its own worker pool, so only the plain baseline needs this.
+        if model_config.provider == "openai" and not model_config.agentic:
+            batch_kwargs["max_workers"] = 8
         if model_config.agentic:
             # Verifier gets problem-statement fields only — never GT labels
             batch_kwargs["equations"] = [

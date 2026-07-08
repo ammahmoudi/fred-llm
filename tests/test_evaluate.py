@@ -64,6 +64,37 @@ class TestSymbolicCompare:
 
         assert result["equivalent"] is True
 
+    def test_run_with_timeout_bounds_slow_call(self) -> None:
+        """The SIGALRM helper caps a slow call and passes fast ones through."""
+        import time
+
+        from src.evaluation.metrics.symbolic import _run_with_timeout
+
+        ok, val = _run_with_timeout(0.15, lambda: (time.sleep(2), "done")[1])
+        assert ok is False and val is None
+
+        ok, val = _run_with_timeout(1.0, lambda: 42)
+        assert ok is True and val == 42
+
+    def test_symbolic_fallback_times_out(self) -> None:
+        """A pathological sympy fallback returns inconclusive, never hangs."""
+        import time
+        from unittest.mock import patch
+
+        x = sp.Symbol("x")
+
+        def slow_simplify(*args: object, **kwargs: object) -> sp.Expr:
+            time.sleep(2)
+            return sp.Integer(1)
+
+        with patch(
+            "src.evaluation.metrics.symbolic.sp.simplify", side_effect=slow_simplify
+        ):
+            result = symbolic_compare(x**2, x**3, use_math_verify=False, timeout_s=0.2)
+
+        assert result["equivalent"] is False
+        assert result.get("error") == "symbolic_timeout"
+
 
 class TestNumericCompare:
     """Tests for numeric comparison."""
@@ -312,6 +343,64 @@ class TestEvaluateSolutions:
             assert metrics["evaluated_count"] == 2
             assert metrics["accuracy"] == 1.0
             assert metrics["has_solution_accuracy"] == 1.0
+        finally:
+            Path(temp_path).unlink()
+
+    def test_metric_leaf_timeout_excludes_item(self) -> None:
+        """A pathological equation that hangs a pure-sympy metric leaf
+        (numeric_compare here) is bounded and dropped; the batch keeps going."""
+        import time
+        from unittest.mock import patch
+
+        import src.evaluation.core as core
+
+        real_numeric = core.numeric_compare
+        calls = {"n": 0}
+
+        def maybe_slow(*a: object, **k: object):
+            calls["n"] += 1
+            if calls["n"] == 1:  # first equation hangs the leaf
+                # numeric_compare wraps its body in `except Exception`; mimic that
+                # to prove the BaseException-derived timeout is NOT swallowed here.
+                try:
+                    time.sleep(3)
+                except Exception:  # noqa: BLE001
+                    return {"match": False}
+            return real_numeric(*a, **k)
+
+        results = [
+            {
+                "equation_id": "slow",
+                "solution_str": "x",
+                "ground_truth": "x",
+                "solution_type": "exact_symbolic",
+                "ground_truth_solution_type": "exact_symbolic",
+            },
+            {
+                "equation_id": "ok",
+                "solution_str": "x",
+                "ground_truth": "x",
+                "solution_type": "exact_symbolic",
+                "ground_truth_solution_type": "exact_symbolic",
+            },
+        ]
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
+            for r in results:
+                f.write(json.dumps(r) + "\n")
+            temp_path = f.name
+
+        try:
+            with (
+                patch.object(core, "_METRIC_TIMEOUT_S", 0.3),
+                patch.object(core, "numeric_compare", side_effect=maybe_slow),
+            ):
+                t0 = time.time()
+                metrics = evaluate_solutions(temp_path)
+            assert time.time() - t0 < 2.5  # bounded, not the full 3s hang
+            assert metrics["total_results"] == 2
+            assert metrics["evaluated_count"] == 1  # only the healthy item
+            assert metrics["parse_errors"] >= 1
         finally:
             Path(temp_path).unlink()
 

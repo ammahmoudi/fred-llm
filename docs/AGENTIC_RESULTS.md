@@ -148,18 +148,66 @@ most exactly where the base model is weakest.**
 pathological answers time out of the sympy evaluation on each side; the
 correct-count-over-100 framing, 35 vs 38, is the cleanest comparison.)
 
+## test_100 v2 — gpt-5.5 (top tier), 2026-07-08
+
+Same v2 prompts and scoring, on `cx/gpt-5.5`. Both sides re-scored through the
+identical `evaluate_solutions` path so the comparison is method-for-method with
+the runs above. gpt-5.5 answers fast (~3 s on trivial prompts) but still emits
+gnarly closed forms, so the same bounded-eval scaffolding applies. One point of
+note: a `_MetricTimeout` from a runaway `doit()` integration escaped the
+pipeline's own evaluation loop (which caught only `except Exception`, and the
+timeout is a `BaseException` by design) and crashed the baseline eval. Fixed by
+adding the `except _MetricTimeout` guard the module-level loop already had;
+predictions were saved before the crash, so no inference was re-paid.
+
+| metric | baseline | agentic |
+|---|---|---|
+| correct equations | 36/100 | **38/100** |
+| accuracy (of evaluated) | 38.3% (36/94) | 38.0% (38/100) |
+| symbolic accuracy | 26.6% | 28.0% |
+| solution-type accuracy | 28.4% | **36.7%** |
+| exact_symbolic | 23/30 | 22/30 |
+| regularized | 0/10 | 1/10 |
+| family | 10/10 | 10/10 |
+| none | 1/15 | 2/15 |
+| approx_coef | 2/13 | 3/15 |
+| series / discrete_points | 0 | 0 |
+
+Agentic: 695 LLM calls, 0 API errors. Selection: 38 verified, 60 majority vote,
+2 best-effort. Method wins: degenerate_kernel 59, adomian 17, neumann 12,
+fredholm_alternative 7, numerical 5.
+
+**The lift has flattened to noise.** gpt-5.5's single-prompt baseline (36/100)
+already sits at the top of the table, and the agentic run lands on 38/100 — the
+same absolute count the workflow reached on gpt-5.4. In accuracy-of-evaluated
+terms the two are indistinguishable (38.3% vs 38.0%). The mechanism has not
+stopped working: verification fires *more* here than on any weaker model
+(38 verified selections, up from 33 on gpt-5.4 and 29 on mini), and
+type-classification still gains a solid +8.3 pp (28.4% → 36.7%). The agentic
+side also evaluated all 100 items where the baseline dropped 6 to pathological
+sympy — a small robustness edge from selecting verified, tamer candidates. But
+on headline accuracy the base model has closed the gap the scaffolding used to
+fill.
+
+(Baseline evaluated 94, agentic 100 — six baseline answers timed out or failed
+in sympy; correct-count-over-100, 36 vs 38, is the cleanest comparison.)
+
 ## Model-scaling summary (v2, test_100)
 
 | model | baseline | agentic | agentic lift |
 |---|---|---|---|
-| gpt-5.4-mini | 21.4% (21/98) | 32.0% (32/100) | **+10.6 pp** |
-| gpt-5.4 | 36.5% (35/96) | 38.4% (38/99) | +1.9 pp |
+| gpt-5.4-mini | 21.4% (21/98) | 32.0% (32/100) | **+10.6 pp / +11 eq** |
+| gpt-5.4 | 36.5% (35/96) | 38.4% (38/99) | +1.9 pp / +3 eq |
+| gpt-5.5 | 38.3% (36/94) | 38.0% (38/100) | ~flat / +2 eq |
 
-The agentic workflow is a bigger win on the weaker model. As base capability
-rises, the baseline already captures most of the winnable items and the
-scaffolding's marginal contribution falls — though verification still fires more
-often on the stronger model (33 vs 29 verified selections). gpt-5.5 (top tier)
-was not run; the trend predicts an even smaller lift there.
+The agentic workflow is a bigger win on the weaker model, and the lift shrinks
+monotonically as the base model gets stronger: **+11, +3, +2 equations** across
+mini → gpt-5.4 → gpt-5.5. The absolute agentic output plateaus at 38/100 for
+both gpt-5.4 and gpt-5.5 while the baseline climbs (21 → 35 → 36), so the gap
+closes from the top down. Verification still fires most on the strongest model
+(38 vs 33 vs 29 verified selections) and type classification keeps improving —
+the mechanism works throughout; what vanishes is the headroom a strong base
+model leaves for it to recover.
 
 **Superseded:** an earlier partial gpt-5.4 v1 baseline (59/100, salvaged as a
 type-only score of 37.0% type accuracy) is retained under

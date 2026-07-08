@@ -1,0 +1,232 @@
+Fred-LLM - Loading config from configs/test_100v2_gpt55_router.yaml
+
+Adaptive Pipeline
+Automation Level: manual
+Resolved Paths: {'prompts': PosixPath('data/prompts/basic/test_100_v2')}
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 1: Loading Pre-generated Prompts                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Prompts: data/prompts/basic/test_100_v2
+> Style: basic
+OK Prompts loaded
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 3: LLM Inference                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Running cx/gpt-5.5...
+> Found 1 prompt files
+  Loading test_100_samples.jsonl...
+OK Loaded 100 prompts
+
+> Generating responses for 100 prompts...
+2026-07-08 21:02:01 | INFO     | src.llm.model_runner | Batch generating 100 responses with cx/gpt-5.5 (max_workers=8)
+2026-07-08 21:02:19 | INFO     | src.llm.model_runner |   progress: 5/100 responses
+2026-07-08 21:02:26 | INFO     | src.llm.model_runner |   progress: 10/100 responses
+2026-07-08 21:02:33 | INFO     | src.llm.model_runner |   progress: 15/100 responses
+2026-07-08 21:02:46 | INFO     | src.llm.model_runner |   progress: 20/100 responses
+2026-07-08 21:02:58 | INFO     | src.llm.model_runner |   progress: 25/100 responses
+2026-07-08 21:03:23 | INFO     | src.llm.model_runner |   progress: 30/100 responses
+2026-07-08 21:03:34 | INFO     | src.llm.model_runner |   progress: 35/100 responses
+2026-07-08 21:03:44 | INFO     | src.llm.model_runner |   progress: 40/100 responses
+2026-07-08 21:03:56 | INFO     | src.llm.model_runner |   progress: 45/100 responses
+2026-07-08 21:04:01 | INFO     | src.llm.model_runner |   progress: 50/100 responses
+2026-07-08 21:04:07 | INFO     | src.llm.model_runner |   progress: 55/100 responses
+2026-07-08 21:04:22 | INFO     | src.llm.model_runner |   progress: 60/100 responses
+2026-07-08 21:04:28 | INFO     | src.llm.model_runner |   progress: 65/100 responses
+2026-07-08 21:04:36 | INFO     | src.llm.model_runner |   progress: 70/100 responses
+2026-07-08 21:04:54 | INFO     | src.llm.model_runner |   progress: 75/100 responses
+2026-07-08 21:05:01 | INFO     | src.llm.model_runner |   progress: 80/100 responses
+2026-07-08 21:05:13 | INFO     | src.llm.model_runner |   progress: 85/100 responses
+2026-07-08 21:05:24 | INFO     | src.llm.model_runner |   progress: 90/100 responses
+2026-07-08 21:05:34 | INFO     | src.llm.model_runner |   progress: 95/100 responses
+2026-07-08 21:06:05 | INFO     | src.llm.model_runner |   progress: 100/100 responses
+> Saved raw responses to 
+outputs/test_100v2_gpt55/raw_responses_20260708_210605.jsonl
+
+OK Generated 100 predictions
+> Saved predictions to 
+outputs/test_100v2_gpt55/predictions_20260708_210605.jsonl
+2026-07-08 21:10:54 | INFO     | src.llm.cost_tracker | Saved cost summary to outputs/test_100v2_gpt55/cost_summary_20260708_210605.json
+2026-07-08 21:10:54 | INFO     | src.llm.cost_tracker | Saved detailed cost log to outputs/test_100v2_gpt55/cost_details_20260708_210605.jsonl
+
+Cost Summary
+Run ID: test_100v2_gpt55_20260708_210201
+Duration: 2026-07-08T21:02:01.451236 → 2026-07-08T21:10:54.585452
+Total Requests: 100
+Total Tokens: 131,477
+Total Cost: $3.63901500
+
+By Provider:
+┏━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Provider ┃ Requests ┃  Tokens ┃  Cost (USD) ┃
+┡━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ openai   │      100 │ 131,477 │ $3.63901500 │
+└──────────┴──────────┴─────────┴─────────────┘
+
+By Model:
+┏━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Model      ┃ Provider ┃ Requests ┃  Tokens ┃  Cost (USD) ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ cx/gpt-5.5 │ openai   │      100 │ 131,477 │ $3.63901500 │
+└────────────┴──────────┴──────────┴─────────┴─────────────┘
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 4: Evaluation                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Evaluating (both mode)...
+Timeout during comparison
+2026-07-08 21:11:07 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison timed out after 8.0s; numeric metric still applies
+2026-07-08 21:11:16 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison timed out after 8.0s; numeric metric still applies
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/shahriar/PV/fun/fred-llm/src/cli.py", line 642, in <module>
+    main()
+  File "/Users/shahriar/PV/fun/fred-llm/src/cli.py", line 638, in main
+    app()
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/typer/main.py", line 319, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/click/core.py", line 1485, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/typer/core.py", line 803, in main
+    return _main(
+           ^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/typer/core.py", line 189, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/click/core.py", line 1873, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/click/core.py", line 1269, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/click/core.py", line 824, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/typer/main.py", line 706, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/src/cli.py", line 80, in run
+    results = pipeline.run(dry_run=dry_run)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/src/adaptive_pipeline.py", line 118, in run
+    metrics = self._evaluate(predictions)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/src/adaptive_pipeline.py", line 962, in _evaluate
+    eval_result = evaluator.evaluate(
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/src/evaluation/core.py", line 442, in evaluate
+    numeric = numeric_compare(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/src/evaluation/metrics/numeric.py", line 93, in numeric_compare
+    solution = solution.doit()
+               ^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 1947, in doit
+    terms = [term.doit(**hints) if isinstance(term, Basic) else term
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 1947, in <listcomp>
+    terms = [term.doit(**hints) if isinstance(term, Basic) else term
+             ^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 1947, in doit
+    terms = [term.doit(**hints) if isinstance(term, Basic) else term
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 1947, in <listcomp>
+    terms = [term.doit(**hints) if isinstance(term, Basic) else term
+             ^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/operations.py", line 478, in doit
+    terms = [term.doit(**hints) for term in self.args]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/operations.py", line 478, in <listcomp>
+    terms = [term.doit(**hints) for term in self.args]
+             ^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/operations.py", line 478, in doit
+    terms = [term.doit(**hints) for term in self.args]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/operations.py", line 478, in <listcomp>
+    terms = [term.doit(**hints) for term in self.args]
+             ^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/integrals.py", line 619, in doit
+    antideriv = self._eval_integral(
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/integrals.py", line 1091, in _eval_integral
+    h = heurisch_wrapper(g, x, hints=[])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/heurisch.py", line 144, in heurisch_wrapper
+    res = heurisch(f, x, rewrite, hints, mappings, retries, degree_offset,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/heurisch.py", line 759, in heurisch
+    solution = _integrate('Q')
+               ^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/heurisch.py", line 706, in _integrate
+    h = F - _derivation(candidate) / denom
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/heurisch.py", line 543, in _derivation
+    return Add(*[ d * h.diff(v) for d, v in zip(numers, V) ])
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/integrals/heurisch.py", line 543, in <listcomp>
+    return Add(*[ d * h.diff(v) for d, v in zip(numers, V) ])
+                      ^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/expr.py", line 3606, in diff
+    return _derivative_dispatch(self, *symbols, **assumptions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1938, in _derivative_dispatch
+    return Derivative(expr, *variables, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1466, in __new__
+    obj = cls._dispatch_eval_derivative_n_times(expr, v, count)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1927, in _dispatch_eval_derivative_n_times
+    return expr._eval_derivative_n_times(v, count)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 1975, in _eval_derivative_n_times
+    obj = obj._eval_derivative(s)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/add.py", line 504, in _eval_derivative
+    return self.func(*[a.diff(s) for a in self.args])
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/add.py", line 504, in <listcomp>
+    return self.func(*[a.diff(s) for a in self.args])
+                       ^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/expr.py", line 3606, in diff
+    return _derivative_dispatch(self, *symbols, **assumptions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1938, in _derivative_dispatch
+    return Derivative(expr, *variables, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1466, in __new__
+    obj = cls._dispatch_eval_derivative_n_times(expr, v, count)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/function.py", line 1927, in _dispatch_eval_derivative_n_times
+    return expr._eval_derivative_n_times(v, count)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/mul.py", line 1006, in _eval_derivative_n_times
+    terms.append(c * p)
+                 ~~^~~
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/decorators.py", line 248, in _func
+    return func(self, other)
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/decorators.py", line 118, in binary_op_wrapper
+    return func(self, other)
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/expr.py", line 259, in __rmul__
+    return Mul(other, self)
+           ^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/basic.py", line 320, in __hash__
+    h = hash((type(self).__name__,) + self._hashable_content())
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/sympy/core/expr.py", line 185, in _hashable_content
+    def _hashable_content(self):
+
+  File "/Users/shahriar/PV/fun/fred-llm/src/evaluation/core.py", line 79, in _handler
+    raise _MetricTimeout("metric evaluation timed out")
+src.evaluation.core._MetricTimeout: metric evaluation timed out

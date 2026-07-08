@@ -1,0 +1,403 @@
+Fred-LLM - Loading config from configs/test_100v2_gpt55_router_agentic.yaml
+
+Adaptive Pipeline
+Automation Level: manual
+Resolved Paths: {'prompts': PosixPath('data/prompts/basic/test_100_v2')}
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 1: Loading Pre-generated Prompts                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Prompts: data/prompts/basic/test_100_v2
+> Style: basic
+OK Prompts loaded
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 3: LLM Inference                                                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Running cx/gpt-5.5...
+> Found 1 prompt files
+  Loading test_100_samples.jsonl...
+OK Loaded 100 prompts
+> Agentic mode: 5 method agents, max 1 repair round(s)
+
+> Generating responses for 100 prompts...
+2026-07-08 21:02:49 | INFO     | src.llm.agentic_runner | Agentic batch: 100 equations x 5 methods (3 equations concurrently)
+2026-07-08 21:03:24 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_5: winner=degenerate_kernel reason=verified calls=5 (35s)
+2026-07-08 21:03:42 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_13: winner=degenerate_kernel reason=verified calls=5 (18s)
+2026-07-08 21:04:20 | INFO     | src.llm.agentic_runner | test100_series_2: winner=degenerate_kernel reason=majority_vote calls=10 (91s)
+2026-07-08 21:04:42 | INFO     | src.llm.agentic_runner | test100_series_6: winner=degenerate_kernel reason=majority_vote calls=9 (61s)
+2026-07-08 21:04:43 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_26: winner=degenerate_kernel reason=majority_vote calls=10 (114s)
+2026-07-08 21:05:21 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:05:40 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_24: winner=fredholm_alternative reason=majority_vote calls=10 (79s)
+2026-07-08 21:05:52 | INFO     | src.llm.agentic_runner | test100_approx_coef_8: winner=neumann reason=majority_vote calls=9 (69s)
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:125: IntegrationWarning: The maximum number of subdivisions (50) has been achieved.
+  If increasing the limit yields no improvement it is advised to analyze 
+  the integrand in order to determine the difficulties.  If the position of a 
+  local difficulty can be determined (singularity, discontinuity) one will 
+  probably gain from splitting up the interval and calling the integrator 
+  on the subranges.  Perhaps a special-purpose integrator should be used.
+  integral_val, _ = integrate.quad(integrand_func, a, b)
+2026-07-08 21:06:13 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_25: winner=neumann reason=verified calls=5 (33s)
+2026-07-08 21:06:33 | INFO     | src.llm.agentic_runner | test100_discrete_points_7: winner=neumann reason=verified calls=5 (40s)
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:125: IntegrationWarning: The integral is probably divergent, or slowly convergent.
+  integral_val, _ = integrate.quad(integrand_func, a, b)
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:125: IntegrationWarning: The algorithm does not converge.  Roundoff error is detected
+  in the extrapolation table.  It is assumed that the requested tolerance
+  cannot be achieved, and that the returned result (if full_output = 1) is 
+  the best which can be obtained.
+  integral_val, _ = integrate.quad(integrand_func, a, b)
+2026-07-08 21:06:45 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:06:47 | INFO     | src.llm.agentic_runner | test100_family_2: winner=degenerate_kernel reason=verified calls=5 (14s)
+2026-07-08 21:06:51 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_22: winner=adomian reason=majority_vote calls=10 (128s)
+2026-07-08 21:06:54 | INFO     | src.llm.agentic_runner | test100_regularized_4: winner=degenerate_kernel reason=majority_vote calls=5 (7s)
+2026-07-08 21:07:06 | INFO     | src.llm.agentic_runner | test100_none_0: winner=degenerate_kernel reason=majority_vote calls=6 (53s)
+2026-07-08 21:07:21 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_4: winner=degenerate_kernel reason=verified calls=5 (15s)
+2026-07-08 21:07:31 | INFO     | src.llm.agentic_runner | test100_family_4: winner=degenerate_kernel reason=verified calls=5 (10s)
+/Users/shahriar/PV/fun/fred-llm/.venv/lib/python3.11/site-packages/scipy/integrate/_quadpack_py.py:607: ComplexWarning: Casting complex values to real discards the imaginary part
+  return _quadpack._qagse(func,a,b,args,full_output,epsabs,epsrel,limit)
+2026-07-08 21:07:53 | INFO     | src.llm.agentic_runner | test100_approx_coef_12: winner=neumann reason=majority_vote calls=9 (59s)
+2026-07-08 21:07:55 | INFO     | src.llm.agentic_runner | test100_regularized_2: winner=degenerate_kernel reason=majority_vote calls=5 (24s)
+2026-07-08 21:08:16 | WARNING  | src.evaluation.types.verify | Solution verification failed: 'ComplexInfinity'
+2026-07-08 21:08:16 | INFO     | src.llm.agentic_runner | test100_approx_coef_14: winner=degenerate_kernel reason=majority_vote calls=10 (85s)
+2026-07-08 21:08:32 | INFO     | src.llm.agentic_runner | test100_discrete_points_2: winner=neumann reason=verified calls=5 (16s)
+2026-07-08 21:08:39 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_2: winner=degenerate_kernel reason=verified calls=5 (44s)
+2026-07-08 21:09:00 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:09:02 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_1: winner=degenerate_kernel reason=verified calls=5 (23s)
+<lambdifygenerated-467>:2: RuntimeWarning: invalid value encountered in sqrt
+  return sqrt(t - x + 1.0e-8)
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:125: IntegrationWarning: The occurrence of roundoff error is detected, which prevents 
+  the requested tolerance from being achieved.  The error may be 
+  underestimated.
+  integral_val, _ = integrate.quad(integrand_func, a, b)
+<lambdifygenerated-471>:2: RuntimeWarning: invalid value encountered in sqrt
+  return sqrt(t - x + 1.0e-8)
+2026-07-08 21:09:11 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:09:28 | INFO     | src.llm.agentic_runner | test100_none_9: winner=adomian reason=majority_vote calls=6 (56s)
+2026-07-08 21:09:29 | INFO     | src.llm.agentic_runner | test100_discrete_points_8: winner=fredholm_alternative reason=verified calls=5 (27s)
+2026-07-08 21:09:32 | INFO     | src.llm.agentic_runner | test100_approx_coef_0: winner=adomian reason=majority_vote calls=7 (99s)
+2026-07-08 21:09:38 | INFO     | src.llm.agentic_runner | test100_regularized_9: winner=degenerate_kernel reason=majority_vote calls=5 (10s)
+2026-07-08 21:09:50 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_3: winner=degenerate_kernel reason=verified calls=5 (18s)
+2026-07-08 21:10:22 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:10:22 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_15: winner=degenerate_kernel reason=verified calls=5 (32s)
+2026-07-08 21:10:24 | INFO     | src.llm.agentic_runner | test100_none_1: winner=degenerate_kernel reason=majority_vote calls=6 (46s)
+2026-07-08 21:10:40 | INFO     | src.llm.agentic_runner | test100_none_11: winner=fredholm_alternative reason=majority_vote calls=8 (71s)
+2026-07-08 21:10:49 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:11:04 | INFO     | src.llm.agentic_runner | test100_approx_coef_6: winner=adomian reason=majority_vote calls=6 (42s)
+2026-07-08 21:11:33 | INFO     | src.llm.agentic_runner | test100_series_5: winner=neumann reason=majority_vote calls=8 (52s)
+2026-07-08 21:11:35 | INFO     | src.llm.agentic_runner | test100_approx_coef_7: winner=degenerate_kernel reason=majority_vote calls=10 (71s)
+2026-07-08 21:12:02 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:12:02 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:12:02 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_9: winner=adomian reason=verified calls=5 (27s)
+2026-07-08 21:12:03 | INFO     | src.llm.agentic_runner | test100_discrete_points_0: winner=adomian reason=majority_vote calls=10 (59s)
+2026-07-08 21:12:06 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_23: winner=degenerate_kernel reason=verified calls=5 (34s)
+2026-07-08 21:12:19 | INFO     | src.llm.agentic_runner | test100_family_5: winner=degenerate_kernel reason=verified calls=5 (13s)
+2026-07-08 21:12:22 | WARNING  | src.evaluation.types.verify | Solution verification failed: 'ComplexInfinity'
+2026-07-08 21:12:22 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_12: winner=degenerate_kernel reason=verified calls=5 (20s)
+2026-07-08 21:13:11 | INFO     | src.llm.agentic_runner | test100_approx_coef_9: winner=neumann reason=majority_vote calls=9 (67s)
+2026-07-08 21:13:22 | INFO     | src.llm.agentic_runner | test100_family_8: winner=degenerate_kernel reason=verified calls=5 (11s)
+2026-07-08 21:13:36 | INFO     | src.llm.agentic_runner | test100_regularized_5: winner=adomian reason=majority_vote calls=5 (15s)
+2026-07-08 21:13:37 | INFO     | src.llm.agentic_runner | test100_none_13: winner=degenerate_kernel reason=majority_vote calls=7 (78s)
+2026-07-08 21:13:54 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_16: winner=degenerate_kernel reason=verified calls=5 (17s)
+2026-07-08 21:13:55 | INFO     | src.llm.agentic_runner | test100_none_7: winner=neumann reason=majority_vote calls=9 (92s)
+2026-07-08 21:14:29 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_29: winner=degenerate_kernel reason=verified calls=5 (35s)
+<lambdifygenerated-880>:2: RuntimeWarning: invalid value encountered in arcsin
+  return t**2 + t + arcsin(t)
+<lambdifygenerated-877>:2: RuntimeWarning: invalid value encountered in arcsin
+  return x**2 + x + arcsin(x)
+2026-07-08 21:15:29 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_10: winner=degenerate_kernel reason=majority_vote calls=10 (94s)
+2026-07-08 21:16:32 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:16:32 | INFO     | src.llm.agentic_runner | test100_series_9: winner=fredholm_alternative reason=majority_vote calls=10 (175s)
+2026-07-08 21:16:53 | INFO     | src.llm.agentic_runner | test100_none_10: winner=degenerate_kernel reason=majority_vote calls=10 (145s)
+2026-07-08 21:16:56 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:16:56 | INFO     | src.llm.agentic_runner | test100_none_4: winner=adomian reason=verified calls=10 (87s)
+2026-07-08 21:17:17 | INFO     | src.llm.agentic_runner | test100_series_1: winner=adomian reason=majority_vote calls=6 (44s)
+2026-07-08 21:17:19 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:17:23 | INFO     | src.llm.agentic_runner | test100_approx_coef_11: winner=numerical reason=verified calls=5 (27s)
+2026-07-08 21:17:37 | INFO     | src.llm.agentic_runner | test100_regularized_1: winner=degenerate_kernel reason=majority_vote calls=5 (14s)
+2026-07-08 21:17:38 | INFO     | src.llm.agentic_runner | test100_family_1: winner=degenerate_kernel reason=verified calls=5 (22s)
+2026-07-08 21:17:49 | INFO     | src.llm.agentic_runner | test100_regularized_0: winner=degenerate_kernel reason=majority_vote calls=5 (13s)
+2026-07-08 21:17:58 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:18:00 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:136: RuntimeWarning: overflow encountered in square
+  result["residual_rmse"] = float(np.sqrt(np.mean(residuals**2)))
+2026-07-08 21:18:00 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_21: winner=degenerate_kernel reason=majority_vote calls=10 (67s)
+2026-07-08 21:18:25 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:18:36 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_7: winner=degenerate_kernel reason=verified calls=5 (36s)
+2026-07-08 21:18:37 | INFO     | src.llm.agentic_runner | test100_approx_coef_4: winner=neumann reason=majority_vote calls=10 (59s)
+2026-07-08 21:18:45 | INFO     | src.llm.agentic_runner | test100_regularized_3: winner=degenerate_kernel reason=majority_vote calls=5 (9s)
+2026-07-08 21:18:52 | INFO     | src.llm.agentic_runner | test100_none_5: winner=adomian reason=majority_vote calls=6 (63s)
+2026-07-08 21:19:26 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:19:26 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:19:57 | INFO     | src.llm.agentic_runner | test100_approx_coef_13: winner=degenerate_kernel reason=verified calls=10 (80s)
+2026-07-08 21:20:07 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:20:08 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:20:08 | INFO     | src.llm.agentic_runner | test100_series_0: winner=degenerate_kernel reason=majority_vote calls=10 (76s)
+2026-07-08 21:20:11 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_0: winner=degenerate_kernel reason=verified calls=5 (86s)
+<lambdifygenerated-1191>:2: RuntimeWarning: invalid value encountered in sqrt
+  return sqrt(t - x + 1.0e-8)*(t + x + 1)
+<lambdifygenerated-1196>:2: RuntimeWarning: overflow encountered in exp
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t))) - 2.2643000066863004*sin(t)
+<lambdifygenerated-1196>:2: RuntimeWarning: overflow encountered in cosh
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t))) - 2.2643000066863004*sin(t)
+<lambdifygenerated-1193>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x))) - 2.2643000066863004*sin(x)
+<lambdifygenerated-1194>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1193>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x))) - 2.2643000066863004*sin(x)
+<lambdifygenerated-1194>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1198>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1198>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1204>:2: RuntimeWarning: overflow encountered in exp
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t))) - 2.2643000066863004*(1 + 2.2643000066863004*1j)*sin(t)
+/Users/shahriar/PV/fun/fred-llm/src/evaluation/types/verify.py:123: RuntimeWarning: invalid value encountered in scalar multiply
+  return f_kernel(xi, t_val) * f_u_t(t_val)
+<lambdifygenerated-1204>:2: RuntimeWarning: overflow encountered in cosh
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t))) - 2.2643000066863004*(1 + 2.2643000066863004*1j)*sin(t)
+<lambdifygenerated-1201>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x))) - 2.2643000066863004*(1 + 2.2643000066863004*1j)*sin(x)
+<lambdifygenerated-1202>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1201>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x))) - 2.2643000066863004*(1 + 2.2643000066863004*1j)*sin(x)
+<lambdifygenerated-1202>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1208>:2: RuntimeWarning: overflow encountered in exp
+  return t**2 - t + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1208>:2: RuntimeWarning: overflow encountered in cosh
+  return t**2 - t + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1205>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 - x + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1206>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1205>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 - x + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1206>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1232>:2: RuntimeWarning: overflow encountered in exp
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1232>:2: RuntimeWarning: overflow encountered in cosh
+  return t**2 + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1229>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1230>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1229>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1230>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1236>:2: RuntimeWarning: overflow encountered in exp
+  return t**2 + t + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1236>:2: RuntimeWarning: overflow encountered in cosh
+  return t**2 + t + 1546.28460070784*exp(cosh(t**4 + t - t/tanh(t)))
+<lambdifygenerated-1233>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + x + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1234>:2: RuntimeWarning: overflow encountered in cosh
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1233>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + x + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+<lambdifygenerated-1234>:2: RuntimeWarning: overflow encountered in exp
+  return x**2 + 1546.28460070784*exp(cosh(x**4 + x - x/tanh(x)))
+2026-07-08 21:21:03 | INFO     | src.llm.agentic_runner | test100_series_7: winner=degenerate_kernel reason=majority_vote calls=9 (55s)
+2026-07-08 21:21:06 | INFO     | src.llm.agentic_runner | test100_approx_coef_2: winner=adomian reason=majority_vote calls=10 (55s)
+2026-07-08 21:21:22 | INFO     | src.llm.agentic_runner | test100_discrete_points_3: winner=fredholm_alternative reason=verified calls=5 (17s)
+2026-07-08 21:21:28 | INFO     | src.llm.agentic_runner | test100_series_4: winner=degenerate_kernel reason=majority_vote calls=5 (25s)
+2026-07-08 21:21:33 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:21:33 | INFO     | src.llm.agentic_runner | test100_approx_coef_5: winner=degenerate_kernel reason=majority_vote calls=6 (96s)
+2026-07-08 21:21:43 | INFO     | src.llm.agentic_runner | test100_regularized_6: winner=degenerate_kernel reason=majority_vote calls=5 (10s)
+2026-07-08 21:22:03 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:22:03 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:22:03 | INFO     | src.llm.agentic_runner | test100_discrete_points_4: winner=numerical reason=verified calls=5 (40s)
+<lambdifygenerated-1283>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1282>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+<lambdifygenerated-1287>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1286>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+<lambdifygenerated-1291>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1290>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+<lambdifygenerated-1295>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1294>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+<lambdifygenerated-1299>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1298>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+<lambdifygenerated-1323>:2: RuntimeWarning: invalid value encountered in log
+  return -log(x) - 45.83787142050338/tan(cos(x**3 + x))
+<lambdifygenerated-1322>:2: RuntimeWarning: invalid value encountered in log
+  return x**2 + 153.8553038603224*log(x) + 7052.399635711936/tan(cos(x**3 + x))
+2026-07-08 21:22:29 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_20: winner=degenerate_kernel reason=majority_vote calls=10 (46s)
+2026-07-08 21:22:56 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_14: winner=degenerate_kernel reason=verified calls=5 (28s)
+2026-07-08 21:23:07 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_8: winner=fredholm_alternative reason=majority_vote calls=10 (99s)
+2026-07-08 21:23:22 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_6: winner=degenerate_kernel reason=verified calls=5 (26s)
+2026-07-08 21:23:44 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:23:51 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_19: winner=adomian reason=verified calls=10 (109s)
+2026-07-08 21:24:00 | INFO     | src.llm.agentic_runner | test100_family_0: winner=degenerate_kernel reason=verified calls=5 (8s)
+2026-07-08 21:24:09 | INFO     | src.llm.agentic_runner | test100_none_8: winner=degenerate_kernel reason=majority_vote calls=6 (47s)
+2026-07-08 21:24:30 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:24:30 | INFO     | src.llm.agentic_runner | test100_none_2: winner=degenerate_kernel reason=best_effort calls=5 (30s)
+2026-07-08 21:25:04 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:25:28 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_28: winner=neumann reason=majority_vote calls=9 (79s)
+2026-07-08 21:25:29 | INFO     | src.llm.agentic_runner | test100_discrete_points_1: winner=degenerate_kernel reason=majority_vote calls=10 (60s)
+2026-07-08 21:25:37 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_11: winner=adomian reason=majority_vote calls=8 (150s)
+2026-07-08 21:25:54 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:25:54 | INFO     | src.llm.agentic_runner | test100_discrete_points_6: winner=degenerate_kernel reason=majority_vote calls=5 (26s)
+2026-07-08 21:25:57 | INFO     | src.llm.agentic_runner | test100_discrete_points_9: winner=adomian reason=verified calls=5 (20s)
+2026-07-08 21:26:00 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:26:00 | INFO     | src.llm.agentic_runner | test100_none_12: winner=degenerate_kernel reason=best_effort calls=5 (30s)
+2026-07-08 21:26:03 | INFO     | src.llm.agentic_runner | test100_family_9: winner=degenerate_kernel reason=verified calls=5 (9s)
+2026-07-08 21:26:16 | INFO     | src.llm.agentic_runner | test100_family_3: winner=degenerate_kernel reason=verified calls=5 (16s)
+2026-07-08 21:26:20 | INFO     | src.llm.agentic_runner | test100_family_6: winner=degenerate_kernel reason=verified calls=5 (17s)
+2026-07-08 21:27:13 | INFO     | src.llm.agentic_runner | test100_none_3: winner=neumann reason=majority_vote calls=9 (76s)
+2026-07-08 21:27:49 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_17: winner=degenerate_kernel reason=majority_vote calls=10 (89s)
+2026-07-08 21:28:32 | INFO     | src.llm.agentic_runner | test100_approx_coef_3: winner=degenerate_kernel reason=majority_vote calls=10 (79s)
+2026-07-08 21:28:43 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_18: winner=fredholm_alternative reason=majority_vote calls=10 (54s)
+2026-07-08 21:28:56 | INFO     | src.llm.agentic_runner | test100_regularized_7: winner=degenerate_kernel reason=majority_vote calls=5 (13s)
+2026-07-08 21:29:17 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:29:44 | WARNING  | src.evaluation.types.verify | Solution verification failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:29:44 | INFO     | src.llm.agentic_runner | test100_discrete_points_5: winner=numerical reason=verified calls=8 (48s)
+2026-07-08 21:30:32 | INFO     | src.llm.agentic_runner | test100_approx_coef_1: winner=numerical reason=majority_vote calls=8 (256s)
+2026-07-08 21:30:42 | INFO     | src.llm.agentic_runner | test100_series_3: winner=neumann reason=majority_vote calls=10 (130s)
+2026-07-08 21:30:53 | INFO     | src.llm.agentic_runner | test100_regularized_8: winner=degenerate_kernel reason=majority_vote calls=5 (21s)
+<lambdifygenerated-1871>:2: RuntimeWarning: invalid value encountered in sqrt
+  return sqrt(t - x + 1.0e-8)
+<lambdifygenerated-1875>:2: RuntimeWarning: invalid value encountered in sqrt
+  return sqrt(t - x + 1.0e-8)
+2026-07-08 21:31:32 | INFO     | src.llm.agentic_runner | test100_series_8: winner=degenerate_kernel reason=majority_vote calls=8 (108s)
+2026-07-08 21:31:53 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:32:00 | INFO     | src.llm.agentic_runner | test100_none_14: winner=numerical reason=majority_vote calls=10 (78s)
+2026-07-08 21:32:07 | WARNING  | src.postprocessing.parse | discrete_points type specified but no points extracted
+2026-07-08 21:32:07 | INFO     | src.llm.agentic_runner | test100_approx_coef_10: winner=adomian reason=majority_vote calls=7 (74s)
+2026-07-08 21:32:16 | INFO     | src.llm.agentic_runner | test100_none_6: winner=adomian reason=majority_vote calls=7 (44s)
+2026-07-08 21:32:19 | INFO     | src.llm.agentic_runner | test100_family_7: winner=degenerate_kernel reason=verified calls=5 (19s)
+2026-07-08 21:34:24 | INFO     | src.llm.agentic_runner | test100_exact_symbolic_27: winner=adomian reason=majority_vote calls=9 (137s)
+
+> Saved raw responses to 
+outputs/test_100v2_gpt55_agentic/raw_responses_20260708_213424.jsonl
+> Saved agentic trace to 
+outputs/test_100v2_gpt55_agentic/agentic_trace_20260708_213424.jsonl
+
+OK Generated 100 predictions
+> Saved predictions to 
+outputs/test_100v2_gpt55_agentic/predictions_20260708_213424.jsonl
+2026-07-08 21:34:26 | INFO     | src.llm.cost_tracker | Saved cost summary to outputs/test_100v2_gpt55_agentic/cost_summary_20260708_213424.json
+2026-07-08 21:34:26 | INFO     | src.llm.cost_tracker | Saved detailed cost log to outputs/test_100v2_gpt55_agentic/cost_details_20260708_213424.jsonl
+
+Cost Summary
+Run ID: test_100v2_gpt55_agentic_20260708_210249
+Duration: 2026-07-08T21:02:49.584126 → 2026-07-08T21:34:26.761460
+Total Requests: 695
+Total Tokens: 1,190,418
+Total Cost: $34.25248500
+
+By Provider:
+┏━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃ Provider ┃ Requests ┃    Tokens ┃   Cost (USD) ┃
+┡━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ openai   │      695 │ 1,190,418 │ $34.25248500 │
+└──────────┴──────────┴───────────┴──────────────┘
+
+By Model:
+┏━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+┃ Model      ┃ Provider ┃ Requests ┃    Tokens ┃   Cost (USD) ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+│ cx/gpt-5.5 │ openai   │      695 │ 1,190,418 │ $34.25248500 │
+└────────────┴──────────┴──────────┴───────────┴──────────────┘
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Step 4: Evaluation                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+> Evaluating (both mode)...
+2026-07-08 21:34:38 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: name 'u_0' is not defined
+2026-07-08 21:34:38 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: 'float' object cannot be interpreted as an integer
+2026-07-08 21:34:51 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: return arrays must be of ArrayType
+2026-07-08 21:34:56 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: 'float' object cannot be interpreted as an integer
+
+Evaluation Results:
+  Total predictions: 100
+  Evaluated: 100
+  Accuracy: 38.00%
+  Symbolic accuracy: 28.00%
+  Numeric accuracy: 28.00%
+  Operator F1: 72.08%
+  Operator Precision: 73.33%
+  Operator Recall: 73.98%
+  Relative L2: 0.490762
+  Mean MAE: 134319816124112.406250
+  Mean RMSE: 593854567327137.625000
+  Mean Max Error: 4415867734620727.500000
+  BLEU: 0.1116
+  None detection P/R/F1: 15.38% / 13.33% / 14.29%
+  Has solution accuracy: 76.00%
+  Solution type accuracy: 36.67%
+
+  Per-type breakdown:
+    approx_coef: 3/15 (20%)
+    discrete_points: 0/10 (0%)
+    exact_symbolic: 22/30 (73%)
+    family: 10/10 (100%)
+    none: 2/15 (13%)
+    regularized: 1/10 (10%)
+    series: 0/10 (0%)
+> Saved evaluated predictions to 
+outputs/test_100v2_gpt55_agentic/predictions_evaluated_20260708_213456.jsonl
+
+> Saved metrics to outputs/test_100v2_gpt55_agentic/metrics_20260708_213456.json
+✓ Pipeline completed successfully!
+Metrics: {'total': 100, 'correct': 38, 'accuracy': 0.38, 'symbolic_accuracy': 
+0.28, 'numeric_accuracy': 0.28, 'mean_mae': 134319816124112.4, 'mean_rmse': 
+593854567327137.6, 'mean_max_error': 4415867734620727.5, 'mean_mean_error': 
+134319816124112.4, 'series_term_stats': {'total': 10, 'match': 0, 'match_rate': 
+0.0, 'min': 1, 'max': 6, 'mean': 2.8, 'target': 4}, 'approx_coef_stats': 
+{'total': 15, 'mean_match_rate': 0.6666666666666666, 'mean_abs_error': 
+67.02862133583311, 'mean_rel_error': inf}, 'discrete_points_stats': {'total': 
+10, 'matched_point_rate': 0.0, 'mean_accuracy': 0.0, 'mean_rmse': inf}, 
+'family_param_stats': {'total': 10, 'naming_convention_rate': 0.0, 
+'param_count_match_rate': 0.0}, 'mean_operator_precision': 0.7333333333333334, 
+'mean_operator_recall': 0.7398351648351649, 'mean_operator_f1': 
+0.7207766592381976, 'mean_rel_l2': 0.49076198767628415, 'mean_bleu': 
+0.11159454004581593, 'per_type': {'series': {'total': 10, 'correct': 0, 
+'accuracy': 0.0}, 'exact_symbolic': {'total': 30, 'correct': 22, 'accuracy': 
+0.7333333333333333}, 'approx_coef': {'total': 15, 'correct': 3, 'accuracy': 
+0.2}, 'discrete_points': {'total': 10, 'correct': 0, 'accuracy': 0.0}, 'none': 
+{'total': 15, 'correct': 2, 'accuracy': 0.13333333333333333}, 'family': 
+{'total': 10, 'correct': 10, 'accuracy': 1.0}, 'regularized': {'total': 10, 
+'correct': 1, 'accuracy': 0.1}}, 'evaluated_count': 100, 'total_predictions': 
+100, 'api_errors': 0, 'parse_errors': 0, 'has_solution_accuracy': 0.76, 
+'has_solution_total': 100, 'solution_type_accuracy': 0.36666666666666664, 
+'solution_type_total': 90, 'confusion_matrix': 
+{'approx_coef_predicted_as_exact_symbolic': 8, 
+'discrete_points_predicted_as_exact_symbolic': 7, 
+'none_predicted_as_regularized': 4, 'family_predicted_as_exact_symbolic': 10, 
+'regularized_predicted_as_none': 9, 'approx_coef_predicted_as_series': 4, 
+'none_predicted_as_series': 3, 'none_predicted_as_exact_symbolic': 4, 
+'series_predicted_as_exact_symbolic': 2, 'series_predicted_as_none': 2, 
+'discrete_points_predicted_as_approx_coef': 2, 
+'discrete_points_predicted_as_series': 1, 'none_predicted_as_approx_coef': 1}, 
+'none_detection': {'precision': 0.15384615384615385, 'recall': 
+0.13333333333333333, 'f1': 0.14285714285714288, 'tp': 2, 'fp': 11, 'fn': 13}}

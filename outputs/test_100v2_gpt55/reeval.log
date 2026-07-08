@@ -1,0 +1,44 @@
+2026-07-08 21:32:51 | INFO     | src.evaluation.core | Evaluating solutions from outputs/test_100v2_gpt55/predictions_20260708_210605.jsonl
+2026-07-08 21:32:51 | INFO     | src.evaluation.core | Loaded 100 results
+Timeout during comparison
+2026-07-08 21:33:04 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison timed out after 8.0s; numeric metric still applies
+2026-07-08 21:33:13 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison timed out after 8.0s; numeric metric still applies
+2026-07-08 21:33:25 | WARNING  | src.evaluation.core | Metric evaluation timed out for result 4 (id=test100_series_6); dropped from accuracy
+2026-07-08 21:33:25 | INFO     | src.evaluation.core |   eval progress: 10/100 equations
+2026-07-08 21:33:27 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: Unsupported by <class 'sympy.printing.numpy.NumPyPrinter'>: <class 'sympy.integrals.integrals.Integral'>
+Set the printer option 'strict' to False in order to generate partially printed code.
+2026-07-08 21:33:27 | INFO     | src.evaluation.core |   eval progress: 20/100 equations
+2026-07-08 21:33:27 | INFO     | src.evaluation.core |   eval progress: 30/100 equations
+2026-07-08 21:33:28 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison failed: unsupported operand type(s) for -: 'FiniteSet' and 'Zero'
+2026-07-08 21:33:28 | INFO     | src.evaluation.core |   eval progress: 40/100 equations
+2026-07-08 21:33:30 | INFO     | src.evaluation.core |   eval progress: 50/100 equations
+2026-07-08 21:33:30 | INFO     | src.evaluation.core |   eval progress: 60/100 equations
+2026-07-08 21:33:31 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison failed: unsupported operand type(s) for -: 'FiniteSet' and 'Add'
+Timeout during comparison
+2026-07-08 21:33:45 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison timed out after 8.0s; numeric metric still applies
+2026-07-08 21:33:57 | WARNING  | src.evaluation.core | Metric evaluation timed out for result 62 (id=test100_series_7); dropped from accuracy
+2026-07-08 21:33:59 | INFO     | src.evaluation.core |   eval progress: 70/100 equations
+2026-07-08 21:33:59 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: return arrays must be of ArrayType
+2026-07-08 21:34:02 | INFO     | src.evaluation.core |   eval progress: 80/100 equations
+2026-07-08 21:34:04 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison failed: unsupported operand type(s) for -: 'FiniteSet' and 'Pow'
+2026-07-08 21:34:06 | WARNING  | src.evaluation.types.approx_coeff | Approx coef comparison failed: 'FiniteSet' object has no attribute 'as_coeff_Mul'
+2026-07-08 21:34:06 | INFO     | src.evaluation.core |   eval progress: 90/100 equations
+2026-07-08 21:34:08 | WARNING  | src.evaluation.metrics.symbolic | Symbolic comparison failed: unsupported operand type(s) for -: 'FiniteSet' and 'Add'
+2026-07-08 21:34:10 | INFO     | src.evaluation.core | Evaluation complete: 94/100 evaluated, accuracy: 38.30%
+ELAPSED: 79.3s
+evaluated_count : 94
+total           : 94
+correct         : 36
+accuracy        : 0.3830
+symbolic_acc    : 0.2660
+type_acc        : 0.2842
+none P/R/F1     : 0.08333333333333333/0.06666666666666667/0.07407407407407407
+per_type        :
+    series           0/8
+    exact_symbolic   23/30
+    approx_coef      2/13
+    none             1/15
+    family           10/10
+    regularized      0/10
+    discrete_points  0/8
+DONE -> outputs/test_100v2_gpt55/eval_metrics_v2_baseline.json

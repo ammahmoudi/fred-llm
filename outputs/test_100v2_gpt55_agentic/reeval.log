@@ -1,0 +1,33 @@
+2026-07-08 21:36:38 | INFO     | src.evaluation.core | Evaluating solutions from outputs/test_100v2_gpt55_agentic/predictions_evaluated_20260708_213456.jsonl
+2026-07-08 21:36:38 | INFO     | src.evaluation.core | Loaded 100 results
+2026-07-08 21:36:50 | INFO     | src.evaluation.core |   eval progress: 10/100 equations
+2026-07-08 21:36:50 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: name 'u_0' is not defined
+2026-07-08 21:36:50 | INFO     | src.evaluation.core |   eval progress: 20/100 equations
+2026-07-08 21:36:50 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: 'float' object cannot be interpreted as an integer
+2026-07-08 21:36:50 | INFO     | src.evaluation.core |   eval progress: 30/100 equations
+2026-07-08 21:36:52 | INFO     | src.evaluation.core |   eval progress: 40/100 equations
+2026-07-08 21:36:53 | INFO     | src.evaluation.core |   eval progress: 50/100 equations
+2026-07-08 21:36:53 | INFO     | src.evaluation.core |   eval progress: 60/100 equations
+2026-07-08 21:37:04 | INFO     | src.evaluation.core |   eval progress: 70/100 equations
+2026-07-08 21:37:04 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: return arrays must be of ArrayType
+2026-07-08 21:37:05 | INFO     | src.evaluation.core |   eval progress: 80/100 equations
+2026-07-08 21:37:06 | INFO     | src.evaluation.core |   eval progress: 90/100 equations
+2026-07-08 21:37:09 | WARNING  | src.evaluation.metrics.numeric | Numeric comparison failed: 'float' object cannot be interpreted as an integer
+2026-07-08 21:37:09 | INFO     | src.evaluation.core | Evaluation complete: 100/100 evaluated, accuracy: 38.00%
+ELAPSED: 30.7s
+evaluated_count : 100
+total           : 100
+correct         : 38
+accuracy        : 0.3800
+symbolic_acc    : 0.2800
+type_acc        : 0.3667
+none P/R/F1     : 0.15384615384615385/0.13333333333333333/0.14285714285714288
+per_type        :
+    series           0/10
+    exact_symbolic   22/30
+    approx_coef      3/15
+    discrete_points  0/10
+    none             2/15
+    family           10/10
+    regularized      1/10
+DONE -> outputs/test_100v2_gpt55_agentic/eval_metrics_v2_agentic.json

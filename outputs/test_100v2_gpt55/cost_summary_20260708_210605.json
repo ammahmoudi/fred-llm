@@ -1,0 +1,23 @@
+{
+  "run_id": "test_100v2_gpt55_20260708_210201",
+  "start_time": "2026-07-08T21:02:01.451236",
+  "end_time": "2026-07-08T21:10:54.583406",
+  "total_requests": 100,
+  "total_tokens": 131477,
+  "total_cost_usd": "3.6390150",
+  "provider_breakdown": {
+    "openai": {
+      "requests": 100,
+      "tokens": 131477,
+      "total_cost_usd": "3.6390150"
+    }
+  },
+  "model_breakdown": {
+    "cx/gpt-5.5": {
+      "provider": "openai",
+      "requests": 100,
+      "tokens": 131477,
+      "total_cost_usd": "3.6390150"
+    }
+  }
+}

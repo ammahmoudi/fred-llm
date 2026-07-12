@@ -297,6 +297,18 @@ This document tracks all features - implemented and planned. Check off items as 
   - Returns {"verified", "residual_max", "residual_mean"} 
   - Integrated with evaluate_solutions() when kernel/f/lambda metadata available
   - Aggregated in metrics["residual_verification"] with verified_count/rate and mean residuals
+- [x] **Bounded residual verification** - verify_solution wrapped in _metric_alarm ✅ **July 12, 2026**
+  - sympy heurisch integration could hang evaluate_solutions indefinitely on hostile kernels
+  - On timeout only the residual diagnostic is skipped; the item stays scored
+  - Regression test: tests/test_evaluate.py::TestResidualVerificationWiring::test_hanging_residual_is_bounded
+- [x] **Special-token fine-tuning experiment (FRED-token)** ✅ **July 12, 2026**
+  - SmolLM2-360M full fine-tune on MLX with 15 new structure/decision tokens vs plain-text ablation
+  - Plain SFT: 0.505 on test_100_v2 — beats all GPT baselines (best 0.384); special tokens: 0.370 (underperforms own ablation)
+  - Scripts + full analysis: experiments/special_tokens/ (REPORT.md)
+- [x] **v2: LM-routed sympy solver (ToolkenGPT-style tool loop)** ✅ **July 12, 2026**
+  - Type decision routes to a degenerate-kernel solver; answer spliced in (no retraining)
+  - plain+solver: 0.582 (exact_symbolic 0.23→0.60); solver without LM router: 0.359 — the router is load-bearing
+  - experiments/special_tokens/solver.py + eval_v2.py
 - [ ] Robustness testing - Prompt variation sensitivity ❌ **Not started**
 - [ ] Generalization testing - Performance on unseen function types ❌ **Not started**
 - [ ] Benchmark suite - Standardized evaluation dataset ❌ **Not started**

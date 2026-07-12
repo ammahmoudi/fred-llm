@@ -1,0 +1,7 @@
+# regenerable via build_data.py (deterministic, seed 42)
+data_special/
+data_plain/
+# ~700 MB each; rebuild via resize_model.py + train_full.py
+base_resized/
+model_special/
+model_plain/

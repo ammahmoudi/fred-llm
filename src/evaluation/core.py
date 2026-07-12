@@ -6,7 +6,7 @@ import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import sympy as sp
@@ -35,11 +35,6 @@ from src.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-from src.evaluation.types.family import (
-    _family_numeric_compare_samples,
-    _family_param_metadata,
-    _substitute_family_constants,
-)
 
 # Per-equation cap on the pure-sympy metric leaves (numeric_compare, series /
 # approx / family evaluators). Those have no internal timeout and reasoning-model
@@ -94,7 +89,7 @@ def evaluate_solutions(
     numeric_tolerance: float = 1e-6,
     n_test_points: int = 100,
     use_math_verify: bool = True,
-    type_tolerances: Optional[dict[str, float]] = None,
+    type_tolerances: dict[str, float] | None = None,
     include_points: bool = False,
     **kwargs: Any,
 ) -> dict[str, Any]:
@@ -276,15 +271,26 @@ def evaluate_solutions(
                     f_expr = parse_latex_to_sympy(
                         f_str, use_math_verify=use_math_verify
                     )
-                    residual = verify_solution(
-                        pred_expr,
-                        kernel_expr,
-                        f_expr,
-                        float(lambda_val),
-                        domain=domain,
-                        x_values=(eval_points or {}).get("x_values"),
-                    )
+                    # Bound verify_solution: sympy.integrate (heurisch) can
+                    # spin unbounded on hostile kernels. Parses above already
+                    # ran math_verify, so this alarm is not clobbered. The
+                    # item is already scored; on timeout only the residual
+                    # diagnostic is skipped.
+                    with _metric_alarm(_METRIC_TIMEOUT_S):
+                        residual = verify_solution(
+                            pred_expr,
+                            kernel_expr,
+                            f_expr,
+                            float(lambda_val),
+                            domain=domain,
+                            x_values=(eval_points or {}).get("x_values"),
+                        )
                     residual_results.append(residual)
+                except _MetricTimeout:
+                    logger.warning(
+                        f"Residual verification timed out for result "
+                        f"{result.get('equation_id', i)}; residual skipped"
+                    )
                 except Exception as e_res:
                     logger.debug(
                         f"Residual verification failed for result {i}: {e_res}"
@@ -398,12 +404,12 @@ class SolutionEvaluator:
         solution: sp.Expr,
         ground_truth: sp.Expr,
         domain: tuple[float, float] = (0, 1),
-        solution_type: Optional[str] = None,
-        numeric_tolerance_override: Optional[float] = None,
-        evaluation_points: Optional[dict[str, Any]] = None,
+        solution_type: str | None = None,
+        numeric_tolerance_override: float | None = None,
+        evaluation_points: dict[str, Any] | None = None,
         include_points: bool = False,
-        pred_str: Optional[str] = None,
-        gt_str: Optional[str] = None,
+        pred_str: str | None = None,
+        gt_str: str | None = None,
     ) -> dict[str, Any]:
         """Evaluate a single solution.
 
@@ -489,7 +495,7 @@ class SolutionEvaluator:
         self.results.append(result)
         return result
 
-    def evaluate_none_type(self, pred_has_solution: Optional[bool]) -> dict[str, Any]:
+    def evaluate_none_type(self, pred_has_solution: bool | None) -> dict[str, Any]:
         """Evaluate a 'none' type equation (no solution exists).
 
         Correct iff the LLM predicted has_solution=False.
@@ -522,7 +528,7 @@ class SolutionEvaluator:
         return result
 
     def evaluate_regularized_type(
-        self, pred_solution_type: Optional[str]
+        self, pred_solution_type: str | None
     ) -> dict[str, Any]:
         """Evaluate a 'regularized' type equation (ill-posed, first kind).
 
@@ -561,7 +567,7 @@ class SolutionEvaluator:
         solution: sp.Expr,
         ground_truth: sp.Expr,
         domain: tuple[float, float] = (0, 1),
-        evaluation_points: Optional[dict[str, Any]] = None,
+        evaluation_points: dict[str, Any] | None = None,
         include_points: bool = False,
     ) -> dict[str, Any]:
         """Evaluate a 'family' type equation (non-unique solution).

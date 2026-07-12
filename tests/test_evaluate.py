@@ -840,3 +840,38 @@ class TestResidualVerificationWiring:
             assert "residual_verification" not in metrics
         finally:
             Path(path).unlink()
+
+    def test_hanging_residual_is_bounded(self, monkeypatch) -> None:
+        """A verify_solution that never returns must not hang the evaluator,
+        and the item stays in the accuracy denominator (already scored)."""
+        import time
+
+        import src.evaluation.core as core
+
+        def _spin(*args, **kwargs):
+            while True:  # interrupted by the SIGALRM metric budget
+                time.sleep(0.05)
+
+        monkeypatch.setattr(core, "verify_solution", _spin)
+        monkeypatch.setattr(core, "_METRIC_TIMEOUT_S", 2.0)
+        results = [
+            {
+                "equation_id": "eq_1",
+                "solution_str": "3*x/2",
+                "ground_truth": "3*x/2",
+                "ground_truth_solution_type": "exact_symbolic",
+                "ground_truth_kernel": "x*t",
+                "ground_truth_f": "x",
+                "ground_truth_lambda": 1.0,
+                "ground_truth_domain": [0, 1],
+            },
+        ]
+        path = self._write_jsonl(results)
+        try:
+            start = time.monotonic()
+            metrics = evaluate_solutions(path)
+            assert time.monotonic() - start < 30
+            assert metrics["evaluated_count"] == 1
+            assert "residual_verification" not in metrics
+        finally:
+            Path(path).unlink()

@@ -1,0 +1,102 @@
+{
+  "total": 8,
+  "correct": 3,
+  "accuracy": 0.375,
+  "symbolic_accuracy": 0.0,
+  "numeric_accuracy": 0.25,
+  "mean_mae": 3.0140968145618718e+41,
+  "mean_rmse": 1.4652453541731214e+42,
+  "mean_max_error": 1.4537648958257403e+43,
+  "mean_mean_error": 3.0140968145618718e+41,
+  "series_term_stats": {
+    "total": 1,
+    "match": 0,
+    "match_rate": 0.0,
+    "min": 6,
+    "max": 6,
+    "mean": 6.0,
+    "target": 4
+  },
+  "approx_coef_stats": {
+    "total": 1,
+    "mean_match_rate": 1.0,
+    "mean_abs_error": 0.0,
+    "mean_rel_error": Infinity
+  },
+  "discrete_points_stats": {
+    "total": 1,
+    "matched_point_rate": 0.0,
+    "mean_accuracy": 0.0,
+    "mean_rmse": 0.24711699217796546
+  },
+  "family_param_stats": {
+    "total": 1,
+    "naming_convention_rate": 0.0,
+    "param_count_match_rate": 0.0
+  },
+  "mean_operator_precision": 0.5833333333333333,
+  "mean_operator_recall": 0.8,
+  "mean_operator_f1": 0.64,
+  "mean_rel_l2": 9.608486200911803e+40,
+  "mean_bleu": 0.15558392289898557,
+  "per_type": {
+    "series": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "exact_symbolic": {
+      "total": 2,
+      "correct": 1,
+      "accuracy": 0.5
+    },
+    "approx_coef": {
+      "total": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    "discrete_points": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "none": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "family": {
+      "total": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    "regularized": {
+      "total": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "evaluated_count": 8,
+  "total_predictions": 8,
+  "api_errors": 0,
+  "parse_errors": 0,
+  "has_solution_accuracy": 0.75,
+  "has_solution_total": 8,
+  "solution_type_accuracy": 0.16666666666666666,
+  "solution_type_total": 6,
+  "confusion_matrix": {
+    "series_predicted_as_exact_symbolic": 1,
+    "discrete_points_predicted_as_approx_coef": 1,
+    "none_predicted_as_approx_coef": 1,
+    "family_predicted_as_exact_symbolic": 1,
+    "regularized_predicted_as_none": 1
+  },
+  "none_detection": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+  }
+}

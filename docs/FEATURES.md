@@ -155,7 +155,13 @@ This document tracks all features - implemented and planned. Check off items as 
   - [x] Per-equation trace file (agentic_trace_*.jsonl) with candidates and verdicts ✅
   - [x] Test coverage - 8 tests with mocked base runner ✅ **All passing**
 - [ ] Fine-tuning support - Train custom models (Phi, T5) ❌ **Not started**
-- [ ] Tool-assisted solving - LLM generates Python code for SymPy ❌ **Not started**
+- [x] **Code-exec solving (program-of-thought)** ✅ **July 13, 2026 - see experiments/code_prompt/**
+  - [x] Equations rendered as executable SymPy definitions (code/code_exec prompt sets) ✅
+  - [x] CodeExecModelRunner: extracts the model's python block, runs it sandboxed with timeout ✅
+  - [x] One feedback repair round on script failure; raw-text fallback ✅
+  - [x] Config via model.code_exec section; script stdout feeds unchanged postprocess/evaluate ✅
+  - [x] Per-item trace file (code_exec_trace_*.jsonl) with scripts, errors, outcomes ✅
+  - [x] Test coverage - 5 tests with fake base runner ✅ **All passing**
 - [ ] Iterative refinement - Multi-turn conversation for complex equations ❌ **Not started**
 - [ ] Confidence scoring - Estimate solution reliability ⚠️ **Basic scoring in postprocess.py**
 

@@ -655,6 +655,20 @@ class AdaptivePipeline:
                 f"max {runner.max_repair_rounds} repair round(s)[/cyan]"
             )
 
+        # Wrap in the program-of-thought workflow when configured
+        if model_config.code_exec:
+            from src.llm.code_exec_runner import CodeExecModelRunner
+
+            runner = CodeExecModelRunner(
+                base_runner=runner,
+                exec_timeout=model_config.code_exec.exec_timeout,
+                max_repair_rounds=model_config.code_exec.max_repair_rounds,
+            )
+            console.print(
+                f"[cyan]> Code-exec mode: {runner.exec_timeout}s timeout, "
+                f"max {runner.max_repair_rounds} repair round(s)[/cyan]"
+            )
+
         # Set cost tracker on the runner
         runner.set_cost_tracker(cost_tracker)
 
@@ -725,6 +739,14 @@ class AdaptivePipeline:
             # Batch fully persisted — drop the checkpoint so a future fresh
             # run into this output dir doesn't wrongly resume from it.
             (output_dir / "agentic_checkpoint.jsonl").unlink(missing_ok=True)
+
+        # Save code-exec trace (scripts, exec results, repair rounds)
+        if model_config.code_exec:
+            trace_file = output_dir / f"code_exec_trace_{timestamp}.jsonl"
+            with open(trace_file, "w") as f:
+                for trace in runner.traces:
+                    f.write(json.dumps(trace) + "\n")
+            console.print(f"[cyan]> Saved code-exec trace to {trace_file}[/cyan]")
 
         # Parse responses and write predictions incrementally
         predictions_file = output_dir / f"predictions_{timestamp}.jsonl"

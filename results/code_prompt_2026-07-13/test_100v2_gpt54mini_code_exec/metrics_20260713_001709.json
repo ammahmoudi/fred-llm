@@ -1,0 +1,111 @@
+{
+  "total": 93,
+  "correct": 35,
+  "accuracy": 0.3763440860215054,
+  "symbolic_accuracy": 0.053763440860215055,
+  "numeric_accuracy": 0.26881720430107525,
+  "mean_mae": 1.5344515617386199e+245,
+  "mean_rmse": 3.0568307043230142e+26,
+  "mean_max_error": 3.2070206428719913e+245,
+  "mean_mean_error": 1.5344515617386199e+245,
+  "series_term_stats": {
+    "total": 10,
+    "match": 1,
+    "match_rate": 0.1,
+    "min": 2,
+    "max": 6,
+    "mean": 3.1,
+    "target": 4
+  },
+  "approx_coef_stats": {
+    "total": 13,
+    "mean_match_rate": 0.38461538461538464,
+    "mean_abs_error": 22403174.874412015,
+    "mean_rel_error": Infinity
+  },
+  "discrete_points_stats": {
+    "total": 7,
+    "matched_point_rate": 0.0,
+    "mean_accuracy": 0.0,
+    "mean_rmse": 2.804765262100062
+  },
+  "family_param_stats": {
+    "total": 10,
+    "naming_convention_rate": 0.0,
+    "param_count_match_rate": 0.0
+  },
+  "mean_operator_precision": 0.631609195402299,
+  "mean_operator_recall": 0.7379720853858784,
+  "mean_operator_f1": 0.6432241130516991,
+  "mean_rel_l2": 1.457394734588125e+21,
+  "mean_bleu": 0.12946891078540593,
+  "per_type": {
+    "series": {
+      "total": 10,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "exact_symbolic": {
+      "total": 28,
+      "correct": 20,
+      "accuracy": 0.7142857142857143
+    },
+    "approx_coef": {
+      "total": 13,
+      "correct": 3,
+      "accuracy": 0.23076923076923078
+    },
+    "discrete_points": {
+      "total": 7,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "none": {
+      "total": 15,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "family": {
+      "total": 10,
+      "correct": 10,
+      "accuracy": 1.0
+    },
+    "regularized": {
+      "total": 10,
+      "correct": 2,
+      "accuracy": 0.2
+    }
+  },
+  "evaluated_count": 93,
+  "total_predictions": 100,
+  "api_errors": 1,
+  "parse_errors": 3,
+  "has_solution_accuracy": 0.7272727272727273,
+  "has_solution_total": 99,
+  "solution_type_accuracy": 0.1978021978021978,
+  "solution_type_total": 91,
+  "confusion_matrix": {
+    "series_predicted_as_approx_coef": 6,
+    "exact_symbolic_predicted_as_approx_coef": 17,
+    "series_predicted_as_family": 1,
+    "discrete_points_predicted_as_approx_coef": 6,
+    "none_predicted_as_discrete_points": 5,
+    "family_predicted_as_exact_symbolic": 10,
+    "regularized_predicted_as_none": 8,
+    "exact_symbolic_predicted_as_none": 2,
+    "none_predicted_as_approx_coef": 8,
+    "none_predicted_as_exact_symbolic": 1,
+    "approx_coef_predicted_as_discrete_points": 2,
+    "series_predicted_as_exact_symbolic": 1,
+    "approx_coef_predicted_as_exact_symbolic": 4,
+    "discrete_points_predicted_as_exact_symbolic": 2
+  },
+  "none_detection": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "tp": 0,
+    "fp": 12,
+    "fn": 15
+  }
+}

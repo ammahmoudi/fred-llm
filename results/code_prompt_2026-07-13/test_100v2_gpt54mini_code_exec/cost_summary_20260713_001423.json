@@ -1,0 +1,23 @@
+{
+  "run_id": "test_100v2_gpt54mini_code_exec_20260713_000738",
+  "start_time": "2026-07-13T00:07:38.307498",
+  "end_time": "2026-07-13T00:14:27.535087",
+  "total_requests": 107,
+  "total_tokens": 452270,
+  "total_cost_usd": "0.78406500",
+  "provider_breakdown": {
+    "openai": {
+      "requests": 107,
+      "tokens": 452270,
+      "total_cost_usd": "0.78406500"
+    }
+  },
+  "model_breakdown": {
+    "cx/gpt-5.4-mini": {
+      "provider": "openai",
+      "requests": 107,
+      "tokens": 452270,
+      "total_cost_usd": "0.78406500"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "run_id": "pilot8_gpt54mini_code_20260713_000523",
+  "start_time": "2026-07-13T00:05:23.332719",
+  "end_time": "2026-07-13T00:06:01.570744",
+  "total_requests": 8,
+  "total_tokens": 32170,
+  "total_cost_usd": "0.05492625",
+  "provider_breakdown": {
+    "openai": {
+      "requests": 8,
+      "tokens": 32170,
+      "total_cost_usd": "0.05492625"
+    }
+  },
+  "model_breakdown": {
+    "cx/gpt-5.4-mini": {
+      "provider": "openai",
+      "requests": 8,
+      "tokens": 32170,
+      "total_cost_usd": "0.05492625"
+    }
+  }
+}

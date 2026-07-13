@@ -258,6 +258,15 @@ class AgenticConfig(BaseModel):
     """Max-residual threshold for a candidate to count as verified."""
 
 
+class CodeExecConfig(BaseModel):
+    """Program-of-thought configuration: execute model-written SymPy scripts."""
+
+    exec_timeout: int = 60
+    """Seconds before a generated script is killed."""
+    max_repair_rounds: int = 1
+    """Feedback re-prompts when a script fails. 0 disables."""
+
+
 class ModelConfig(BaseModel):
     """LLM model configuration."""
 
@@ -274,6 +283,8 @@ class ModelConfig(BaseModel):
     """Reasoning model config. Set this for models like o1, o3, GPT-5.x."""
     agentic: Optional[AgenticConfig] = None
     """When set, wrap the base model in the agentic multi-method workflow."""
+    code_exec: Optional[CodeExecConfig] = None
+    """When set, execute the model's python code block and use its stdout."""
 
 
 class EvaluationConfig(BaseModel):

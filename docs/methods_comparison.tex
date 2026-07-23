@@ -1,0 +1,131 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+
+\title{Four Ways to Solve a Fredholm Equation with an LLM:\\
+\large Baseline Prompting vs.\ Agentic vs.\ Code Execution vs.\ Fine-Tuning, Side by Side}
+\author{Fred-LLM project}
+\date{23 July 2026}
+
+\begin{document}
+\maketitle
+
+All numbers are on the same benchmark: \texttt{test\_100\_v2}, 100 Fredholm
+equations of the second kind across seven solution types (30 exact symbolic,
+15 approximate-coefficient, 15 no-solution, 10 series, 10 discrete-point, 10
+solution-family, 10 regularized first-kind), scored by the same evaluation
+pipeline. Counts treat unscored responses as wrong. Full details are in the
+July 7 (agentic), July 12 (fine-tuning), and July 13 (code execution) reports.
+
+\section{The four methods}
+
+\textbf{Baseline.} One zero-shot prompt with the equation in LaTeX; the model
+answers directly in the structured \texttt{SOLUTION} format. One model call
+per equation, temperature 0.1.
+
+\textbf{Agentic multi-method.} Five specialist agents (degenerate kernel,
+Adomian, Neumann series, Fredholm alternative, numerical) attempt each
+equation in parallel. A deterministic SymPy check substitutes each candidate
+back into the equation; residual $<10^{-6}$ counts as verified, one repair
+round re-prompts failures, and a rule-based selector picks the winner
+(smallest residual, else majority vote, else best remaining). Five to seven
+model calls per equation.
+
+\textbf{Code execution (program of thought).} The equation is re-rendered as
+executable SymPy definitions and the model writes one Python script that
+solves it and prints the standard output format. The script runs in a
+sandboxed subprocess (60-second timeout, one repair round) and its stdout is
+scored as if the model had said it. One model call per equation. An ablation
+that shows the code-shaped prompt without executing anything gains only 3
+points, so execution, not representation, is the mechanism.
+
+\textbf{Fine-tuning + solver routing.} SmolLM2-360M-Instruct, fully
+fine-tuned on 11{,}100 equations from the project's augmentation pipeline,
+run locally. Plain text labels beat a special-token variant of the same
+training (0.505 vs.\ 0.370 evaluator accuracy), so plain is shown. The
+routing variant adds no training: when the model declares an equation
+solvable, a deterministic degenerate-kernel solver computes the answer and
+replaces the model's; the model's type decision only routes. The solver
+without the router scores 28/100, because it happily ``solves'' equations
+that have no solution.
+
+\section{Results by solution type}
+
+\begin{table}[h]
+\centering
+\small
+\setlength{\tabcolsep}{4.5pt}
+\begin{tabular}{llccccccccr}
+\toprule
+ & & exact & approx & series & discr. & family & regul. & none & \textbf{total} & cost \\
+Model & Method & /30 & /15 & /10 & /10 & /10 & /10 & /15 & \textbf{/100} & (\$) \\
+\midrule
+gpt-5.4-mini & baseline    & 6  & 3  & 0 & 0 & 10 & 0  & 2 & 21 & 0.57 \\
+gpt-5.4-mini & agentic     & 13 & 2  & 0 & 0 & 10 & 2  & 5 & 32 & 5.12 \\
+gpt-5.4-mini & code exec.  & 20 & 3  & 0 & 0 & 10 & 2  & 0 & 35 & 0.78 \\
+\midrule
+gpt-5.4 & baseline         & 21 & 1  & 0 & 0 & 10 & 1  & 2 & 35 & 3.01 \\
+gpt-5.4 & agentic          & 24 & 0  & 0 & 0 & 10 & 2  & 2 & 38 & 10.62$^{*}$ \\
+gpt-5.4 & code exec.       & 23 & 2  & 0 & 0 & 10 & \textbf{6} & 1 & 42 & 4.71 \\
+\midrule
+SmolLM2-360M & plain SFT   & 7  & \textbf{11} & 0 & 0 & 10 & \textbf{10} & \textbf{8} & 46 & local \\
+SmolLM2-360M & SFT + routing & 18 & 7 & 0 & 0 & 10 & \textbf{10} & \textbf{8} & \textbf{53} & local \\
+\bottomrule
+\end{tabular}
+\caption{Correct counts per solution type on \texttt{test\_100\_v2}. Cost is
+API spend per 100-equation run (list-price proxy). $^{*}$Partial log after a
+checkpoint resume; the full run is estimated near \$36.}
+\end{table}
+
+Read by column, the table splits into three regimes.
+
+\textbf{Algebra (exact symbolic, 30 items).} Scaffolding is everything for
+weak models and marginal for strong ones: the mini goes $6 \to 13 \to 20$
+across baseline, agentic, and code execution, while gpt-5.4 moves only
+$21 \to 24 \to 23$. The 360M model cannot do the algebra itself (7/30) but
+recovers to 18/30 by routing to the deterministic solver.
+
+\textbf{Decisions (none, regularized, family --- 35 items scored on
+classification).} Fine-tuning owns this regime: 10/10 regularized and 8/15
+none, against 0--2 for nearly every GPT configuration. The one GPT exception
+is gpt-5.4 code execution on regularized items (6/10). Code execution is
+worst on no-solution items (0--1 of 15): the scripts attempt singularity
+checks but pick tolerances a float system never trips, so they print a huge
+``solution'' instead of abstaining. Family items are free for everyone
+(10/10 everywhere).
+
+\textbf{Numeric types (approx-coef, series, discrete --- 35 items).}
+Series and discrete-point are zero for every method; they need a different
+output contract, not better solving. Approximate-coefficient is the SFT
+model's other win (11/15 plain), since it learned the expected output format;
+GPT methods manage at most 3.
+
+\section{Cost}
+
+Per 100 equations: the baseline costs \$0.57 (mini) to \$3.01 (gpt-5.4);
+code execution costs about the same as a baseline (\$0.78, \$4.71) because it
+is still one call per equation; agentic costs $5$--$7\times$ more (\$5.12,
+$\approx$\$36 full-run estimate). Per \emph{extra} correct answer over the
+same-model baseline: agentic pays \$0.41 on the mini but $\approx$\$11 on
+gpt-5.4; code execution pays \$0.02 on the mini and \$0.24 on gpt-5.4. The
+fine-tuned model has no per-query API cost at all (a few hours of training on
+a laptop), and holds the overall lead at 53/100.
+
+\section{Takeaway}
+
+Code execution is the best way to spend API money on this benchmark (42/100
+at baseline-level cost); agentic orchestration only pays where the base model
+is weak; and a 360M local specialist plus a deterministic solver beats every
+GPT configuration (53/100) by winning the decision items the GPTs throw away.
+The failure profiles barely overlap --- scripts own the algebra, the
+specialist owns the decisions --- so the obvious next step is the hybrid.
+(gpt-5.5 repeats the gpt-5.4 pattern, 36 baseline / 38 agentic, and is
+omitted from the table.)
+
+\end{document}
